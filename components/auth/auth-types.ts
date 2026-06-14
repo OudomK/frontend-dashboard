@@ -1,0 +1,1 @@
+export type AuthVariant = "admin" | "doctor";
