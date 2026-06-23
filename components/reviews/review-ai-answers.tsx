@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Clock, Flag, MessageCircleQuestion } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { aiReviews, type AiReview, type ReviewStatus } from "./review-data";
+import { type AiReview, type ReviewStatus } from "./review-data";
 import { ReviewCard } from "./review-card";
 
 // ─── Tab empty states ─────────────────────────────────────────────────────────
@@ -20,12 +20,12 @@ function EmptyTab({
   sub: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-        <Icon className="h-7 w-7 text-slate-400" />
+    <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white text-center mt-4">
+      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
+        <Icon className="h-10 w-10 text-blue-500/60" />
       </div>
-      <h3 className="mb-1 font-semibold text-slate-900">{message}</h3>
-      <p className="max-w-xs text-sm text-slate-500">{sub}</p>
+      <h3 className="mb-2 text-lg font-bold text-slate-800">{message}</h3>
+      <p className="max-w-sm text-sm leading-relaxed text-slate-500">{sub}</p>
     </div>
   );
 }
@@ -73,28 +73,78 @@ function ReviewList({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ReviewAIAnswers() {
-  // Local status overrides (would normally mutate server state)
   const [overrides, setOverrides] = useState<Record<string, ReviewStatus>>({});
+  const [flags, setFlags] = useState<AiReview[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchFlags() {
+      try {
+        const { apiClient } = await import("@/lib/api-client");
+        const res = await apiClient.get("/api/v1/emergency-flags/");
+        const fetched = res.data.map((f: any) => ({
+          id: `flag-${f.id}`,
+          sessionId: `Session #${f.session_id}`,
+          timestamp: new Date(f.flagged_at).toLocaleString(),
+          userQuestion: f.message_content || "(No message content)",
+          aiAnswer: `[System Action: ${f.rule_name}] ${f.advice_text}`,
+          isEmergency: true,
+          emergencyNote: `Severity: ${f.severity_level?.toUpperCase()} | Detected: "${f.detected_text}"`,
+          confidence: "high" as const,
+          confidenceScore: 100,
+          sources: [],
+          status: f.status || ("needs_review" as const),
+        }));
+        setFlags(fetched);
+      } catch (err) {
+        console.error("Failed to load emergency flags", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFlags();
+  }, []);
 
   function getStatus(review: AiReview): ReviewStatus {
-    return overrides[review.id] ?? review.status;
+    return review.status;
   }
 
-  function handleApprove(id: string) {
-    setOverrides((prev) => ({ ...prev, [id]: "approved" }));
+  async function handleApprove(id: string) {
+    const numericId = id.replace('flag-', '');
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      await apiClient.patch(`/api/v1/emergency-flags/${numericId}/status`, { status: "approved" });
+      setFlags(prev => prev.map(f => f.id === id ? { ...f, status: "approved" } : f));
+    } catch (err) {
+      console.error("Failed to approve flag", err);
+    }
   }
 
-  function handleFlag(id: string) {
-    setOverrides((prev) => ({ ...prev, [id]: "flagged" }));
+  async function handleFlag(id: string) {
+    const numericId = id.replace('flag-', '');
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      await apiClient.patch(`/api/v1/emergency-flags/${numericId}/status`, { status: "flagged" });
+      setFlags(prev => prev.map(f => f.id === id ? { ...f, status: "flagged" } : f));
+    } catch (err) {
+      console.error("Failed to flag item", err);
+    }
   }
 
-  function handleEdit(id: string, _newAnswer: string) {
-    // In production: PATCH /api/reviews/:id with newAnswer
-    setOverrides((prev) => ({ ...prev, [id]: "flagged" }));
+  async function handleEdit(id: string, newAnswer: string) {
+    const numericId = id.replace('flag-', '');
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      await apiClient.patch(`/api/v1/emergency-flags/${numericId}/status`, { status: "flagged" });
+      setFlags(prev => prev.map(f => f.id === id ? { ...f, status: "flagged" } : f));
+    } catch (err) {
+      console.error("Failed to edit item", err);
+    }
   }
 
-  // Derived lists using the overrides
-  const withStatus = aiReviews.map((r) => ({
+  // Derived lists
+  const combined = [...flags];
+  const withStatus = combined.map((r) => ({
     ...r,
     status: getStatus(r),
   }));
@@ -102,6 +152,14 @@ export function ReviewAIAnswers() {
   const needsReview = withStatus.filter((r) => r.status === "needs_review");
   const approved    = withStatus.filter((r) => r.status === "approved");
   const flagged     = withStatus.filter((r) => r.status === "flagged");
+
+  if (loading && flags.length === 0) {
+    return (
+      <div className="flex justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <Tabs defaultValue="needs_review">

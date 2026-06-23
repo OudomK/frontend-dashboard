@@ -23,13 +23,20 @@ export function DashboardHeader({
   const pathname = usePathname();
   const sessionUser = useAuthStore((state) => state.user);
 
-  const displayName = sessionUser?.email
-    ? (typeof window !== "undefined" ? localStorage.getItem("women_health_user_name") : null) || sessionUser.email.split("@")[0]
-    : (role === "admin" ? "Dr. Anderson" : "Dr. Sarah Jenkins");
+  const displayName = sessionUser?.name || (sessionUser?.email
+    ? sessionUser.email.split("@")[0]
+    : (role === "admin" ? "Dr. Anderson" : "Dr. Sarah Jenkins"));
 
   const displayRole = role === "admin" ? "System Admin" : "Clinic Owner";
   
-  const avatarUrl = sessionUser?.avatarUrl || (role === "admin"
+  const getFullAvatarUrl = (url?: string) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    return `${apiUrl}${url}`;
+  };
+
+  const avatarUrl = getFullAvatarUrl(sessionUser?.avatarUrl) || (role === "admin"
     ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
     : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100");
 

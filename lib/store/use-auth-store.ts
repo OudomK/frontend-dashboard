@@ -5,6 +5,7 @@ interface UserInfo {
   email: string;
   roleId: number;
   avatarUrl?: string;
+  name?: string;
 }
 
 interface AuthState {
@@ -18,6 +19,7 @@ interface AuthState {
   logout: () => Promise<void>;
   initialize: () => void;
   updateAvatar: (url: string) => void;
+  updateName: (name: string) => void;
 }
 
 // Helper to decode JWT payload without external libraries
@@ -69,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         params.append("username", email);
         params.append("password", password);
 
-        const response = await apiClient.post("/api/users/login", params, {
+        const response = await apiClient.post("/api/v1/users/login", params, {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
@@ -92,16 +94,23 @@ export const useAuthStore = create<AuthState>((set, get) => {
         localStorage.setItem("women_health_role_id", String(role_id));
         localStorage.setItem("women_health_user_email", email);
 
-        // Fetch User Profile to retrieve avatar if present
+        // Fetch User Profile to retrieve avatar and name if present
         let avatarUrl = undefined;
+        let fullName = undefined;
         try {
-          const profileResponse = await apiClient.get("/api/users/profile", {
+          const profileResponse = await apiClient.get("/api/v1/users/me", {
             headers: {
               Authorization: `Bearer ${access_token}`,
             },
           });
           avatarUrl = profileResponse.data.avatar_url;
+          fullName = profileResponse.data.full_name;
+          
           if (avatarUrl) {
+            // Ensure full URL is stored
+            if (!avatarUrl.startsWith('http')) {
+              avatarUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${avatarUrl}`;
+            }
             localStorage.setItem("women_health_avatar_url", avatarUrl);
           }
         } catch (profileError) {
@@ -109,8 +118,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
 
         const decoded = decodeJwt(access_token);
-        const namePart = email.split("@")[0];
-        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        
+        let formattedName = fullName;
+        if (!formattedName) {
+          const namePart = email.split("@")[0];
+          formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        }
         localStorage.setItem("women_health_user_name", formattedName);
 
         set({
@@ -121,6 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             email: email,
             roleId: role_id,
             avatarUrl: avatarUrl,
+            name: formattedName,
           },
           isAuthenticated: true,
           isLoading: false,
@@ -134,11 +148,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     logout: async () => {
       const currentRefreshToken = get().refreshToken || localStorage.getItem("women_health_refresh_token");
+      const currentRoleId = get().roleId;
       
       try {
         if (currentRefreshToken) {
           // Send logout to backend with refresh token
-          await apiClient.post(`/api/users/logout?refresh_token=${currentRefreshToken}`);
+          await apiClient.post(`/api/v1/users/logout?refresh_token=${currentRefreshToken}`);
         }
       } catch (error) {
         console.error("Backend logout error", error);
@@ -162,8 +177,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         // Redirect appropriately
         if (typeof window !== "undefined") {
-          const expectedRole = get().roleId;
-          if (expectedRole === 3) {
+          if (currentRoleId === 3) {
             window.location.href = "/auth/admin-login";
           } else {
             window.location.href = "/auth/doctor-login";
@@ -180,6 +194,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const roleIdStr = localStorage.getItem("women_health_role_id");
       const email = localStorage.getItem("women_health_user_email");
       const avatarUrl = localStorage.getItem("women_health_avatar_url") || undefined;
+      const name = localStorage.getItem("women_health_user_name") || undefined;
 
       if (token && refreshToken && roleIdStr && email) {
         const roleId = Number(roleIdStr);
@@ -191,6 +206,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             email,
             roleId,
             avatarUrl,
+            name,
           },
           isAuthenticated: true,
           isLoading: false,
@@ -208,6 +224,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
           user: {
             ...currentUser,
             avatarUrl: url,
+          },
+        });
+      }
+    },
+
+    updateName: (name) => {
+      const currentUser = get().user;
+      if (currentUser) {
+        localStorage.setItem("women_health_user_name", name);
+        set({
+          user: {
+            ...currentUser,
+            name: name,
           },
         });
       }

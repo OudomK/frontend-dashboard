@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertTriangle,
   Building2,
@@ -22,6 +22,18 @@ import {
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/lib/store/use-auth-store";
+import { toast } from "sonner";
+import { useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // ─── Field label ──────────────────────────────────────────────────────────────
 
@@ -167,11 +179,19 @@ function ProfileHero({
   firstName,
   lastName,
   title,
+  avatarUrl,
+  onAvatarUpload,
+  uploadingAvatar,
 }: {
   firstName: string;
   lastName: string;
   title: string;
+  avatarUrl: string;
+  onAvatarUpload: () => void;
+  uploadingAvatar: boolean;
 }) {
+  const displayAvatar = avatarUrl || "https://i.pravatar.cc/80?img=47";
+  
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Gradient banner */}
@@ -184,13 +204,15 @@ function ProfileHero({
           <div className="relative -mt-10">
             <div className="h-20 w-20 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-slate-100">
               <img
-                src="https://i.pravatar.cc/80?img=47"
-                alt="Dr. Sarah Jenkins"
+                src={displayAvatar}
+                alt="Doctor Avatar"
                 className="h-full w-full object-cover"
               />
             </div>
             <button
-              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white"
+              onClick={onAvatarUpload}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white hover:bg-blue-700 disabled:opacity-50"
               aria-label="Change avatar"
             >
               <Camera className="h-3 w-3" />
@@ -207,8 +229,12 @@ function ProfileHero({
 
           {/* Action row */}
           <div className="mt-3 flex items-center gap-2">
-            <button className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-              Change Avatar
+            <button
+              onClick={onAvatarUpload}
+              disabled={uploadingAvatar}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+            >
+              {uploadingAvatar ? "Uploading..." : "Change Avatar"}
             </button>
             <button className="rounded-xl px-3 py-2 text-xs font-medium text-slate-500 hover:text-red-600 transition">
               Remove
@@ -227,13 +253,15 @@ function ProfileHero({
           <div className="relative">
             <div className="h-20 w-20 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-slate-100">
               <img
-                src="https://i.pravatar.cc/80?img=47"
-                alt="Dr. Sarah Jenkins"
+                src={displayAvatar}
+                alt="Doctor Avatar"
                 className="h-full w-full object-cover"
               />
             </div>
             <button
-              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white"
+              onClick={onAvatarUpload}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white hover:bg-blue-700 disabled:opacity-50"
               aria-label="Change avatar"
             >
               <Camera className="h-3 w-3" />
@@ -248,8 +276,12 @@ function ProfileHero({
           </div>
 
           <div className="mb-1 flex shrink-0 items-center gap-2">
-            <button className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
-              Change Avatar
+            <button 
+              onClick={onAvatarUpload}
+              disabled={uploadingAvatar}
+              className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+            >
+              {uploadingAvatar ? "Uploading..." : "Change Avatar"}
             </button>
             <button className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-red-600 transition">
               Remove
@@ -264,32 +296,209 @@ function ProfileHero({
   );
 }
 
+// ─── Change Password Modal ──────────────────────────────────────────────────────
+
+function ChangePasswordModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await apiClient.put("/api/users/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      toast.success("Password changed successfully!");
+      onOpenChange(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || "Failed to change password.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Enter your current password and a new secure password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <FieldLabel>Current Password</FieldLabel>
+              <TextInput 
+                type="password" 
+                value={currentPassword} 
+                onChange={setCurrentPassword} 
+                placeholder="••••••••" 
+              />
+            </div>
+            <div className="space-y-2">
+              <FieldLabel>New Password</FieldLabel>
+              <TextInput 
+                type="password" 
+                value={newPassword} 
+                onChange={setNewPassword} 
+                placeholder="••••••••" 
+              />
+            </div>
+            <div className="space-y-2">
+              <FieldLabel>Confirm New Password</FieldLabel>
+              <TextInput 
+                type="password" 
+                value={confirmPassword} 
+                onChange={setConfirmPassword} 
+                placeholder="••••••••" 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Updating..." : "Update Password"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DoctorProfilePage() {
-  const [firstName,     setFirstName]    = useState("Sarah");
-  const [lastName,      setLastName]     = useState("Jenkins");
-  const [title,         setTitle]        = useState("Senior Obstetrician & Gynecologist");
-  const [email]                          = useState("dr.sarah@aurahealth.com");
-  const [phone,         setPhone]        = useState("+855 12 345 678");
-  const [bio,           setBio]          = useState(
-    "Over 15 years of experience in women's health, focusing on pregnancy care, reproductive health, and empowering women through medical education."
-  );
-  const [clinicName,    setClinicName]   = useState("Aura Women's Health Clinic");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [firstName,     setFirstName]    = useState("");
+  const [lastName,      setLastName]     = useState("");
+  const [title,         setTitle]        = useState("");
+  const [email,         setEmail]        = useState("");
+  const [phone,         setPhone]        = useState("");
+  const [bio,           setBio]          = useState("");
+  const [clinicName,    setClinicName]   = useState("");
   const [telegram,      setTelegram]     = useState("t.me/auraclinic_support");
   const [emergencyTel,  setEmergencyTel] = useState("+855 23 999 999");
-  const [clinicAddress, setClinicAddress] = useState(
-    "#123, Preah Norodom Blvd, Sangkat Tonle Bassac, Khan Chamkarmon, Phnom Penh"
-  );
+  const [clinicAddress, setClinicAddress] = useState("");
   const [twoFA,         setTwoFA]        = useState(true);
   const [saved,         setSaved]        = useState(false);
+  const [loading,       setLoading]      = useState(true);
+  const [avatarUrl,     setAvatarUrl]    = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await apiClient.get("/api/v1/users/me");
+        const p = res.data;
+        const nameParts = (p.full_name || "").split(" ");
+        setFirstName(nameParts[0] || "");
+        setLastName(nameParts.slice(1).join(" ") || "");
+        setTitle(p.specialization || "");
+        setEmail(p.email || "");
+        setPhone(p.phone || "");
+        setBio(p.medical_note || "");
+        setClinicName(p.hospital_name || "");
+        setClinicAddress(p.address || "");
+        
+        if (p.avatar_url) {
+          const fullUrl = p.avatar_url.startsWith("http")
+            ? p.avatar_url
+            : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${p.avatar_url}`;
+          setAvatarUrl(fullUrl);
+        }
+      } catch (err) {
+        console.error("Failed to load profile", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  async function handleSave() {
+    try {
+      await apiClient.put("/api/v1/users/profile", {
+        full_name: `${firstName} ${lastName}`.trim(),
+        specialization: title,
+        phone,
+        medical_note: bio,
+        hospital_name: clinicName,
+        address: clinicAddress,
+      });
+      useAuthStore.getState().updateName(`${firstName} ${lastName}`.trim());
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Failed to save profile", err);
+    }
   }
 
-  const fields = [firstName, lastName, title, phone, bio, clinicName, telegram, emergencyTel, clinicAddress];
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await apiClient.post("/api/v1/uploads/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      let newAvatarUrl = res.data.file_url;
+      if (!newAvatarUrl.startsWith("http")) {
+        newAvatarUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${newAvatarUrl}`;
+      }
+
+      setAvatarUrl(newAvatarUrl);
+      useAuthStore.getState().updateAvatar(newAvatarUrl);
+
+      // Save to profile
+      await apiClient.put("/api/v1/users/profile", {
+        avatar_url: res.data.file_url, // store relative path in db
+      });
+      
+      toast.success("Avatar updated successfully!");
+    } catch (error: any) {
+      console.error("Failed to upload avatar", error);
+      toast.error(error.response?.data?.detail || "Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const triggerAvatarUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const fields = [firstName, lastName, title, phone, bio, clinicName, telegram, emergencyTel, clinicAddress, avatarUrl];
   const completeness = Math.round((fields.filter(Boolean).length / fields.length) * 100);
 
   return (
@@ -307,6 +516,13 @@ export default function DoctorProfilePage() {
         </Button>
       }
     >
+      <input 
+        type="file" 
+        accept="image/png, image/jpeg, image/gif, image/webp"
+        className="hidden" 
+        ref={fileInputRef}
+        onChange={handleAvatarUpload}
+      />
       {/* Mobile save button (DashboardLayout hides actions on mobile) */}
       <div className="mb-4 lg:hidden">
         <button
@@ -326,11 +542,18 @@ export default function DoctorProfilePage() {
        */}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
 
-        {/* ── Left column (forms) — order-2 on mobile → appears second ─── */}
-        <div className="order-2 space-y-5 lg:order-1">
+        {/* ── Left column (forms) — appears first on mobile ─── */}
+        <div className="space-y-5">
 
           {/* Hero card */}
-          <ProfileHero firstName={firstName} lastName={lastName} title={title} />
+          <ProfileHero 
+            firstName={firstName} 
+            lastName={lastName} 
+            title={title} 
+            avatarUrl={avatarUrl}
+            onAvatarUpload={triggerAvatarUpload}
+            uploadingAvatar={uploadingAvatar}
+          />
 
           {/* Personal Information */}
           <SectionCard
@@ -448,8 +671,8 @@ export default function DoctorProfilePage() {
 
         </div>
 
-        {/* ── Right column — order-1 on mobile → appears FIRST ─────────── */}
-        <div className="order-1 space-y-4 lg:order-2">
+        {/* ── Right column — appears second on mobile ─────────── */}
+        <div className="space-y-4">
 
           {/* Profile Completeness */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -491,9 +714,12 @@ export default function DoctorProfilePage() {
                 icon={KeyRound}
                 iconBg="bg-slate-100 text-slate-600"
                 title="Password"
-                description="Last changed 3 months ago."
+                description="Manage your account password."
                 action={
-                  <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  <button 
+                    onClick={() => setPasswordModalOpen(true)}
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
                     Update
                   </button>
                 }
@@ -560,6 +786,7 @@ export default function DoctorProfilePage() {
       </div>
 
       <SaveToast visible={saved} />
+      <ChangePasswordModal open={passwordModalOpen} onOpenChange={setPasswordModalOpen} />
     </DashboardLayout>
   );
 }

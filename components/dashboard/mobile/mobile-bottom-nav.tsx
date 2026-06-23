@@ -9,6 +9,7 @@ import {
   Settings,
   FileWarning,
   User,
+  Menu,
 } from "lucide-react";
 
 type Props = {
@@ -35,9 +36,9 @@ export function MobileBottomNav({ role }: Props) {
       icon: BookOpen,
     },
     {
-      label: "Settings",
-      href: "/admin/settings",
-      icon: Settings,
+      label: "Menu",
+      href: "/admin/menu",
+      icon: Menu,
     },
   ];
 
@@ -58,9 +59,9 @@ export function MobileBottomNav({ role }: Props) {
       icon: FileWarning,
     },
     {
-      label: "Profile",
-      href: "/doctor/profile",
-      icon: User,
+      label: "Menu",
+      href: "/doctor/menu",
+      icon: Menu,
     },
   ];
 

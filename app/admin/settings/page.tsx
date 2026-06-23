@@ -1,59 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, X, Plus, ChevronRight, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 
-// ─── Default Config Setup ───────────────────────────────────────────────────
-
-const defaultConfig = {
-  clinicName: "Women's Health Care Clinic",
-  emergencyPhone: "+855 12 345 678",
-  telegramLink: "womenscareclinic",
-  enableAutoDetection: true,
-  keywords: [
-    "bleeding heavily",
-    "severe pain",
-    "ectopic",
-    "faint",
-    "ធ្លាក់ឈាមខ្លាំង",
-    "ឈឺពោះខ្លាំង",
-  ],
-  emergencyMessage:
-    "⚠️ ជម្រាបសួរ, មានសញ្ញាដែលអាចជាការគំរាមកំហែងដល់អាយុជីវិត! សូមប្រញាប់ទៅជួបគ្រូពេទ្យ ឬមន្ទីរពេទ្យជាបន្ទាន់! (Warning: The symptoms you described could be dangerous. Please see a doctor or visit a hospital immediately!)",
-  languagePreference: "Khmer & English (Auto-detect)",
-  strictness: "Strict (Only use uploaded Docs)",
-  systemPrompt:
-    "You are a highly empathetic and knowledgeable women's health assistant for Women's Health Care Clinic. 1. Always respond in simple, easy-to-understand language. 2. Do NOT provide real medical diagnoses or generate prescriptions. 3. Base your answers strictly on the clinic's provided knowledge base. 4. If a question is outside the scope of your knowledge, suggest contacting the clinic.",
-  require2Fa: false,
-  sessionTimeout: "30 Minutes",
-};
-
 export default function AdminSettingsPage() {
   // Page Form States
-  const [clinicName, setClinicName] = useState(defaultConfig.clinicName);
-  const [emergencyPhone, setEmergencyPhone] = useState(defaultConfig.emergencyPhone);
-  const [telegramLink, setTelegramLink] = useState(defaultConfig.telegramLink);
-  const [enableAutoDetection, setEnableAutoDetection] = useState(
-    defaultConfig.enableAutoDetection
-  );
-  const [keywords, setKeywords] = useState<string[]>(defaultConfig.keywords);
-  const [emergencyMessage, setEmergencyMessage] = useState(
-    defaultConfig.emergencyMessage
-  );
-  const [languagePreference, setLanguagePreference] = useState(
-    defaultConfig.languagePreference
-  );
-  const [strictness, setStrictness] = useState(defaultConfig.strictness);
-  const [systemPrompt, setSystemPrompt] = useState(defaultConfig.systemPrompt);
-  const [require2Fa, setRequire2Fa] = useState(defaultConfig.require2Fa);
-  const [sessionTimeout, setSessionTimeout] = useState(defaultConfig.sessionTimeout);
+  const [clinicName, setClinicName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [telegramLink, setTelegramLink] = useState("");
+  const [enableAutoDetection, setEnableAutoDetection] = useState(false);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [emergencyMessage, setEmergencyMessage] = useState("");
+  const [languagePreference, setLanguagePreference] = useState("Khmer & English (Auto-detect)");
+  const [strictness, setStrictness] = useState("Strict (Only use uploaded Docs)");
+  const [systemPrompt, setSystemPrompt] = useState("");
+  const [require2Fa, setRequire2Fa] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState(30);
+
+  const [isLoading, setIsLoading] = useState(true);
 
   // Keyword Tags management state
   const [newTagInput, setNewTagInput] = useState("");
+
+  const fetchSettings = async () => {
+    try {
+      setIsLoading(true);
+      const res = await apiClient.get("/api/v1/settings/global");
+      const data = res.data;
+      setClinicName(data.clinic_name || "");
+      setEmergencyPhone(data.emergency_phone || "");
+      setTelegramLink(data.telegram_link || "");
+      setEnableAutoDetection(data.enable_auto_detection || false);
+      setKeywords(data.keywords || []);
+      setEmergencyMessage(data.emergency_message || "");
+      setLanguagePreference(data.language_preference || "Khmer & English (Auto-detect)");
+      setStrictness(data.strictness || "Strict (Only use uploaded Docs)");
+      setSystemPrompt(data.system_prompt || "");
+      setRequire2Fa(data.require_2fa || false);
+      setSessionTimeout(data.session_timeout || 30);
+    } catch (error) {
+      toast.error("Failed to load settings.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleAddKeyword = () => {
     const trimmed = newTagInput.trim();
@@ -77,26 +76,36 @@ export default function AdminSettingsPage() {
     setKeywords((prev) => prev.filter((k) => k !== tagToRemove));
   };
 
-  // Action: Reset all form fields to default mock seeds
+  // Action: Reset all form fields by fetching from server again
   const handleDiscardChanges = () => {
-    setClinicName(defaultConfig.clinicName);
-    setEmergencyPhone(defaultConfig.emergencyPhone);
-    setTelegramLink(defaultConfig.telegramLink);
-    setEnableAutoDetection(defaultConfig.enableAutoDetection);
-    setKeywords(defaultConfig.keywords);
-    setEmergencyMessage(defaultConfig.emergencyMessage);
-    setLanguagePreference(defaultConfig.languagePreference);
-    setStrictness(defaultConfig.strictness);
-    setSystemPrompt(defaultConfig.systemPrompt);
-    setRequire2Fa(defaultConfig.require2Fa);
-    setSessionTimeout(defaultConfig.sessionTimeout);
-    setNewTagInput("");
-    toast.info("All settings reverted to default configurations.");
+    fetchSettings();
+    toast.info("Settings reverted to saved configurations.");
   };
 
   // Action: Save and display confirmation toast
-  const handleSaveChanges = () => {
-    toast.success("System configurations updated successfully!");
+  const handleSaveChanges = async () => {
+    const toastId = toast.loading("Saving changes...");
+    try {
+      const payload = {
+        clinic_name: clinicName,
+        emergency_phone: emergencyPhone,
+        telegram_link: telegramLink,
+        enable_auto_detection: enableAutoDetection,
+        keywords: keywords,
+        emergency_message: emergencyMessage,
+        language_preference: languagePreference,
+        strictness: strictness,
+        system_prompt: systemPrompt,
+        require_2fa: require2Fa,
+        session_timeout: sessionTimeout
+      };
+      await apiClient.put("/api/v1/settings/global", payload);
+      toast.dismiss(toastId);
+      toast.success("System configurations updated successfully!");
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error("Failed to update settings.");
+    }
   };
 
   return (
@@ -382,13 +391,13 @@ export default function AdminSettingsPage() {
                 <div className="w-full sm:w-1/2">
                   <select
                     value={sessionTimeout}
-                    onChange={(e) => setSessionTimeout(e.target.value)}
+                    onChange={(e) => setSessionTimeout(Number(e.target.value))}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
                   >
-                    <option value="15 Minutes">15 Minutes</option>
-                    <option value="30 Minutes">30 Minutes</option>
-                    <option value="1 Hour">1 Hour</option>
-                    <option value="4 Hours">4 Hours</option>
+                    <option value={15}>15 Minutes</option>
+                    <option value={30}>30 Minutes</option>
+                    <option value={60}>1 Hour</option>
+                    <option value={240}>4 Hours</option>
                   </select>
                 </div>
               </div>

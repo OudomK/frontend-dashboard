@@ -17,6 +17,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { UploadDocumentDialog } from "@/app/doctor/documents/upload-document-dialog";
+import { ViewDocumentDialog } from "./view-document-dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,6 +125,8 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "All">("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [categories, setCategories] = useState<any[]>([]);
+  const [viewDocId, setViewDocId] = useState<number | null>(null);
+  const [viewDocName, setViewDocName] = useState<string>("");
 
   const fetchDocuments = useCallback(async () => {
     setLoadingList(true);
@@ -348,8 +351,8 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                 <tr className="border-b border-slate-200 text-xs font-semibold text-slate-400">
                   <th className="px-6 py-4">{isAdmin ? "Document Name" : "Document Details"}</th>
                   {isAdmin && <th className="px-5 py-4">Size</th>}
-                  {isAdmin && <th className="px-5 py-4">Uploaded By</th>}
-                  {isAdmin && <th className="px-5 py-4">Date Added</th>}
+                  <th className="px-5 py-4">Uploaded By</th>
+                  <th className="px-5 py-4">Date Added</th>
                   <th className="px-5 py-4">{isAdmin ? "AI Status" : "Category"}</th>
                   {!isAdmin && <th className="px-5 py-4">AI Status</th>}
                   <th className="px-5 py-4">Active</th>
@@ -379,8 +382,8 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                           </div>
                         </td>
                         {isAdmin && <td className="px-5 py-4 text-slate-400">{document.size}</td>}
-                        {isAdmin && <td className="px-5 py-4 text-slate-950">{document.author}</td>}
-                        {isAdmin && <td className="px-5 py-4 text-slate-400">{document.date}</td>}
+                        <td className="px-5 py-4 text-slate-950">{document.author}</td>
+                        <td className="px-5 py-4 text-slate-400">{document.date}</td>
                         <td className="px-5 py-4">
                           {isAdmin ? (
                             <StatusBadge status={document.status} />
@@ -418,7 +421,14 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-3 text-slate-400">
-                            <button aria-label={`View ${document.name}`} className="transition hover:text-blue-600">
+                            <button
+                              aria-label={`View ${document.name}`}
+                              className="transition hover:text-blue-600"
+                              onClick={() => {
+                                setViewDocId(document.id);
+                                setViewDocName(document.name);
+                              }}
+                            >
                               <Eye className="h-4 w-4" />
                             </button>
                             {/* Doctor-only: re-process and delete */}
@@ -533,7 +543,14 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                         <div className="flex items-center gap-1.5">
                           <StatusBadge status={document.status} />
 
-                          <button aria-label={`View ${document.name}`} className="rounded-lg p-2 hover:bg-slate-100 text-slate-400">
+                          <button
+                            aria-label={`View ${document.name}`}
+                            className="rounded-lg p-2 hover:bg-slate-100 text-slate-400"
+                            onClick={() => {
+                              setViewDocId(document.id);
+                              setViewDocName(document.name);
+                            }}
+                          >
                             <Eye className="h-4 w-4" />
                           </button>
 
@@ -603,6 +620,13 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
           )}
         </section>
       </div>
+
+      <ViewDocumentDialog
+        documentId={viewDocId}
+        documentName={viewDocName}
+        open={viewDocId !== null}
+        onOpenChange={(open) => !open && setViewDocId(null)}
+      />
     </DashboardLayout>
   );
 }

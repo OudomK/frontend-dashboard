@@ -47,7 +47,7 @@ apiClient.interceptors.response.use(
 
     // Check if error is 401 Unauthorized and not already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes("/api/users/refresh") || originalRequest.url?.includes("/api/users/login")) {
+      if (originalRequest.url?.includes("/api/v1/users/refresh") || originalRequest.url?.includes("/api/v1/users/login")) {
         // If login or refresh request fails with 401, reject immediately
         return Promise.reject(error);
       }
@@ -79,7 +79,7 @@ apiClient.interceptors.response.use(
       try {
         // Call refresh endpoint with refresh_token as query parameter
         const response = await axios.post(
-          `${API_URL}/api/users/refresh`,
+          `${API_URL}/api/v1/users/refresh`,
           null,
           {
             params: { refresh_token: refreshToken },

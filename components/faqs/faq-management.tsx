@@ -23,6 +23,27 @@ import { toast } from "sonner";
 import { FaqDialog } from "./faq-dialog";
 import { DeleteFaqDialog } from "./delete-faq-dialog";
 
+type Category = {
+  id: number;
+  name: string;
+};
+
+export type Faq = {
+  id: number;
+  category_id: number | null;
+  created_by?: number | null;
+  question: string;
+  answer: string;
+  language: string;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+type FaqWithCategory = Faq & {
+  categoryName: string;
+};
+
 type Props = {
   role: "admin" | "doctor";
   addOpen?: boolean;
@@ -37,23 +58,30 @@ function CategoryPill({ category }: { category: string }) {
   );
 }
 
-function formatBackendError(error: any): string {
-  const detail = error.response?.data?.detail;
+function formatBackendError(error: unknown): string {
+  const response = error && typeof error === "object" && "response" in error
+    ? (error as { response?: { data?: { detail?: unknown; message?: string } } }).response
+    : undefined;
+  const detail = response?.data?.detail;
   if (Array.isArray(detail)) {
-    return detail.map((d: any) => {
-      const field = d.loc && d.loc.length > 0 ? d.loc[d.loc.length - 1] : "field";
-      return `${field}: ${d.msg}`;
+    return detail.map((d) => {
+      const item = d as { loc?: string[]; msg?: string };
+      const field = item.loc && item.loc.length > 0 ? item.loc[item.loc.length - 1] : "field";
+      return `${field}: ${item.msg ?? "Invalid value"}`;
     }).join(", ");
   }
   if (typeof detail === "string") {
     return detail;
   }
-  return error.response?.data?.message || error.message || "An error occurred";
+  if (response?.data?.message) {
+    return response.data.message;
+  }
+  return error instanceof Error ? error.message : "An error occurred";
 }
 
 export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
-  const [faqs, setFaqs] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
@@ -61,9 +89,11 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   const [showCategoryFilter, setShowCategoryFilter] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingFaq, setEditingFaq] = useState<any | null>(null);
+  const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingFaq, setDeletingFaq] = useState<any | null>(null);
+  const [deletingFaq, setDeletingFaq] = useState<Faq | null>(null);
+
+  const canManage = role === "admin" || role === "doctor";
 
   const fetchFaqs = async () => {
     setLoading(true);
@@ -72,9 +102,9 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
         apiClient.get("/api/v1/faqs/"),
         apiClient.get("/api/v1/categories/")
       ]);
-      setFaqs(faqRes.data || []);
-      setCategories(catRes.data || []);
-    } catch (error: any) {
+      setFaqs((faqRes.data || []) as Faq[]);
+      setCategories((catRes.data || []) as Category[]);
+    } catch (error: unknown) {
       toast.error(formatBackendError(error));
     } finally {
       setLoading(false);
@@ -82,7 +112,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   };
 
   useEffect(() => {
-    fetchFaqs();
+    void Promise.resolve().then(fetchFaqs);
   }, []);
 
   const handleToggleActive = async (faqId: number, currentActive: boolean) => {
@@ -93,23 +123,26 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
       toast.dismiss(toastId);
       toast.success(`FAQ ${currentActive ? "deactivated" : "activated"} successfully!`);
       fetchFaqs();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(toastId);
       toast.error(formatBackendError(error));
     }
   };
 
   function handleAdd() {
+    if (!canManage) return;
     setEditingFaq(null);
     setDialogOpen(true);
   }
 
-  function handleEdit(faq: any) {
+  function handleEdit(faq: Faq) {
+    if (!canManage) return;
     setEditingFaq(faq);
     setDialogOpen(true);
   }
 
-  function handleDeleteClick(faq: any) {
+  function handleDeleteClick(faq: Faq) {
+    if (!canManage) return;
     setDeletingFaq(faq);
     setDeleteDialogOpen(true);
   }
@@ -120,9 +153,9 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
     categories.forEach((c) => catMap.set(c.id, c.name));
 
     return faqs
-      .map((faq) => ({
+      .map<FaqWithCategory>((faq) => ({
         ...faq,
-        categoryName: faq.category_id ? catMap.get(faq.category_id) : "Uncategorized"
+        categoryName: faq.category_id ? catMap.get(faq.category_id) ?? "Uncategorized" : "Uncategorized"
       }))
       .filter((faq) => {
         const matchesSearch =
@@ -223,21 +256,22 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan={4}>
-                      <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                          <MessageCircleQuestion className="h-7 w-7 text-slate-400" />
+                      <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white text-center m-4">
+                        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
+                          <MessageCircleQuestion className="h-10 w-10 text-blue-500/60" />
                         </div>
-                        <h3 className="mb-1 font-semibold text-slate-900">No FAQs found</h3>
-                        <p className="mb-6 max-w-xs text-sm text-slate-500">
-                          No FAQs match your current filters. Try adding a new FAQ.
+                        <h3 className="mb-2 text-lg font-bold text-slate-800">No FAQs found</h3>
+                        <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
+                          Build your knowledge base by adding common patient questions and standardized answers.
                         </p>
-                        <Button
-                          onClick={handleAdd}
-                          className="h-9 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add FAQ
-                        </Button>
+                        {canManage && (
+                          <Button
+                            onClick={handleAdd}
+                            className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
+                          >
+                            <Plus className="h-4 w-4" /> Add First FAQ
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -362,7 +396,6 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
         faq={editingFaq}
         categories={categories}
         onSuccess={fetchFaqs}
-        role={role}
       />
 
       {onAddOpenChange && (
@@ -372,7 +405,6 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
           faq={null}
           categories={categories}
           onSuccess={fetchFaqs}
-          role={role}
         />
       )}
 

@@ -12,26 +12,34 @@ import {
 } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import type { Faq } from "./faq-management";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  faq: any | null;
+  faq: Faq | null;
   onSuccess: () => void;
 };
 
-function formatBackendError(error: any): string {
-  const detail = error.response?.data?.detail;
+function formatBackendError(error: unknown): string {
+  const response = error && typeof error === "object" && "response" in error
+    ? (error as { response?: { data?: { detail?: unknown; message?: string } } }).response
+    : undefined;
+  const detail = response?.data?.detail;
   if (Array.isArray(detail)) {
-    return detail.map((d: any) => {
-      const field = d.loc && d.loc.length > 0 ? d.loc[d.loc.length - 1] : "field";
-      return `${field}: ${d.msg}`;
+    return detail.map((d) => {
+      const item = d as { loc?: string[]; msg?: string };
+      const field = item.loc && item.loc.length > 0 ? item.loc[item.loc.length - 1] : "field";
+      return `${field}: ${item.msg ?? "Invalid value"}`;
     }).join(", ");
   }
   if (typeof detail === "string") {
     return detail;
   }
-  return error.response?.data?.message || error.message || "An error occurred";
+  if (response?.data?.message) {
+    return response.data.message;
+  }
+  return error instanceof Error ? error.message : "An error occurred";
 }
 
 export function DeleteFaqDialog({ open, onOpenChange, faq, onSuccess }: Props) {
@@ -44,7 +52,7 @@ export function DeleteFaqDialog({ open, onOpenChange, faq, onSuccess }: Props) {
       toast.success("FAQ deleted successfully!");
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(toastId);
       toast.error(formatBackendError(error));
     }

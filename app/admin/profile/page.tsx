@@ -1,53 +1,88 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Upload, X, ChevronRight, Check, KeyRound } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, X, ChevronRight, Check, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
+import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 // ─── Initial Default User Profile Seeds ──────────────────────────────────────
 
-const defaultProfile = {
-  firstName: "Thomas",
-  lastName: "Anderson",
-  email: "dr.anderson@clinic.com",
-  phone: "+855 12 345 678",
-  bio: "Obstetrics and Gynecology Specialist with 15 years of experience in women's health. Passionate about empowering women through accurate health education and care.",
-  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200", // Default premium photo placeholder
-  accountCreated: "March 12, 2023",
-  status: "Active",
-  role: "Super Admin",
-};
-
 export default function AdminProfilePage() {
+  const { updateAvatar, updateName } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
   // Form input states
-  const [firstName, setFirstName] = useState(defaultProfile.firstName);
-  const [lastName, setLastName] = useState(defaultProfile.lastName);
-  const [email, setEmail] = useState(defaultProfile.email);
-  const [phone, setPhone] = useState(defaultProfile.phone);
-  const [bio, setBio] = useState(defaultProfile.bio);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
 
   // Avatar state
-  const [avatar, setAvatar] = useState<string | null>(defaultProfile.avatar);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Password change states
-  const [currentPassword, setCurrentPassword] = useState("••••••••••••");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
-  // Notification states
+  // Meta data
+  const [accountCreated, setAccountCreated] = useState("");
+  const [status, setStatus] = useState("Active");
+  const [role, setRole] = useState("Admin");
+
+  // Notification states (stubbed for now if not in backend schema)
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [telegramAlerts, setTelegramAlerts] = useState(true);
   const [require2Fa, setRequire2Fa] = useState(false);
+
+  // Load Profile from API
+  const loadProfile = async () => {
+    try {
+      const res = await apiClient.get("/api/v1/users/me");
+      const data = res.data;
+      
+      const nameParts = (data.full_name || "").split(" ");
+      setFirstName(nameParts[0] || "");
+      setLastName(nameParts.slice(1).join(" ") || "");
+      setEmail(data.email || "");
+      setPhone(data.phone || "");
+      setBio(data.medical_note || "");
+      
+      const avatarFullUrl = data.avatar_url 
+        ? (data.avatar_url.startsWith('http') ? data.avatar_url : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${data.avatar_url}`) 
+        : null;
+      setAvatar(avatarFullUrl);
+
+      if (data.created_at) {
+        setAccountCreated(new Date(data.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+      }
+      setStatus(data.status === "active" ? "Active" : data.status);
+      setRole(data.role_id === 3 ? "Admin" : data.role_id === 2 ? "Doctor" : "User");
+
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to load profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   // Initializing initials based on first and last name
   const getInitials = () => {
     const f = firstName.charAt(0) || "";
     const l = lastName.charAt(0) || "";
-    return (f + l).toUpperCase() || "TA";
+    return (f + l).toUpperCase() || "AD";
   };
 
   // Upload photo handler
@@ -55,65 +90,129 @@ export default function AdminProfilePage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("File size must be less than 2MB.");
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result as string);
-        toast.success("Profile photo uploaded successfully!");
-      };
-      reader.readAsDataURL(file);
+      
+      setUploadingAvatar(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const uploadRes = await apiClient.post("/api/v1/uploads/image", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        
+        const fileUrl = uploadRes.data.file_url;
+        
+        // Save to profile
+        await apiClient.put("/api/v1/users/profile", {
+          avatar_url: fileUrl
+        });
+
+        const fullUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${fileUrl}`;
+        setAvatar(fullUrl);
+        updateAvatar(fullUrl);
+        
+        toast.success("Profile photo updated successfully!");
+      } catch (err: any) {
+        toast.error(err.response?.data?.detail || "Failed to upload image");
+      } finally {
+        setUploadingAvatar(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }
   };
 
-  const handleRemovePhoto = () => {
-    setAvatar(null);
-    toast.success("Profile photo removed.");
+  const handleRemovePhoto = async () => {
+    try {
+      setUploadingAvatar(true);
+      await apiClient.put("/api/v1/users/profile", { avatar_url: null });
+      setAvatar(null);
+      updateAvatar("");
+      toast.success("Profile photo removed.");
+    } catch (err: any) {
+      toast.error("Failed to remove photo.");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   // Reset form inputs (Cancel button)
   const handleCancelEdits = () => {
-    setFirstName(defaultProfile.firstName);
-    setLastName(defaultProfile.lastName);
-    setEmail(defaultProfile.email);
-    setPhone(defaultProfile.phone);
-    setBio(defaultProfile.bio);
+    loadProfile();
     toast.info("Changes discarded.");
   };
 
   // Persist edits (Save button)
-  const handleSaveEdits = () => {
-    if (!firstName || !lastName || !email) {
-      toast.error("First Name, Last Name, and Email are required fields.");
+  const handleSaveEdits = async () => {
+    if (!firstName || !email) {
+      toast.error("First Name and Email are required fields.");
       return;
     }
-    toast.success("Personal information updated successfully!");
+
+    setSubmitting(true);
+    try {
+      const newFullName = `${firstName} ${lastName}`.trim();
+      await apiClient.put("/api/v1/users/profile", {
+        full_name: newFullName,
+        phone: phone,
+        medical_note: bio,
+      });
+      updateName(newFullName);
+      toast.success("Personal information updated successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to update profile.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Update password validation
-  const handleUpdatePassword = () => {
-    if (!newPassword || !confirmPassword) {
-      toast.error("Please fill out both password input fields.");
+  const handleUpdatePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill out all password fields.");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters long.");
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match.");
       return;
     }
-    toast.success("Security credentials updated successfully!");
-    setNewPassword("");
-    setConfirmPassword("");
-    setCurrentPassword("••••••••••••");
+
+    setChangingPassword(true);
+    try {
+      await apiClient.put("/api/v1/users/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword
+      });
+      toast.success("Security credentials updated successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
+      setCurrentPassword("");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to update password.");
+    } finally {
+      setChangingPassword(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex h-full items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="admin">
@@ -144,7 +243,11 @@ export default function AdminProfilePage() {
               
               {/* Profile Avatar Container */}
               <div className="relative group mt-2">
-                {avatar ? (
+                {uploadingAvatar ? (
+                  <div className="h-28 w-28 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 shadow-md">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                  </div>
+                ) : avatar ? (
                   <img
                     src={avatar}
                     alt={`${firstName} ${lastName}`}
@@ -160,23 +263,24 @@ export default function AdminProfilePage() {
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept="image/*"
+                  accept="image/png, image/jpeg, image/webp, image/gif"
                   className="hidden"
                 />
               </div>
 
               {/* Name & Title */}
               <h2 className="mt-4 text-lg font-bold text-slate-900 text-center">
-                Dr. {firstName} {lastName}
+                {firstName} {lastName}
               </h2>
               <p className="text-xs font-semibold text-slate-400 text-center mt-1">
-                Medical Director & Admin
+                Medical Director & {role}
               </p>
 
               {/* Photo Actions */}
               <div className="w-full mt-6 space-y-2 select-none">
                 <Button
                   onClick={handleUploadClick}
+                  disabled={uploadingAvatar}
                   className="w-full h-10 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow hover:bg-blue-700 transition-colors"
                 >
                   <Upload className="mr-1.5 h-4 w-4" />
@@ -186,7 +290,7 @@ export default function AdminProfilePage() {
                 <Button
                   variant="outline"
                   onClick={handleRemovePhoto}
-                  disabled={!avatar}
+                  disabled={!avatar || uploadingAvatar}
                   className="w-full h-10 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50"
                 >
                   Remove Photo
@@ -197,17 +301,17 @@ export default function AdminProfilePage() {
               <div className="w-full border-t border-slate-100 mt-6 pt-6 space-y-3.5 text-xs">
                 <div className="flex items-center justify-between font-medium">
                   <span className="text-slate-400">Account Created</span>
-                  <span className="text-slate-700 font-semibold">{defaultProfile.accountCreated}</span>
+                  <span className="text-slate-700 font-semibold">{accountCreated || "N/A"}</span>
                 </div>
                 
                 <div className="flex items-center justify-between font-medium">
                   <span className="text-slate-400">Status</span>
-                  <span className="text-emerald-600 font-bold">{defaultProfile.status}</span>
+                  <span className="text-emerald-600 font-bold">{status}</span>
                 </div>
 
                 <div className="flex items-center justify-between font-medium">
                   <span className="text-slate-400">Role</span>
-                  <span className="text-slate-700 font-semibold">{defaultProfile.role}</span>
+                  <span className="text-slate-700 font-semibold">{role}</span>
                 </div>
               </div>
 
@@ -251,9 +355,8 @@ export default function AdminProfilePage() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email address..."
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    disabled
+                    className="h-11 w-full rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm font-medium text-slate-500 outline-none cursor-not-allowed"
                   />
                 </div>
 
@@ -285,15 +388,17 @@ export default function AdminProfilePage() {
                 <Button
                   variant="ghost"
                   onClick={handleCancelEdits}
+                  disabled={submitting}
                   className="h-10 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  Cancel
+                  Discard Changes
                 </Button>
                 <Button
                   onClick={handleSaveEdits}
+                  disabled={submitting}
                   className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow transition-all hover:bg-blue-700"
                 >
-                  Save Changes
+                  {submitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </div>
@@ -310,6 +415,7 @@ export default function AdminProfilePage() {
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
@@ -343,17 +449,19 @@ export default function AdminProfilePage() {
                 <Button
                   variant="outline"
                   onClick={handleUpdatePassword}
+                  disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
                   className="h-10 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
                 >
-                  Update Password
+                  {changingPassword ? "Updating..." : "Update Password"}
                 </Button>
               </div>
             </div>
 
             {/* Card C: Notifications & Preferences */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-              <div className="border-b border-slate-50 pb-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 opacity-70">
+              <div className="border-b border-slate-50 pb-3 flex justify-between items-center">
                 <h3 className="text-base font-bold text-slate-900">Notifications & Preferences</h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Coming Soon</span>
               </div>
 
               <div className="space-y-4 divide-y divide-slate-100">
@@ -367,16 +475,10 @@ export default function AdminProfilePage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setEmailNotifications(!emailNotifications)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      emailNotifications ? "bg-blue-600" : "bg-slate-200"
-                    }`}
+                    disabled
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-blue-600 opacity-50`}
                   >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        emailNotifications ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
+                    <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
                   </button>
                 </div>
 
@@ -390,41 +492,13 @@ export default function AdminProfilePage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setTelegramAlerts(!telegramAlerts)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      telegramAlerts ? "bg-blue-600" : "bg-slate-200"
-                    }`}
+                    disabled
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-blue-600 opacity-50`}
                   >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        telegramAlerts ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
+                    <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
                   </button>
                 </div>
 
-                {/* 2FA Enable */}
-                <div className="flex items-center justify-between pt-4">
-                  <div className="space-y-0.5 pr-4">
-                    <h4 className="text-sm font-bold text-slate-700">Two-Factor Authentication (2FA)</h4>
-                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                      Add an extra layer of security to your admin account.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRequire2Fa(!require2Fa)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      require2Fa ? "bg-blue-600" : "bg-slate-200"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        require2Fa ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                </div>
               </div>
             </div>
 

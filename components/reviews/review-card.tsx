@@ -96,8 +96,8 @@ export function ReviewCard({
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
       {/* ── Card top bar ───────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 px-5 py-3 gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
           <span className="font-semibold text-slate-700">
             Session ID: {review.sessionId}
           </span>
@@ -105,7 +105,7 @@ export function ReviewCard({
           <span>{review.timestamp}</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <ConfidenceBadge level={review.confidence} score={review.confidenceScore} />
 
           {isDone && (
@@ -231,7 +231,7 @@ export function ReviewCard({
 
       {/* ── Action buttons ─────────────────────────────────────────────── */}
       {!isEditing && (
-        <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 border-t border-slate-100 px-5 py-3">
 
           {isDone ? (
             /* Already reviewed — show info */
@@ -244,7 +244,7 @@ export function ReviewCard({
               {/* Flag & Reject */}
               <button
                 onClick={() => onFlag(review.id)}
-                className="flex items-center gap-1.5 rounded-lg border border-red-300 px-3.5 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                className="flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-red-300 px-3.5 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
               >
                 <Flag className="h-3.5 w-3.5" />
                 Flag & Reject
@@ -253,7 +253,7 @@ export function ReviewCard({
               {/* Edit Response */}
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit Response
@@ -262,7 +262,7 @@ export function ReviewCard({
               {/* Approve as Accurate */}
               <button
                 onClick={() => onApprove(review.id)}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                className="flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
                 <Check className="h-3.5 w-3.5" />
                 Approve as Accurate

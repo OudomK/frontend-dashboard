@@ -142,6 +142,7 @@ export default function AdminDashboardPage() {
         }
 
         return {
+          id: doc.id,
           name: doc.title || doc.file_name,
           uploadedBy: doc.uploader?.full_name || "Doctor",
           status: statusName,
@@ -315,9 +316,9 @@ export default function AdminDashboardPage() {
                     <p className="text-sm font-semibold">No uploads found</p>
                   </div>
                 ) : (
-                  uploads.map((upload) => (
+                  uploads.map((upload, idx) => (
                     <div
-                      key={upload.name}
+                      key={upload.id || idx}
                       className="rounded-xl border border-slate-200 bg-white p-4 animate-in fade-in duration-300"
                     >
                       <div className="flex items-center gap-2">
@@ -362,8 +363,8 @@ export default function AdminDashboardPage() {
                         </td>
                       </tr>
                     ) : (
-                      uploads.map((upload) => (
-                        <tr key={upload.name} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/20 transition-colors">
+                      uploads.map((upload, idx) => (
+                        <tr key={upload.id || idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/20 transition-colors">
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3 max-w-[300px]">
                               <FileText className="h-4 w-4 text-slate-400 shrink-0" />

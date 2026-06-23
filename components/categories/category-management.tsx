@@ -471,15 +471,25 @@ export function CategoryManagement({ role }: Props) {
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-16 text-center">
-                    <div className="flex flex-col items-center gap-3 text-slate-400">
-                      <FolderOpen className="h-10 w-10 text-slate-200" />
-                      <p className="font-semibold">No categories found</p>
-                      {search && <p className="text-xs">Try a different search term</p>}
-                    </div>
-                  </td>
-                </tr>
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white text-center m-4">
+                        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
+                          <FolderOpen className="h-10 w-10 text-blue-500/60" />
+                        </div>
+                        <h3 className="mb-2 text-lg font-bold text-slate-800">No categories found</h3>
+                        <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
+                          Categories help organize articles and FAQs by health topic.
+                        </p>
+                        <Button
+                          onClick={openCreate}
+                          className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
+                        >
+                          <Plus className="h-4 w-4" /> Create First Category
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
               ) : (
                 paginated.map((cat) => {
                   const s = getIconStyle(cat.icon_url);
@@ -548,9 +558,14 @@ export function CategoryManagement({ role }: Props) {
               <span className="text-sm font-semibold">Loading categories...</span>
             </div>
           ) : paginated.length === 0 ? (
-            <div className="py-12 text-center text-slate-400">
-              <FolderOpen className="h-8 w-8 mx-auto text-slate-200 mb-2" />
-              <p className="font-semibold text-sm">No categories found</p>
+            <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white text-center m-4">
+              <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
+                <FolderOpen className="h-10 w-10 text-blue-500/60" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-slate-800">No categories found</h3>
+              <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
+                Categories help organize your medical knowledge base.
+              </p>
             </div>
           ) : (
             paginated.map((cat) => (
@@ -632,7 +647,7 @@ export function CategoryManagement({ role }: Props) {
 
       {/* ── Create / Edit Dialog ── */}
       <Dialog open={openDialog} onOpenChange={(open) => { if (!open) resetForm(); setOpenDialog(open); }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md rounded-2xl shadow-xl">
+        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-md rounded-2xl p-4 sm:p-6 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900">
               {editMode ? "Edit Category" : "New Category"}

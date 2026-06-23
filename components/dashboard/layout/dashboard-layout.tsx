@@ -79,6 +79,7 @@ export function DashboardLayout({
                   ? "Admin Dashboard"
                   : "Doctor Dashboard"
               }
+              role={role}
             />
           </div>
 
@@ -91,15 +92,15 @@ export function DashboardLayout({
             <main className="flex-1 px-3 py-4 lg:p-8">
               {(title || subtitle || actions) && (
                 <div className="mb-4 flex flex-col gap-3 lg:mb-8 lg:flex-row lg:items-end lg:justify-between">
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {title && (
-                      <h1 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-3xl">
+                      <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 lg:text-[28px] font-sans">
                         {title}
                       </h1>
                     )}
 
                     {subtitle && (
-                      <p className="text-sm text-slate-500 lg:text-base">
+                      <p className="text-sm font-medium text-slate-500 lg:text-base">
                         {subtitle}
                       </p>
                     )}

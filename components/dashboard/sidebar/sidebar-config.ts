@@ -10,6 +10,9 @@ import {
   Settings,
   ShieldAlert,
   Users,
+  Megaphone,
+  AlertTriangle as AlertTriangleIcon,
+  Activity
 } from "lucide-react";
 
 export const doctorMenu = [
@@ -64,6 +67,12 @@ export const adminMenu = [
   },
 
   {
+    label: "System Audit Logs",
+    icon: Activity,
+    href: "/admin/audit-logs",
+  },
+
+  {
     label: "System Analytics",
     icon: ShieldAlert,
     href: "/admin/analytics",
@@ -73,6 +82,18 @@ export const adminMenu = [
     label: "Knowledge Base Docs",
     icon: BookOpen,
     href: "/admin/documents",
+  },
+
+  {
+    label: "Emergency Rules",
+    icon: AlertTriangleIcon,
+    href: "/admin/emergency-rules",
+  },
+
+  {
+    label: "Push Notifications",
+    icon: Megaphone,
+    href: "/admin/notifications",
   },
 
   {

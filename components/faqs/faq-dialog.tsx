@@ -21,59 +21,82 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import type { Faq } from "./faq-management";
+
+type Category = {
+  id: number;
+  name: string;
+};
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  faq: any | null;   // null = Add mode, non-null = Edit mode
-  categories: any[];
+  faq: Faq | null;
+  categories: Category[];
   onSuccess: () => void;
-  role: "admin" | "doctor";
 };
 
-function formatBackendError(error: any): string {
-  const detail = error.response?.data?.detail;
+function formatBackendError(error: unknown): string {
+  const response = error && typeof error === "object" && "response" in error
+    ? (error as { response?: { data?: { detail?: unknown; message?: string } } }).response
+    : undefined;
+  const detail = response?.data?.detail;
   if (Array.isArray(detail)) {
-    return detail.map((d: any) => {
-      const field = d.loc && d.loc.length > 0 ? d.loc[d.loc.length - 1] : "field";
-      return `${field}: ${d.msg}`;
+    return detail.map((d) => {
+      const item = d as { loc?: string[]; msg?: string };
+      const field = item.loc && item.loc.length > 0 ? item.loc[item.loc.length - 1] : "field";
+      return `${field}: ${item.msg ?? "Invalid value"}`;
     }).join(", ");
   }
   if (typeof detail === "string") {
     return detail;
   }
-  return error.response?.data?.message || error.message || "An error occurred";
+  if (response?.data?.message) {
+    return response.data.message;
+  }
+  return error instanceof Error ? error.message : "An error occurred";
 }
 
-export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess, role }: Props) {
+export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess }: Props) {
   const isEdit = faq !== null;
 
   const [question, setQuestion] = useState("");
   const [answer, setAnswer]     = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   // Sync form when faq changes (switching from add → edit or vice-versa)
   useEffect(() => {
-    if (faq) {
-      setQuestion(faq.question || "");
-      setAnswer(faq.answer || "");
-      setCategoryId(faq.category_id ? faq.category_id.toString() : "");
-      setIsActive(faq.is_active ?? true);
-    } else {
-      setQuestion("");
-      setAnswer("");
-      setCategoryId(categories.length > 0 ? categories[0].id.toString() : "");
-      setIsActive(true);
-    }
+    void Promise.resolve().then(() => {
+      if (faq) {
+        setQuestion(faq.question || "");
+        setAnswer(faq.answer || "");
+        setCategoryId(faq.category_id ? faq.category_id.toString() : "");
+        setIsActive(faq.is_active ?? true);
+      } else {
+        setQuestion("");
+        setAnswer("");
+        setCategoryId(categories.length > 0 ? categories[0].id.toString() : "");
+        setIsActive(true);
+        setErrors({});
+      }
+    });
   }, [faq, open, categories]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!question || !answer) {
+    const newErrors: Record<string, boolean> = {};
+    if (!question.trim()) newErrors.question = true;
+    if (!answer.trim()) newErrors.answer = true;
+    if (!categoryId) newErrors.category = true;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       toast.error("Please fill out all required fields.");
       return;
     }
+    setErrors({});
 
     const toastId = toast.loading(isEdit ? "Saving modifications..." : "Adding FAQ...");
     const payload = {
@@ -97,7 +120,7 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess, role
       }
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(toastId);
       toast.error(formatBackendError(error));
     }
@@ -105,7 +128,7 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess, role
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-lg rounded-2xl p-4 sm:p-6">
 
         {/* Header */}
         <DialogHeader>
@@ -137,9 +160,11 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess, role
             <input
               required
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={(e) => { setQuestion(e.target.value); if (errors.question) setErrors({ ...errors, question: false }); }}
               placeholder="e.g. What are the early signs of pregnancy?"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className={`w-full rounded-lg border px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+                errors.question ? "border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50" : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+              }`}
             />
           </div>
 
@@ -152,9 +177,11 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess, role
               required
               rows={4}
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={(e) => { setAnswer(e.target.value); if (errors.answer) setErrors({ ...errors, answer: false }); }}
               placeholder="Provide a clear and concise answer…"
-              className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className={`w-full resize-none rounded-lg border px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+                errors.answer ? "border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50" : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+              }`}
             />
             <p className="text-right text-xs text-slate-400">
               {answer.length} / 500 characters
@@ -168,9 +195,11 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess, role
             </label>
             <Select
               value={categoryId}
-              onValueChange={setCategoryId}
+              onValueChange={(val) => { setCategoryId(val); if (errors.category) setErrors({ ...errors, category: false }); }}
             >
-              <SelectTrigger className="h-10 w-full rounded-lg border-slate-200 text-sm">
+              <SelectTrigger className={`h-10 w-full rounded-lg text-sm ${
+                errors.category ? "border-red-500 ring-2 ring-red-100 bg-red-50" : "border-slate-200"
+              }`}>
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
