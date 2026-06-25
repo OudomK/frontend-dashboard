@@ -29,6 +29,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
@@ -506,32 +513,34 @@ export default function AdminUserManagementPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 w-full md:flex md:items-center md:w-auto">
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Role:</span>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full bg-transparent text-xs text-slate-700 outline-none cursor-pointer font-bold"
-              >
-                <option value="All">All</option>
-                <option value="USER">User</option>
-                <option value="DOCTOR">Doctor</option>
-                <option value="ADMIN">Admin</option>
-                <option value="MODERATOR">Moderator</option>
-              </select>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
+                  <SelectItem value="DOCTOR">Doctor</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="MODERATOR">Moderator</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Status:</span>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full bg-transparent text-xs text-slate-700 outline-none cursor-pointer font-bold"
-              >
-                <option value="All">All</option>
-                <option value="Active">Active</option>
-                <option value="Suspended">Suspended</option>
-              </select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -807,27 +816,29 @@ export default function AdminUserManagementPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-slate-700">Role *</label>
-                <select
-                  value={formRole}
-                  onChange={(e) => setFormRole(e.target.value as any)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500"
-                >
-                  <option value="USER">User</option>
-                  <option value="DOCTOR">Doctor</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
+                <Select value={formRole} onValueChange={(val) => setFormRole(val as any)}>
+                  <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
+                    <SelectValue placeholder="Select Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USER">User</SelectItem>
+                    <SelectItem value="DOCTOR">Doctor</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-slate-700">Status *</label>
-                <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as any)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Suspended">Suspended</option>
-                </select>
+                <Select value={formStatus} onValueChange={(val) => setFormStatus(val as any)}>
+                  <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

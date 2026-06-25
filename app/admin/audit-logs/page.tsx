@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Activity,
   Calendar,
@@ -20,6 +20,15 @@ import {
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ─── Mock Audit Logs Data ──────────────────────────────────────────────────
 
@@ -38,91 +47,7 @@ interface AuditLog {
   details?: string;
 }
 
-const MOCK_AUDIT_LOGS: AuditLog[] = [
-  {
-    id: "AL-8092",
-    timestamp: "2023-10-24T14:32:00Z",
-    user: "Marcus Johnson",
-    role: "ADMIN",
-    action: "Updated System Settings",
-    type: "UPDATE",
-    resource: "System Config",
-    ipAddress: "192.168.1.105",
-    status: "Success",
-    details: "Changed AI Strictness Level from 0.7 to 0.8",
-  },
-  {
-    id: "AL-8091",
-    timestamp: "2023-10-24T13:15:00Z",
-    user: "System",
-    role: "SYSTEM",
-    action: "Automated Database Backup",
-    type: "CREATE",
-    resource: "Database",
-    ipAddress: "127.0.0.1",
-    status: "Success",
-  },
-  {
-    id: "AL-8090",
-    timestamp: "2023-10-24T11:05:00Z",
-    user: "Sarah Jenkins",
-    role: "ADMIN",
-    action: "Deleted Document",
-    type: "DELETE",
-    resource: "Knowledge Base",
-    ipAddress: "192.168.1.102",
-    status: "Success",
-    details: "Deleted 'old_guidelines_2022.pdf'",
-  },
-  {
-    id: "AL-8089",
-    timestamp: "2023-10-24T09:45:00Z",
-    user: "Unknown",
-    role: "UNKNOWN",
-    action: "Failed Login Attempt",
-    type: "LOGIN",
-    resource: "Admin Portal",
-    ipAddress: "45.22.109.12",
-    status: "Failed",
-    details: "Invalid password for admin@bellyn.com",
-  },
-  {
-    id: "AL-8088",
-    timestamp: "2023-10-24T09:30:00Z",
-    user: "Marcus Johnson",
-    role: "ADMIN",
-    action: "Created New Doctor Account",
-    type: "CREATE",
-    resource: "User Management",
-    ipAddress: "192.168.1.105",
-    status: "Success",
-    details: "Created account for Dr. Emily Chen",
-  },
-  {
-    id: "AL-8087",
-    timestamp: "2023-10-23T16:20:00Z",
-    user: "Dr. Emily Chen",
-    role: "DOCTOR",
-    action: "Exported Patient Data",
-    type: "SECURITY",
-    resource: "Reports",
-    ipAddress: "10.0.0.45",
-    status: "Success",
-    details: "Exported CSV of recent consultations",
-  },
-  {
-    id: "AL-8086",
-    timestamp: "2023-10-23T14:10:00Z",
-    user: "Marcus Johnson",
-    role: "ADMIN",
-    action: "Updated Emergency Rule",
-    type: "UPDATE",
-    resource: "Rules Engine",
-    ipAddress: "192.168.1.105",
-    status: "Success",
-    details: "Added keyword 'hemorrhage' to critical rules",
-  },
-];
+
 
 // ─── Helper Functions ──────────────────────────────────────────────────────
 
@@ -152,23 +77,39 @@ const getTypeColor = (type: AuditActionType) => {
 
 export default function AdminAuditLogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const response = await apiClient.get('/api/v1/admin/logs');
+        setAuditLogs(response.data || []);
+      } catch (error) {
+        toast.error("Failed to load audit logs");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLogs();
+  }, []);
   const [selectedType, setSelectedType] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
 
   // Filter Logic
   const filteredLogs = useMemo(() => {
-    return MOCK_AUDIT_LOGS.filter((log) => {
+    return auditLogs.filter((log) => {
       const matchesSearch =
-        log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.resource.toLowerCase().includes(searchQuery.toLowerCase());
+        (log.user || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (log.action || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (log.resource || "").toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesType = selectedType === "All" || log.type === selectedType;
       const matchesStatus = selectedStatus === "All" || log.status === selectedStatus;
 
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [searchQuery, selectedType, selectedStatus]);
+  }, [searchQuery, selectedType, selectedStatus, auditLogs]);
 
   return (
     <DashboardLayout
@@ -188,7 +129,7 @@ export default function AdminAuditLogsPage() {
       <div className="space-y-6 pb-20 lg:pb-0">
         
         {/* ── Analytics Cards ── */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
@@ -249,31 +190,34 @@ export default function AdminAuditLogsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 w-full md:flex md:items-center md:w-auto">
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <Filter className="mr-2 h-3.5 w-3.5 text-slate-400" />
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer"
-              >
-                <option value="All">All Types</option>
-                <option value="LOGIN">Logins</option>
-                <option value="UPDATE">Updates</option>
-                <option value="CREATE">Creations</option>
-                <option value="DELETE">Deletions</option>
-                <option value="SECURITY">Security</option>
-              </select>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[90px] font-bold text-slate-700">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Types</SelectItem>
+                  <SelectItem value="LOGIN">Logins</SelectItem>
+                  <SelectItem value="UPDATE">Updates</SelectItem>
+                  <SelectItem value="CREATE">Creations</SelectItem>
+                  <SelectItem value="DELETE">Deletions</SelectItem>
+                  <SelectItem value="SECURITY">Security</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer"
-              >
-                <option value="All">All Statuses</option>
-                <option value="Success">Success</option>
-                <option value="Failed">Failed</option>
-              </select>
+            
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="Success">Success</SelectItem>
+                  <SelectItem value="Failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -284,12 +228,12 @@ export default function AdminAuditLogsPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                  <th className="px-6 py-4">Event Date</th>
-                  <th className="px-6 py-4">User / Actor</th>
-                  <th className="px-6 py-4">Action</th>
-                  <th className="px-6 py-4">Resource</th>
-                  <th className="px-6 py-4">IP Address</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Event Date</th>
+                  <th className="px-6 py-4 whitespace-nowrap">User / Actor</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Action</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Resource</th>
+                  <th className="px-6 py-4 whitespace-nowrap">IP Address</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">

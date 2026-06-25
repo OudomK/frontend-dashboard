@@ -414,11 +414,11 @@ export default function AdminDashboardPage() {
                     <p className="text-sm font-semibold">No alerts detected</p>
                   </div>
                 ) : (
-                  alerts.map((alert) => {
+                  alerts.map((alert, index) => {
                     const warning = alert.severity === "warning";
 
                     return (
-                      <article key={alert.session} className="flex gap-4 py-4 first:pt-0">
+                      <article key={`${alert.session}-${index}`} className="flex gap-4 py-4 first:pt-0">
                         <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                           warning ? "bg-amber-100 text-amber-600" : "bg-red-50 text-red-500"
                         }`}

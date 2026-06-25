@@ -38,7 +38,7 @@ export function LoginForm({ variant }: Props) {
     const loginToastId = toast.loading(`Authenticating as ${variant === "admin" ? "Admin" : "Doctor"}...`);
     
     try {
-      await login(email, password, variant);
+      await login(email.trim(), password, variant);
       toast.dismiss(loginToastId);
       toast.success("Welcome back! Login successful.");
       

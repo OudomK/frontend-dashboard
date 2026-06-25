@@ -12,7 +12,8 @@ import {
   Users,
   Megaphone,
   AlertTriangle as AlertTriangleIcon,
-  Activity
+  Activity,
+  Info
 } from "lucide-react";
 
 export const doctorMenu = [
@@ -124,6 +125,12 @@ export const adminMenu = [
     label: "User Management",
     icon: Users,
     href: "/admin/users",
+  },
+
+  {
+    label: "About Us",
+    icon: Info,
+    href: "/admin/about",
   },
 ];
 

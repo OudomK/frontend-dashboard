@@ -70,7 +70,7 @@ export function DashboardLayout({
         <Sidebar role={role} />
 
         {/* Main Content */}
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen flex-1 flex-col min-w-0">
           {/* Mobile Header */}
           <div className="lg:hidden">
             <MobileHeader

@@ -33,6 +33,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 
@@ -315,12 +322,27 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                 <Input
                   className="h-10 rounded-md bg-slate-50 pl-10"
                   placeholder="Search by name, type, or author..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button variant="outline" className="h-10 rounded-md">
-                <Filter />
-                Status: All
-              </Button>
+              <div className="w-[180px]">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="h-10 rounded-md bg-white">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Filter className="h-4 w-4" />
+                      <SelectValue placeholder="Status: All" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Statuses</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="Processing">Processing</SelectItem>
+                    <SelectItem value="Failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">

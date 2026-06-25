@@ -11,14 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/store/use-auth-store";
-import { Category, Content } from "./articles-posts";
+import { Category, Article } from "./articles-posts";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: Category[];
   onSuccess: () => void;
-  article?: Content | null;
+  article?: Article | null;
 };
 
 export function CreateArticleDialog({

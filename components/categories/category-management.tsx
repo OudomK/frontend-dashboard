@@ -27,6 +27,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -416,30 +423,34 @@ export function CategoryManagement({ role }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center border border-slate-200 rounded-xl px-3 h-10 bg-slate-50/20">
-            <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value as any); setCurrentPage(1); }}
-              className="bg-transparent text-xs text-slate-700 outline-none cursor-pointer font-semibold"
-            >
-              <option value="All">All</option>
-              <option value="ACTIVE">Active</option>
-              <option value="DRAFT">Draft</option>
-            </select>
-          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Status:</span>
+              <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val as any); setCurrentPage(1); }}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[90px] font-bold text-slate-700">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="flex items-center border border-slate-200 rounded-xl px-3 h-10 bg-slate-50/20">
-            <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sort:</span>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as any)}
-              className="bg-transparent text-xs text-slate-700 outline-none cursor-pointer font-semibold"
-            >
-              <option value="Newest">Newest</option>
-              <option value="Oldest">Oldest</option>
-              <option value="Name A-Z">Name A-Z</option>
-            </select>
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Sort:</span>
+              <Select value={sortOption} onValueChange={(val) => setSortOption(val as any)}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
+                  <SelectValue placeholder="Newest" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Newest">Newest</SelectItem>
+                  <SelectItem value="Oldest">Oldest</SelectItem>
+                  <SelectItem value="Name A-Z">Name A-Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <span className="hidden sm:inline text-sm font-semibold text-slate-400">
@@ -719,14 +730,15 @@ export function CategoryManagement({ role }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-slate-700">Status</label>
-                <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as any)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500"
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="DRAFT">Draft</option>
-                </select>
+                <Select value={formStatus} onValueChange={(val) => setFormStatus(val as any)}>
+                  <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-slate-700">Display Order</label>

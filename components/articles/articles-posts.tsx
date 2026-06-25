@@ -43,17 +43,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
-interface Category {
+export interface Category {
   id: number;
   name: string;
   description?: string;
 }
 
-interface Article {
+export interface Article {
   id: number;
   title: string;
   excerpt: string;
@@ -65,6 +73,8 @@ interface Article {
   status: "PUBLISHED" | "DRAFT";
   date: string;
   content: string;
+  body?: string;
+  language?: string;
   readTime: string;
   cover_image_url?: string;
   is_featured?: boolean;
@@ -149,6 +159,8 @@ export function ArticlesPosts({ role }: { role: string }) {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openPreviewDialog, setOpenPreviewDialog] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [articleToDelete, setArticleToDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form
   const [editMode, setEditMode] = useState(false);
@@ -328,13 +340,16 @@ export function ArticlesPosts({ role }: { role: string }) {
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this article?")) return;
+    setDeleting(true);
     try {
       await apiClient.delete(`/api/v1/contents/${id}`);
       toast.success("Article deleted.");
+      setArticleToDelete(null);
       fetchData();
     } catch {
       toast.error("Failed to delete article.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -428,29 +443,31 @@ export function ArticlesPosts({ role }: { role: string }) {
 
           {/* Filters */}
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-10 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-blue-400 shadow-sm font-medium cursor-pointer"
-              >
-                <option value="All Topics">All Topics</option>
-                {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <div className="w-[180px]">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="h-10 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-100">
+                  <SelectValue placeholder="All Topics" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All Topics">All Topics</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="relative">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="h-10 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-blue-400 shadow-sm font-medium cursor-pointer"
-              >
-                <option value="Any">Any Status</option>
-                <option value="Published">Published</option>
-                <option value="Draft">Draft</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <div className="w-[150px]">
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-10 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-100">
+                  <SelectValue placeholder="Any Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Any">Any Status</SelectItem>
+                  <SelectItem value="Published">Published</SelectItem>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* View Toggle */}
@@ -558,7 +575,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(article.id)}
+                        onClick={() => setArticleToDelete(article.id)}
                         className="h-8 w-8 flex items-center justify-center rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -717,8 +734,8 @@ export function ArticlesPosts({ role }: { role: string }) {
                         <button onClick={() => handleEditClick(article)} className="p-1.5 rounded-lg border border-blue-100 bg-white text-blue-500 hover:bg-blue-50 transition-colors">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => handleDelete(article.id)} className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 transition-colors">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <button onClick={() => setArticleToDelete(article.id)} className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 transition-colors">
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
@@ -1101,6 +1118,26 @@ export function ArticlesPosts({ role }: { role: string }) {
       >
         <Plus className="h-6 w-6" />
       </button>
+
+      <Dialog open={!!articleToDelete} onOpenChange={(open) => !open && setArticleToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this article? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-2 sm:justify-end mt-4">
+            <Button variant="outline" onClick={() => setArticleToDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => articleToDelete && handleDelete(articleToDelete)} disabled={deleting}>
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

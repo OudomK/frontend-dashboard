@@ -132,6 +132,8 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
   const [editingRule, setEditingRule] = useState<EmergencyRule | null>(null);
   const [form, setForm] = useState<RuleForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [ruleToDelete, setRuleToDelete] = useState<EmergencyRule | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const categoryMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -248,17 +250,19 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
   };
 
   const deleteRule = async (rule: EmergencyRule) => {
-    if (!confirm(`Delete emergency rule "${rule.name}"?`)) return;
-
+    setDeleting(true);
     const toastId = toast.loading("Deleting emergency rule...");
     try {
       await apiClient.delete(`/api/v1/emergency-rules/${rule.id}`);
       toast.dismiss(toastId);
       toast.success("Emergency rule deleted.");
+      setRuleToDelete(null);
       await fetchData();
     } catch (error: unknown) {
       toast.dismiss(toastId);
       toast.error(formatBackendError(error));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -372,7 +376,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                             <Button variant="ghost" size="icon" disabled={false} onClick={() => openEdit(rule)}>
                               <Pencil className="h-4 w-4 text-slate-500" />
                             </Button>
-                            <Button variant="ghost" size="icon" disabled={false} onClick={() => deleteRule(rule)}>
+                            <Button variant="ghost" size="icon" disabled={false} onClick={() => setRuleToDelete(rule)}>
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
@@ -418,7 +422,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                           <Pencil className="h-4 w-4" />
                           Edit
                         </Button>
-                        <Button variant="outline" size="sm" disabled={false} onClick={() => deleteRule(rule)}>
+                        <Button variant="outline" size="sm" disabled={false} onClick={() => setRuleToDelete(rule)}>
                           <Trash2 className="h-4 w-4" />
                           Delete
                         </Button>
@@ -526,6 +530,25 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
             <Button onClick={saveRule} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {editingRule ? "Save Changes" : "Create Rule"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!ruleToDelete} onOpenChange={(open) => !open && setRuleToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the rule "{ruleToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-2 sm:justify-end mt-4">
+            <Button variant="outline" onClick={() => setRuleToDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => ruleToDelete && deleteRule(ruleToDelete)} disabled={deleting}>
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
