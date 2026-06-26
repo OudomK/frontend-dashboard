@@ -18,6 +18,7 @@ import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 function formatBackendError(error: any): string {
   const detail = error.response?.data?.detail;
@@ -115,6 +116,7 @@ export default function AdminDashboardPage() {
   const [uploads, setUploads] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   const fetchData = async () => {
     setLoading(true);
@@ -132,13 +134,13 @@ export default function AdminDashboardPage() {
           ? new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
           : "N/A";
         
-        let statusName = "Inactive";
+        let statusName = t("dashboard.statusInactive");
         if (doc.status === "completed" && doc.is_active) {
-          statusName = "Active";
+          statusName = t("dashboard.statusActive");
         } else if (doc.status === "processing" || doc.status === "uploaded") {
-          statusName = "Processing";
+          statusName = t("dashboard.statusProcessing");
         } else if (doc.status === "failed") {
-          statusName = "Failed";
+          statusName = t("dashboard.statusFailed");
         }
 
         return {
@@ -199,51 +201,51 @@ export default function AdminDashboardPage() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    toast.success("Overview report exported successfully!");
+    toast.success(t("dashboard.reportExportSuccess"));
   };
 
   const metrics = useMemo(() => {
     return [
       {
-        title: "Total Users",
+        title: t("dashboard.totalUsers"),
         value: overview?.total_users?.toLocaleString() || "0",
-        note: `Doctors: ${overview?.total_doctors || 0} | Admins: ${overview?.total_admins || 0}`,
+        note: `${t("dashboard.doctors")}: ${overview?.total_doctors || 0} | ${t("dashboard.admins")}: ${overview?.total_admins || 0}`,
         tone: "positive",
         icon: Users,
       },
       {
-        title: "AI Queries (Total Messages)",
+        title: t("dashboard.aiQueries"),
         value: overview?.total_chat_messages?.toLocaleString() || "0",
-        note: `Sessions: ${overview?.total_chat_sessions || 0}`,
+        note: `${t("dashboard.sessions")}: ${overview?.total_chat_sessions || 0}`,
         tone: "positive",
         icon: MessageCircle,
       },
       {
-        title: "Knowledge Base Docs",
+        title: t("dashboard.knowledgeBaseDocs"),
         value: overview?.total_documents?.toLocaleString() || "0",
-        note: "RAG Source files",
+        note: t("dashboard.ragSourceFiles"),
         tone: "neutral",
         icon: Database,
       },
       {
-        title: "Emergency Alerts",
+        title: t("dashboard.emergencyAlerts"),
         value: overview?.total_emergency_flags?.toLocaleString() || "0",
-        note: "Flags requiring audit",
+        note: t("dashboard.flagsRequiringAudit"),
         tone: (overview?.total_emergency_flags || 0) > 0 ? "negative" : "neutral",
         icon: AlertTriangle,
       },
     ];
-  }, [overview]);
+  }, [overview, t]);
 
   return (
     <DashboardLayout
       role="admin"
-      title="System Dashboard"
-      subtitle="Monitor AI performance, knowledge base status, and emergency alerts."
+      title={t("dashboard.overview")}
+      subtitle={t("dashboard.subtitle")}
       actions={
         <Button onClick={handleExportCSV} className="h-10 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700">
           <Download className="mr-2 h-4 w-4" />
-          Export Report
+          {t("dashboard.exportReport")}
         </Button>
       }
     >
@@ -259,11 +261,11 @@ export default function AdminDashboardPage() {
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
                 <h2 className="font-bold text-slate-950">
-                  AI Chat Usage (Last 7 Days)
+                  {t("dashboard.aiChatUsage")}
                 </h2>
                 <Link href="/admin/analytics">
                   <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
-                    View Full Report
+                    {t("dashboard.viewFullReport")}
                   </Button>
                 </Link>
               </div>
@@ -300,11 +302,11 @@ export default function AdminDashboardPage() {
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                 <h2 className="font-bold text-slate-950">
-                  Recent Knowledge Base Uploads
+                  {t("dashboard.recentUploads")}
                 </h2>
                 <Link href="/admin/documents">
                   <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
-                    Manage Documents
+                    {t("dashboard.manageDocuments")}
                   </Button>
                 </Link>
               </div>
@@ -313,7 +315,7 @@ export default function AdminDashboardPage() {
               <div className="space-y-3 p-4 lg:hidden">
                 {uploads.length === 0 ? (
                   <div className="py-8 text-center text-slate-400">
-                    <p className="text-sm font-semibold">No uploads found</p>
+                    <p className="text-sm font-semibold">{t("dashboard.noUploads")}</p>
                   </div>
                 ) : (
                   uploads.map((upload, idx) => (
@@ -329,7 +331,7 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div className="mt-2 text-xs text-slate-500 font-medium">
-                        Uploaded By: <span className="font-semibold text-slate-700">{upload.uploadedBy}</span>
+                        {t("dashboard.uploadedBy")} <span className="font-semibold text-slate-700">{upload.uploadedBy}</span>
                       </div>
 
                       <div className="mt-1 text-xs text-slate-400 font-medium">
@@ -349,17 +351,17 @@ export default function AdminDashboardPage() {
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs font-semibold text-slate-400">
-                      <th className="px-5 py-3">Document Name</th>
-                      <th className="px-5 py-3">Uploaded By</th>
-                      <th className="px-5 py-3">Status</th>
-                      <th className="px-5 py-3">Date Added</th>
+                      <th className="px-5 py-3">{t("dashboard.docName")}</th>
+                      <th className="px-5 py-3">{t("dashboard.uploadedBy")}</th>
+                      <th className="px-5 py-3">{t("dashboard.status")}</th>
+                      <th className="px-5 py-3">{t("dashboard.dateAdded")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {uploads.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="py-12 text-center text-slate-400">
-                          <p className="font-semibold">No uploads found</p>
+                          <p className="font-semibold">{t("dashboard.noUploads")}</p>
                         </td>
                       </tr>
                     ) : (
@@ -394,24 +396,24 @@ export default function AdminDashboardPage() {
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <h2 className="font-bold text-slate-950">
-                Recent Emergency Alerts
+                {t("dashboard.recentEmergencyAlerts")}
               </h2>
               <Link href="/admin/emergency-rules">
                 <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
-                  View All
+                  {t("dashboard.viewAll")}
                 </Button>
               </Link>
             </div>
 
             <div className="px-4 py-4 lg:px-6 lg:py-6">
               <p className="mb-7 text-sm leading-5 text-slate-400">
-                AI-detected critical symptoms recommending immediate clinic visit.
+                {t("dashboard.alertSubtitle")}
               </p>
 
               <div className="divide-y divide-slate-100">
                 {alerts.length === 0 ? (
                   <div className="py-8 text-center text-slate-400">
-                    <p className="text-sm font-semibold">No alerts detected</p>
+                    <p className="text-sm font-semibold">{t("dashboard.noAlerts")}</p>
                   </div>
                 ) : (
                   alerts.map((alert, index) => {
@@ -434,7 +436,7 @@ export default function AdminDashboardPage() {
                             {alert.body}
                           </p>
                           <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-400">
-                            <span>Session ID: {alert.session}</span>
+                            <span>{t("dashboard.sessionId")} {alert.session}</span>
                             <span className="shrink-0">{alert.time}</span>
                           </div>
                         </div>

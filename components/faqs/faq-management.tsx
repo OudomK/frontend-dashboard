@@ -22,6 +22,7 @@ import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { FaqDialog } from "./faq-dialog";
 import { DeleteFaqDialog } from "./delete-faq-dialog";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Category = {
   id: number;
@@ -83,6 +84,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -155,7 +157,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
     return faqs
       .map<FaqWithCategory>((faq) => ({
         ...faq,
-        categoryName: faq.category_id ? catMap.get(faq.category_id) ?? "Uncategorized" : "Uncategorized"
+        categoryName: faq.category_id ? catMap.get(faq.category_id) ?? t("faqs.uncategorized") : t("faqs.uncategorized")
       }))
       .filter((faq) => {
         const matchesSearch =
@@ -181,7 +183,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search FAQs..."
+              placeholder={t("faqs.searchPlaceholder")}
               aria-label="Search FAQs"
               className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -203,10 +205,10 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
               >
                 <SelectTrigger className="h-10 w-[200px] rounded-lg border-slate-200 text-sm font-medium text-slate-700">
                   <Filter className="h-4 w-4 text-slate-500" />
-                  <SelectValue placeholder="Filter by Category" />
+                  <SelectValue placeholder={t("faqs.filterCategory")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">{t("faqs.allCategories")}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
@@ -225,8 +227,8 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
               >
                 <Filter className="h-4 w-4" />
                 {categoryFilter === "all"
-                  ? "Filter by Category"
-                  : categories.find((c) => c.id.toString() === categoryFilter)?.name || "Category"}
+                  ? t("faqs.filterCategory")
+                  : categories.find((c) => c.id.toString() === categoryFilter)?.name || t("faqs.category")}
               </button>
             )}
           </div>
@@ -239,10 +241,10 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
-                  <th className="px-6 py-4 font-semibold">Question & Answer</th>
-                  <th className="px-6 py-4 font-semibold">Category</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
-                  <th className="px-6 py-4 text-right font-semibold">Actions</th>
+                  <th className="px-6 py-4 font-semibold">{t("faqs.tableQuestionAnswer")}</th>
+                  <th className="px-6 py-4 font-semibold">{t("faqs.tableCategory")}</th>
+                  <th className="px-6 py-4 font-semibold">{t("faqs.tableStatus")}</th>
+                  <th className="px-6 py-4 text-right font-semibold">{t("faqs.tableActions")}</th>
                 </tr>
               </thead>
 
@@ -250,7 +252,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                 {loading ? (
                   <tr>
                     <td colSpan={4} className="py-12 text-center text-slate-400 font-medium">
-                      Loading FAQs...
+                      {t("faqs.loading")}
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
@@ -260,16 +262,16 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                         <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
                           <MessageCircleQuestion className="h-10 w-10 text-blue-500/60" />
                         </div>
-                        <h3 className="mb-2 text-lg font-bold text-slate-800">No FAQs found</h3>
+                        <h3 className="mb-2 text-lg font-bold text-slate-800">{t("faqs.noFaqs")}</h3>
                         <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-                          Build your knowledge base by adding common patient questions and standardized answers.
+                          {t("faqs.noFaqsDesc")}
                         </p>
                         {canManage && (
                           <Button
                             onClick={handleAdd}
                             className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
                           >
-                            <Plus className="h-4 w-4" /> Add First FAQ
+                            <Plus className="h-4 w-4" /> {t("faqs.addFirstFaq")}
                           </Button>
                         )}
                       </div>
@@ -302,7 +304,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                             aria-label={faq.is_active ? "Deactivate FAQ" : "Activate FAQ"}
                           />
                           <span className={`text-sm font-medium ${faq.is_active ? "text-slate-900" : "text-slate-400"}`}>
-                            {faq.is_active ? "Active" : "Inactive"}
+                            {faq.is_active ? t("faqs.active") : t("faqs.inactive")}
                           </span>
                         </div>
                       </td>
@@ -336,12 +338,12 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
           <div className="divide-y divide-slate-100 lg:hidden">
             {loading ? (
               <div className="py-12 text-center text-slate-400">
-                Loading FAQs...
+                {t("faqs.loading")}
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <MessageCircleQuestion className="mb-3 h-10 w-10 text-slate-300" />
-                <p className="text-sm font-medium text-slate-600">No FAQs found</p>
+                <p className="text-sm font-medium text-slate-600">{t("faqs.noFaqs")}</p>
               </div>
             ) : (
               filtered.map((faq) => (
@@ -362,7 +364,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                             onCheckedChange={(checked) => handleToggleActive(faq.id, !checked)}
                           />
                           <span className={`text-sm font-medium ${faq.is_active ? "text-slate-900" : "text-slate-400"}`}>
-                            {faq.is_active ? "Active" : "Inactive"}
+                            {faq.is_active ? t("faqs.active") : t("faqs.inactive")}
                           </span>
                         </div>
                       </div>

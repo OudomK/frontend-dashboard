@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,12 +57,12 @@ export function LoginForm({ variant }: Props) {
 
   return (
     <div className="w-full max-w-md">
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+      <div className="space-y-3">
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
           {content.title}
         </h1>
 
-        <p className="text-base text-slate-500">
+        <p className="text-base text-slate-500 font-medium">
           {content.subtitle}
         </p>
       </div>
@@ -79,7 +80,7 @@ export function LoginForm({ variant }: Props) {
             <Input
               type="email"
               placeholder="doctor@clinic.com"
-              className="h-12 pl-10"
+              className="h-12 pl-10 bg-slate-50 border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-all duration-300 hover:border-blue-400"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -99,7 +100,7 @@ export function LoginForm({ variant }: Props) {
             <Input
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
-              className="h-12 pl-10 pr-10"
+              className="h-12 pl-10 pr-10 bg-slate-50 border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-all duration-300 hover:border-blue-400"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -132,16 +133,19 @@ export function LoginForm({ variant }: Props) {
             </label>
           </div>
 
-          <button
-            type="button"
+          <Link
+            href="/auth/forgot-password"
             className="text-sm font-medium text-blue-600 hover:text-blue-700"
           >
             Forgot password?
-          </button>
+          </Link>
         </div>
 
         {/* Submit */}
-        <Button className="h-12 w-full text-base font-semibold" disabled={loading}>
+        <Button 
+          className="h-12 w-full text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" 
+          disabled={loading}
+        >
           {loading ? "Authenticating..." : content.buttonText}
         </Button>
       </form>

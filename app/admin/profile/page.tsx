@@ -7,10 +7,12 @@ import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 // ─── Initial Default User Profile Seeds ──────────────────────────────────────
 
 export default function AdminProfilePage() {
+  const { t } = useTranslation();
   const { updateAvatar, updateName } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +96,7 @@ export default function AdminProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB.");
+        toast.error(t("prof.fileSize"));
         return;
       }
       
@@ -118,7 +120,7 @@ export default function AdminProfilePage() {
         setAvatar(fullUrl);
         updateAvatar(fullUrl);
         
-        toast.success("Profile photo updated successfully!");
+        toast.success(t("prof.photoUpdated"));
       } catch (err: any) {
         toast.error(err.response?.data?.detail || "Failed to upload image");
       } finally {
@@ -134,7 +136,7 @@ export default function AdminProfilePage() {
       await apiClient.put("/api/v1/users/profile", { avatar_url: null });
       setAvatar(null);
       updateAvatar("");
-      toast.success("Profile photo removed.");
+      toast.success(t("prof.photoRemoved"));
     } catch (err: any) {
       toast.error("Failed to remove photo.");
     } finally {
@@ -151,7 +153,7 @@ export default function AdminProfilePage() {
   // Persist edits (Save button)
   const handleSaveEdits = async () => {
     if (!firstName || !email) {
-      toast.error("First Name and Email are required fields.");
+      toast.error(t("prof.reqFirstNameEmail"));
       return;
     }
 
@@ -164,7 +166,7 @@ export default function AdminProfilePage() {
         medical_note: bio,
       });
       updateName(newFullName);
-      toast.success("Personal information updated successfully!");
+      toast.success(t("prof.profileUpdated"));
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to update profile.");
     } finally {
@@ -175,15 +177,15 @@ export default function AdminProfilePage() {
   // Update password validation
   const handleUpdatePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("Please fill out all password fields.");
+      toast.error(t("prof.fillAllPwd"));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters long.");
+      toast.error(t("prof.pwdLength"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match.");
+      toast.error(t("prof.pwdMismatch"));
       return;
     }
 
@@ -193,7 +195,7 @@ export default function AdminProfilePage() {
         current_password: currentPassword,
         new_password: newPassword
       });
-      toast.success("Security credentials updated successfully!");
+      toast.success(t("prof.pwdUpdated"));
       setNewPassword("");
       setConfirmPassword("");
       setCurrentPassword("");
@@ -221,16 +223,16 @@ export default function AdminProfilePage() {
         {/* Breadcrumb Header block */}
         <div className="space-y-1 select-none">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-            <span>Admin Panel</span>
+            <span>{t("chat.adminPanel")}</span>
             <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-            <span className="text-slate-600">Profile Settings</span>
+            <span className="text-slate-600">{t("prof.title")}</span>
           </div>
 
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 lg:text-3xl">
-            Profile Settings
+            {t("prof.title")}
           </h1>
           <p className="text-sm text-slate-500 lg:text-base">
-            Manage your account information and preferences.
+            {t("prof.subtitle")}
           </p>
         </div>
 
@@ -273,7 +275,7 @@ export default function AdminProfilePage() {
                 {firstName} {lastName}
               </h2>
               <p className="text-xs font-semibold text-slate-400 text-center mt-1">
-                Medical Director & {role}
+                {t("prof.mdRole")} {role}
               </p>
 
               {/* Photo Actions */}
@@ -284,7 +286,7 @@ export default function AdminProfilePage() {
                   className="w-full h-10 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow hover:bg-blue-700 transition-colors"
                 >
                   <Upload className="mr-1.5 h-4 w-4" />
-                  Upload New Photo
+                  {t("prof.upload")}
                 </Button>
                 
                 <Button
@@ -293,24 +295,24 @@ export default function AdminProfilePage() {
                   disabled={!avatar || uploadingAvatar}
                   className="w-full h-10 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50"
                 >
-                  Remove Photo
+                  {t("prof.remove")}
                 </Button>
               </div>
 
               {/* Divider & Meta details */}
               <div className="w-full border-t border-slate-100 mt-6 pt-6 space-y-3.5 text-xs">
                 <div className="flex items-center justify-between font-medium">
-                  <span className="text-slate-400">Account Created</span>
+                  <span className="text-slate-400">{t("prof.created")}</span>
                   <span className="text-slate-700 font-semibold">{accountCreated || "N/A"}</span>
                 </div>
                 
                 <div className="flex items-center justify-between font-medium">
-                  <span className="text-slate-400">Status</span>
+                  <span className="text-slate-400">{t("prof.status")}</span>
                   <span className="text-emerald-600 font-bold">{status}</span>
                 </div>
 
                 <div className="flex items-center justify-between font-medium">
-                  <span className="text-slate-400">Role</span>
+                  <span className="text-slate-400">{t("prof.role")}</span>
                   <span className="text-slate-700 font-semibold">{role}</span>
                 </div>
               </div>
@@ -324,34 +326,34 @@ export default function AdminProfilePage() {
             {/* Card A: Personal Information */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
               <div className="border-b border-slate-50 pb-3">
-                <h3 className="text-base font-bold text-slate-900">Personal Information</h3>
+                <h3 className="text-base font-bold text-slate-900">{t("prof.personalInfo")}</h3>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">First Name</label>
+                  <label className="text-xs font-bold text-slate-700">{t("prof.firstName")}</label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Enter first name..."
+                    placeholder={t("prof.firstNamePlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Last Name</label>
+                  <label className="text-xs font-bold text-slate-700">{t("prof.lastName")}</label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Enter last name..."
+                    placeholder={t("prof.lastNamePlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Email Address</label>
+                  <label className="text-xs font-bold text-slate-700">{t("prof.email")}</label>
                   <input
                     type="email"
                     value={email}
@@ -361,23 +363,23 @@ export default function AdminProfilePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                  <label className="text-xs font-bold text-slate-700">{t("prof.phone")}</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter phone number..."
+                    placeholder={t("prof.phonePlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Bio / Specialty</label>
+                <label className="text-xs font-bold text-slate-700">{t("prof.bio")}</label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us about your background or specialization..."
+                  placeholder={t("prof.bioPlaceholder")}
                   rows={3}
                   className="w-full rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
@@ -391,14 +393,14 @@ export default function AdminProfilePage() {
                   disabled={submitting}
                   className="h-10 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  Discard Changes
+                  {t("prof.discard")}
                 </Button>
                 <Button
                   onClick={handleSaveEdits}
                   disabled={submitting}
                   className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow transition-all hover:bg-blue-700"
                 >
-                  {submitting ? "Saving..." : "Save Changes"}
+                  {submitting ? t("prof.saving") : t("prof.save")}
                 </Button>
               </div>
             </div>
@@ -406,39 +408,39 @@ export default function AdminProfilePage() {
             {/* Card B: Security Settings */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
               <div className="border-b border-slate-50 pb-3">
-                <h3 className="text-base font-bold text-slate-900">Security Settings</h3>
+                <h3 className="text-base font-bold text-slate-900">{t("prof.security")}</h3>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Current Password</label>
+                <label className="text-xs font-bold text-slate-700">{t("prof.currentPwd")}</label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
+                  placeholder={t("prof.currentPwdPlaceholder")}
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">New Password</label>
+                  <label className="text-xs font-bold text-slate-700">{t("prof.newPwd")}</label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder={t("prof.newPwdPlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Confirm New Password</label>
+                  <label className="text-xs font-bold text-slate-700">{t("prof.confirmPwd")}</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={t("prof.confirmPwdPlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
@@ -452,7 +454,7 @@ export default function AdminProfilePage() {
                   disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
                   className="h-10 rounded-lg border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
                 >
-                  {changingPassword ? "Updating..." : "Update Password"}
+                  {changingPassword ? t("prof.updatingPwd") : t("prof.updatePwd")}
                 </Button>
               </div>
             </div>
@@ -460,17 +462,17 @@ export default function AdminProfilePage() {
             {/* Card C: Notifications & Preferences */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 opacity-70">
               <div className="border-b border-slate-50 pb-3 flex justify-between items-center">
-                <h3 className="text-base font-bold text-slate-900">Notifications & Preferences</h3>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Coming Soon</span>
+                <h3 className="text-base font-bold text-slate-900">{t("prof.notifPref")}</h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{t("prof.comingSoon")}</span>
               </div>
 
               <div className="space-y-4 divide-y divide-slate-100">
                 {/* Email Notifications */}
                 <div className="flex items-center justify-between pb-4 first:pt-0 pt-4">
                   <div className="space-y-0.5 pr-4">
-                    <h4 className="text-sm font-bold text-slate-700">Email Notifications</h4>
+                    <h4 className="text-sm font-bold text-slate-700">{t("prof.emailNotif")}</h4>
                     <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                      Receive system updates, daily reports, and alerts via email.
+                      {t("prof.emailNotifDesc")}
                     </p>
                   </div>
                   <button
@@ -485,9 +487,9 @@ export default function AdminProfilePage() {
                 {/* Telegram Notifications */}
                 <div className="flex items-center justify-between pb-4 pt-4">
                   <div className="space-y-0.5 pr-4">
-                    <h4 className="text-sm font-bold text-slate-700">Telegram Emergency Alerts</h4>
+                    <h4 className="text-sm font-bold text-slate-700">{t("prof.tgAlerts")}</h4>
                     <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                      Get urgent notifications directly to your connected Telegram account.
+                      {t("prof.tgAlertsDesc")}
                     </p>
                   </div>
                   <button

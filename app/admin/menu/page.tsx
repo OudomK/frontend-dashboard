@@ -4,26 +4,29 @@ import Link from "next/link";
 import { LogOut, Settings } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { adminMenu, adminSettingsItem } from "@/components/dashboard/sidebar/sidebar-config";
+import { navKeyMap } from "@/components/dashboard/sidebar/sidebar";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 export default function AdminMenuPage() {
   const { logout, user: sessionUser } = useAuthStore();
+  const { t } = useTranslation();
   
   const adminName = sessionUser?.email
     ? (typeof window !== "undefined" ? localStorage.getItem("women_health_user_name") : null) || sessionUser.email.split("@")[0]
-    : "System Admin";
+    : t("mnu.sysAdmin");
 
   const groups = [
     {
-      label: "Overview",
+      label: t("mnu.overview"),
       items: adminMenu.slice(0, 2),
     },
     {
-      label: "AI & Knowledge",
+      label: t("mnu.aiKnow"),
       items: adminMenu.slice(2, 4),
     },
     {
-      label: "Content Management",
+      label: t("mnu.contentMgmt"),
       items: adminMenu.slice(4),
     },
   ];
@@ -31,8 +34,8 @@ export default function AdminMenuPage() {
   return (
     <DashboardLayout
       role="admin"
-      title="Menu"
-      subtitle="Access all admin features and settings."
+      title={t("mnu.title")}
+      subtitle={t("mnu.subtitle")}
     >
       <div className="space-y-6 lg:hidden pb-20">
         
@@ -45,7 +48,7 @@ export default function AdminMenuPage() {
           />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-slate-900 text-lg truncate">{adminName}</h2>
-            <p className="text-sm font-medium text-slate-500">System Administrator</p>
+            <p className="text-sm font-medium text-slate-500">{t("mnu.sysAdmin")}</p>
           </div>
           <Link
             href="/admin/profile"
@@ -74,7 +77,7 @@ export default function AdminMenuPage() {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="font-semibold text-slate-700 flex-1">{item.label}</span>
+                    <span className="font-semibold text-slate-700 flex-1">{t(navKeyMap[item.label] || "nav.dashboard")}</span>
                   </Link>
                 );
               })}
@@ -85,7 +88,7 @@ export default function AdminMenuPage() {
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              System
+              {t("mnu.system")}
             </span>
           </div>
           <div className="divide-y divide-slate-100">
@@ -96,7 +99,7 @@ export default function AdminMenuPage() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                 <adminSettingsItem.icon className="h-5 w-5" />
               </div>
-              <span className="font-semibold text-slate-700 flex-1">{adminSettingsItem.label}</span>
+              <span className="font-semibold text-slate-700 flex-1">{t(navKeyMap[adminSettingsItem.label] || "nav.settings")}</span>
             </Link>
 
             <button
@@ -106,7 +109,7 @@ export default function AdminMenuPage() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
                 <LogOut className="h-5 w-5" />
               </div>
-              <span className="font-semibold text-red-600 flex-1">Logout</span>
+              <span className="font-semibold text-red-600 flex-1">{t("mnu.logout")}</span>
             </button>
           </div>
         </div>
@@ -114,7 +117,7 @@ export default function AdminMenuPage() {
       
       {/* Desktop empty state - shouldn't be reached normally since it's a mobile feature */}
       <div className="hidden lg:flex flex-col items-center justify-center py-20 text-slate-500">
-        <p className="text-lg font-medium">Please use the sidebar for navigation.</p>
+        <p className="text-lg font-medium">{t("mnu.useSidebar")}</p>
       </div>
     </DashboardLayout>
   );

@@ -22,15 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Role = "doctor" | "admin";
 type Severity = "warning" | "urgent" | "critical";
@@ -112,17 +107,19 @@ function StatusToggle({
   disabled: boolean;
   onChange: (checked: boolean) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2">
       <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
       <span className={`text-sm font-semibold ${checked ? "text-emerald-700" : "text-slate-400"}`}>
-        {checked ? "Active" : "Inactive"}
+        {checked ? t("emg.active") : t("emg.inactive")}
       </span>
     </div>
   );
 }
 
 export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
+  const { t } = useTranslation();
   const isAdmin = role === "admin";
   const [rules, setRules] = useState<EmergencyRule[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -269,12 +266,12 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
   return (
     <DashboardLayout
       role={role}
-      title="Emergency Rules"
-      subtitle="Configure medical guidance and alert messages for high-risk symptoms."
+      title={t("emg.title")}
+      subtitle={t("emg.subtitle")}
       actions={
         <Button onClick={openCreate} className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">
           <Plus className="h-4 w-4" />
-          New Rule
+          {t("emg.newRule")}
         </Button>
       }
     >
@@ -282,9 +279,9 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
         <div className="flex items-start gap-3">
           <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
           <div>
-            <p className="text-sm font-bold">Emergency protocol rules affect AI safety responses.</p>
+            <p className="text-sm font-bold">{t("emg.alertTitle")}</p>
             <p className="mt-0.5 text-sm text-orange-800">
-              Keep triggers specific and advice direct. Admin changes apply to future high-risk chat detection.
+              {t("emg.alertDesc")}
             </p>
           </div>
         </div>
@@ -293,8 +290,8 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Configured Emergency Protocols</h2>
-            <p className="text-sm text-slate-500">{rules.length} total rules</p>
+            <h2 className="text-lg font-bold text-slate-900">{t("emg.configuredProtocols")}</h2>
+            <p className="text-sm text-slate-500">{rules.length} {t("emg.totalRules")}</p>
           </div>
 
           <div className="relative w-full sm:w-80">
@@ -302,7 +299,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search rules or symptoms..."
+              placeholder={t("emg.searchPlaceholder")}
               className="h-10 w-full rounded-lg border border-slate-200 pl-10 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -311,22 +308,22 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-sm font-semibold text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading emergency rules...
+            {t("emg.loading")}
           </div>
         ) : filteredRules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white text-center m-4">
             <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
               <ShieldAlert className="h-10 w-10 text-blue-500/60" />
             </div>
-            <h3 className="mb-2 text-lg font-bold text-slate-800">No emergency rules found</h3>
+            <h3 className="mb-2 text-lg font-bold text-slate-800">{t("emg.noRules")}</h3>
             <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-              Create rules to automatically alert doctors and provide instant guidance for high-risk symptoms.
+              {t("emg.noRulesDesc")}
             </p>
             <Button
               onClick={openCreate}
               className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
             >
-              <Plus className="h-4 w-4" /> New Rule
+              <Plus className="h-4 w-4" /> {t("emg.newRule")}
             </Button>
           </div>
         ) : (
@@ -335,16 +332,16 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
                   <tr>
-                    <th className="px-5 py-4">Rule</th>
-                    <th className="px-5 py-4">Triggers</th>
-                    <th className="px-5 py-4">Advice</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4 text-right">Actions</th>
+                    <th className="px-5 py-4">{t("emg.tableRule")}</th>
+                    <th className="px-5 py-4">{t("emg.tableTriggers")}</th>
+                    <th className="px-5 py-4">{t("emg.tableAdvice")}</th>
+                    <th className="px-5 py-4">{t("emg.tableStatus")}</th>
+                    <th className="px-5 py-4 text-right">{t("emg.tableActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRules.map((rule) => {
-                    const category = rule.category_id ? categoryMap.get(rule.category_id) ?? "Uncategorized" : "Uncategorized";
+                    const category = rule.category_id ? categoryMap.get(rule.category_id) ?? t("emg.uncategorized") : t("emg.uncategorized");
                     return (
                       <tr key={rule.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
                         <td className="px-5 py-5">
@@ -390,7 +387,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
 
             <div className="divide-y divide-slate-100 lg:hidden">
               {filteredRules.map((rule) => {
-                const category = rule.category_id ? categoryMap.get(rule.category_id) ?? "Uncategorized" : "Uncategorized";
+                const category = rule.category_id ? categoryMap.get(rule.category_id) ?? t("emg.uncategorized") : t("emg.uncategorized");
                 return (
                   <div key={rule.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -420,11 +417,11 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" disabled={false} onClick={() => openEdit(rule)}>
                           <Pencil className="h-4 w-4" />
-                          Edit
+                          {t("emg.edit")}
                         </Button>
                         <Button variant="outline" size="sm" disabled={false} onClick={() => setRuleToDelete(rule)}>
                           <Trash2 className="h-4 w-4" />
-                          Delete
+                          {t("emg.delete")}
                         </Button>
                       </div>
                     </div>

@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import {
   Select,
   SelectContent,
@@ -79,6 +80,7 @@ export default function AdminAuditLogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -86,7 +88,7 @@ export default function AdminAuditLogsPage() {
         const response = await apiClient.get('/api/v1/admin/logs');
         setAuditLogs(response.data || []);
       } catch (error) {
-        toast.error("Failed to load audit logs");
+        toast.error(t("audit.errorLoadLogs"));
       } finally {
         setIsLoading(false);
       }
@@ -114,15 +116,15 @@ export default function AdminAuditLogsPage() {
   return (
     <DashboardLayout
       role="admin"
-      title="System Audit Logs"
-      subtitle="Monitor and track all administrative actions and security events across the platform."
+      title={t("audit.title")}
+      subtitle={t("audit.subtitle")}
       actions={
         <Button
           variant="outline"
           className="h-10 rounded-lg border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50"
         >
           <Download className="mr-2 h-4 w-4 text-slate-500" />
-          Export Logs
+          {t("audit.exportLogs")}
         </Button>
       }
     >
@@ -133,7 +135,7 @@ export default function AdminAuditLogsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Total Events (24h)</p>
+                <p className="text-sm font-semibold text-slate-400">{t("audit.totalEvents")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900">1,284</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
@@ -144,7 +146,7 @@ export default function AdminAuditLogsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Security Alerts</p>
+                <p className="text-sm font-semibold text-slate-400">{t("audit.securityAlerts")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900">3</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500">
@@ -155,7 +157,7 @@ export default function AdminAuditLogsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Active Admins</p>
+                <p className="text-sm font-semibold text-slate-400">{t("audit.activeAdmins")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900">4</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
@@ -166,7 +168,7 @@ export default function AdminAuditLogsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Failed Logins</p>
+                <p className="text-sm font-semibold text-slate-400">{t("audit.failedLogins")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900">12</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-500">
@@ -184,7 +186,7 @@ export default function AdminAuditLogsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search actions, users, or resources..."
+              placeholder={t("audit.searchPlaceholder")}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -194,15 +196,15 @@ export default function AdminAuditLogsPage() {
               <Filter className="mr-2 h-3.5 w-3.5 text-slate-400" />
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[90px] font-bold text-slate-700">
-                  <SelectValue placeholder="All Types" />
+                  <SelectValue placeholder={t("audit.allTypes")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Types</SelectItem>
-                  <SelectItem value="LOGIN">Logins</SelectItem>
-                  <SelectItem value="UPDATE">Updates</SelectItem>
-                  <SelectItem value="CREATE">Creations</SelectItem>
-                  <SelectItem value="DELETE">Deletions</SelectItem>
-                  <SelectItem value="SECURITY">Security</SelectItem>
+                  <SelectItem value="All">{t("audit.allTypes")}</SelectItem>
+                  <SelectItem value="LOGIN">{t("audit.typeLogins")}</SelectItem>
+                  <SelectItem value="UPDATE">{t("audit.typeUpdates")}</SelectItem>
+                  <SelectItem value="CREATE">{t("audit.typeCreations")}</SelectItem>
+                  <SelectItem value="DELETE">{t("audit.typeDeletions")}</SelectItem>
+                  <SelectItem value="SECURITY">{t("audit.typeSecurity")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -210,12 +212,12 @@ export default function AdminAuditLogsPage() {
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue placeholder={t("audit.allStatuses")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Success">Success</SelectItem>
-                  <SelectItem value="Failed">Failed</SelectItem>
+                  <SelectItem value="All">{t("audit.allStatuses")}</SelectItem>
+                  <SelectItem value="Success">{t("audit.statusSuccess")}</SelectItem>
+                  <SelectItem value="Failed">{t("audit.statusFailed")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -228,19 +230,19 @@ export default function AdminAuditLogsPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                  <th className="px-6 py-4 whitespace-nowrap">Event Date</th>
-                  <th className="px-6 py-4 whitespace-nowrap">User / Actor</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Action</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Resource</th>
-                  <th className="px-6 py-4 whitespace-nowrap">IP Address</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                  <th className="px-6 py-4 whitespace-nowrap">{t("audit.tableEventDate")}</th>
+                  <th className="px-6 py-4 whitespace-nowrap">{t("audit.tableUser")}</th>
+                  <th className="px-6 py-4 whitespace-nowrap">{t("audit.tableAction")}</th>
+                  <th className="px-6 py-4 whitespace-nowrap">{t("audit.tableResource")}</th>
+                  <th className="px-6 py-4 whitespace-nowrap">{t("audit.tableIpAddress")}</th>
+                  <th className="px-6 py-4 whitespace-nowrap">{t("audit.tableStatus")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {filteredLogs.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400">
-                      <p className="font-semibold">No audit logs found matching criteria</p>
+                      <p className="font-semibold">{t("audit.noLogsFound")}</p>
                     </td>
                   </tr>
                 ) : (

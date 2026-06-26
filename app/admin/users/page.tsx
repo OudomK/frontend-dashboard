@@ -9,6 +9,7 @@ import {
   Pencil,
   Plus,
   Search,
+  ShieldAlert,
   Sparkles,
   Stethoscope,
   Trash2,
@@ -37,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -144,6 +146,7 @@ function formatBackendError(error: any): string {
 export default function AdminUserManagementPage() {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const { t } = useTranslation();
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,6 +161,7 @@ export default function AdminUserManagementPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
+  const [deleteDialogUser, setDeleteDialogUser] = useState<UserAccount | null>(null);
 
   // Options Menu dropdown state per user
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
@@ -237,26 +241,26 @@ export default function AdminUserManagementPage() {
 
   const handleFormSubmit = async () => {
     if (!formName || !formEmail) {
-      toast.error("Please fill out all required fields.");
+      toast.error(t("users.fillRequired"));
       return;
     }
 
     if (!editMode && !formPassword) {
-      toast.error("Password is required for new accounts.");
+      toast.error(t("users.passwordRequired"));
       return;
     }
 
     if (!editMode && formPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+      toast.error(t("users.passwordMinLen"));
       return;
     }
 
     if (editMode && formPassword && formPassword.length < 6) {
-      toast.error("New password must be at least 6 characters.");
+      toast.error(t("users.passwordNewMinLen"));
       return;
     }
 
-    const toastId = toast.loading(editMode ? "Saving modifications..." : "Provisioning account...");
+    const toastId = toast.loading(editMode ? t("users.savingModifications") : t("users.provisioningAccount"));
 
     try {
       if (editMode && selectedUser) {
@@ -279,7 +283,7 @@ export default function AdminUserManagementPage() {
         }
 
         toast.dismiss(toastId);
-        toast.success("User account updated successfully!");
+        toast.success(t("users.userUpdated"));
       } else {
         // Create new user
         if (formRole === "DOCTOR") {
@@ -300,7 +304,7 @@ export default function AdminUserManagementPage() {
           });
         }
         toast.dismiss(toastId);
-        toast.success("New user account created successfully!");
+        toast.success(t("users.userCreated"));
       }
       setOpenDialog(false);
       resetForm();
@@ -316,11 +320,11 @@ export default function AdminUserManagementPage() {
     const isSuspending = user.status === "Active";
     const action = isSuspending ? "deactivate" : "activate";
     
-    const toastId = toast.loading(`${isSuspending ? "Suspending" : "Activating"} account...`);
+    const toastId = toast.loading(isSuspending ? t("users.suspending") : t("users.activating"));
     try {
       await apiClient.patch(`/api/v1/admin/users/${user.id}/${action}`);
       toast.dismiss(toastId);
-      toast.success(`User ${user.name} is now ${isSuspending ? "SUSPENDED" : "ACTIVE"}`);
+      toast.success(t("users.userIsNow"));
       fetchUsers();
     } catch (error: any) {
       toast.dismiss(toastId);
@@ -331,10 +335,7 @@ export default function AdminUserManagementPage() {
 
   // Delete User Warning (Clinical Audit compliance)
   const handleDeleteUser = (user: UserAccount) => {
-    toast.info(
-      `Account '${user.name}' cannot be permanently deleted to comply with medical audit records. You can suspend their account instead.`,
-      { duration: 5000 }
-    );
+    setDeleteDialogUser(user);
     setActiveMenuId(null);
   };
 
@@ -351,7 +352,7 @@ export default function AdminUserManagementPage() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    toast.success("CSV Export started for user accounts!");
+    toast.success(t("users.exportStarted"));
   };
 
   // Filter Logic
@@ -406,8 +407,8 @@ export default function AdminUserManagementPage() {
   return (
     <DashboardLayout
       role="admin"
-      title="User Management"
-      subtitle="Manage clinic staff, doctors, and patient accounts."
+      title={t("users.title")}
+      subtitle={t("users.subtitle")}
       actions={
         <div className="flex items-center gap-2">
           <Button
@@ -417,7 +418,7 @@ export default function AdminUserManagementPage() {
             className="h-10 rounded-lg border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50"
           >
             <Download className="mr-1.5 h-4 w-4 text-slate-500" />
-            Export CSV
+            {t("users.exportCsv")}
           </Button>
 
           <Button
@@ -428,7 +429,7 @@ export default function AdminUserManagementPage() {
             className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700 transition-all"
           >
             <Plus className="mr-1.5 h-4 w-4" />
-            Add New User
+            {t("users.addUser")}
           </Button>
         </div>
       }
@@ -442,7 +443,7 @@ export default function AdminUserManagementPage() {
           <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Total Users</p>
+                <p className="text-sm font-semibold text-slate-400">{t("users.totalUsers")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight">{stats.total}</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
@@ -455,7 +456,7 @@ export default function AdminUserManagementPage() {
           <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Active Users</p>
+                <p className="text-sm font-semibold text-slate-400">{t("users.activeUsers")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight">{stats.activeUsers}</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
@@ -468,7 +469,7 @@ export default function AdminUserManagementPage() {
           <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">Doctors & Staff</p>
+                <p className="text-sm font-semibold text-slate-400">{t("users.doctorsAndStaff")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight">{stats.doctorsAndStaff}</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500">
@@ -481,7 +482,7 @@ export default function AdminUserManagementPage() {
           <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-400">New This Week</p>
+                <p className="text-sm font-semibold text-slate-400">{t("users.newRegistrations")}</p>
                 <h3 className="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight">{stats.newThisWeek}</h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-500">
@@ -499,7 +500,7 @@ export default function AdminUserManagementPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or email..."
+              placeholder={t("users.searchPlaceholder")}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
             />
             {searchQuery && (
@@ -514,13 +515,13 @@ export default function AdminUserManagementPage() {
 
           <div className="grid grid-cols-2 gap-2 w-full md:flex md:items-center md:w-auto">
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Role:</span>
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{t("users.roleLabel")}</span>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
                 <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder={t("users.allRoles")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="All">{t("users.allRoles")}</SelectItem>
                   <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="DOCTOR">Doctor</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
@@ -530,13 +531,13 @@ export default function AdminUserManagementPage() {
             </div>
 
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Status:</span>
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{t("users.statusLabel")}</span>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder={t("users.allStatuses")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="All">{t("users.allStatuses")}</SelectItem>
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Suspended">Suspended</SelectItem>
                 </SelectContent>
@@ -553,19 +554,19 @@ export default function AdminUserManagementPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
-                  <th className="px-6 py-4 font-semibold text-slate-500">User</th>
-                  <th className="px-6 py-4 font-semibold text-slate-500">Role</th>
-                  <th className="px-6 py-4 font-semibold text-slate-500">Status</th>
-                  <th className="px-6 py-4 font-semibold text-slate-500">Joined Date</th>
-                  <th className="px-6 py-4 font-semibold text-slate-500">Last Active</th>
-                  <th className="px-6 py-4 font-semibold text-slate-500 text-right">Actions</th>
+                  <th className="px-6 py-4 font-semibold text-slate-500">{t("users.tableUser")}</th>
+                  <th className="px-6 py-4 font-semibold text-slate-500">{t("users.tableRole")}</th>
+                  <th className="px-6 py-4 font-semibold text-slate-500">{t("users.tableStatus")}</th>
+                  <th className="px-6 py-4 font-semibold text-slate-500">{t("users.tableJoined")}</th>
+                  <th className="px-6 py-4 font-semibold text-slate-500">{t("users.tableLastActive")}</th>
+                  <th className="px-6 py-4 font-semibold text-slate-500 text-right">{t("users.tableActions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800 text-sm">
                 {paginatedUsers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400">
-                      <p className="font-semibold">No accounts found</p>
+                      <p className="font-semibold">{t("users.noUsersFound")}</p>
                     </td>
                   </tr>
                 ) : (
@@ -873,6 +874,50 @@ export default function AdminUserManagementPage() {
         <Plus className="h-6 w-6" />
       </button>
 
+      {/* Compliance Delete Warning Modal */}
+      <Dialog open={!!deleteDialogUser} onOpenChange={(open) => !open && setDeleteDialogUser(null)}>
+        <DialogContent className="sm:max-w-[425px] bg-[#0F172A] border-white/10 text-white rounded-2xl shadow-2xl">
+          <DialogHeader className="gap-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
+              <ShieldAlert className="w-6 h-6 text-blue-400" />
+            </div>
+            <DialogTitle className="text-xl font-semibold text-center tracking-tight text-white">
+              Action Not Permitted
+            </DialogTitle>
+            <DialogDescription className="text-center text-slate-400 text-sm leading-relaxed pt-2">
+              Account <span className="font-medium text-slate-200">"{deleteDialogUser?.name}"</span> cannot be permanently deleted. 
+              <br/><br/>
+              To comply with strict medical audit records and data retention policies, users cannot be wiped from the database. 
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/5">
+            <Button
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-900/20"
+              onClick={() => {
+                if (deleteDialogUser) {
+                  // If they aren't already suspended, suspend them
+                  if (deleteDialogUser.status === "Active") {
+                    handleToggleStatus(deleteDialogUser);
+                  } else {
+                    toast.info("This account is already suspended.");
+                  }
+                  setDeleteDialogUser(null);
+                }
+              }}
+            >
+              Suspend Account Instead
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-white/10 bg-transparent hover:bg-white/5 text-slate-300"
+              onClick={() => setDeleteDialogUser(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -5,8 +5,11 @@ import { LogOut, Settings } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { doctorMenu } from "@/components/dashboard/sidebar/sidebar-config";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { useTranslation } from "@/lib/hooks/use-translation";
+import { navKeyMap } from "@/components/dashboard/sidebar/sidebar";
 
 export default function DoctorMenuPage() {
+  const { t } = useTranslation();
   const { logout, user: sessionUser } = useAuthStore();
   
   const doctorName = sessionUser?.email
@@ -15,15 +18,15 @@ export default function DoctorMenuPage() {
 
   const groups = [
     {
-      label: "Overview",
+      label: t("menu.groupOverview"),
       items: doctorMenu.slice(0, 1),
     },
     {
-      label: "AI & Knowledge",
+      label: t("menu.groupAiKnowledge"),
       items: doctorMenu.slice(1, 4),
     },
     {
-      label: "Content Management",
+      label: t("menu.groupContent"),
       items: doctorMenu.slice(4),
     },
   ];
@@ -31,8 +34,8 @@ export default function DoctorMenuPage() {
   return (
     <DashboardLayout
       role="doctor"
-      title="Menu"
-      subtitle="Access all clinic features and tools."
+      title={t("menu.title")}
+      subtitle={t("menu.subtitle")}
     >
       <div className="space-y-6 lg:hidden pb-20">
         
@@ -45,7 +48,7 @@ export default function DoctorMenuPage() {
           />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-slate-900 text-lg truncate">{doctorName}</h2>
-            <p className="text-sm font-medium text-slate-500">Clinic Owner</p>
+            <p className="text-sm font-medium text-slate-500">{t("menu.clinicOwner")}</p>
           </div>
           <Link
             href="/doctor/profile"
@@ -74,7 +77,7 @@ export default function DoctorMenuPage() {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="font-semibold text-slate-700 flex-1">{item.label}</span>
+                    <span className="font-semibold text-slate-700 flex-1">{t(navKeyMap[item.label] || item.label)}</span>
                   </Link>
                 );
               })}
@@ -90,7 +93,7 @@ export default function DoctorMenuPage() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
               <LogOut className="h-5 w-5" />
             </div>
-            <span className="font-semibold text-red-600 flex-1">Logout</span>
+            <span className="font-semibold text-red-600 flex-1">{t("nav.logout")}</span>
           </button>
         </div>
       </div>

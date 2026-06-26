@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 interface ChatMessage {
   id: string;
@@ -33,6 +34,7 @@ interface ChatSession {
 }
 
 export default function AdminChatLogsPage() {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
@@ -106,12 +108,12 @@ export default function AdminChatLogsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 shrink-0 select-none">
           <div>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 mb-2">
-              <span>Admin Panel</span>
+              <span>{t("chat.adminPanel")}</span>
               <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-              <span className="text-slate-600">Chat & QA Logs</span>
+              <span className="text-slate-600">{t("chat.title")}</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">AI Chat Logs</h1>
-            <p className="text-sm text-slate-500">Review anonymized conversations and flagged AI responses.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("chat.title")}</h1>
+            <p className="text-sm text-slate-500">{t("chat.subtitle")}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -119,7 +121,7 @@ export default function AdminChatLogsPage() {
               onClick={fetchSessions}
               className="h-10 rounded-xl bg-white text-sm font-semibold border-slate-200 text-slate-700 shadow-sm"
             >
-              Refresh Logs
+              {t("chat.refresh")}
             </Button>
           </div>
         </div>
@@ -135,7 +137,7 @@ export default function AdminChatLogsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by ID, name or message..."
+                  placeholder={t("chat.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
@@ -162,12 +164,12 @@ export default function AdminChatLogsPage() {
             {/* List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {isLoading ? (
-                <div className="flex justify-center items-center h-32 text-sm text-slate-400 font-medium">Loading sessions...</div>
+                <div className="flex justify-center items-center h-32 text-sm text-slate-400 font-medium">{t("chat.loading")}</div>
               ) : filteredSessions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 text-center px-4">
                   <MessageSquare className="h-8 w-8 text-slate-200 mb-3" />
-                  <p className="text-sm font-semibold text-slate-700">No chat sessions found</p>
-                  <p className="text-xs text-slate-400 mt-1">Try adjusting your search or filters</p>
+                  <p className="text-sm font-semibold text-slate-700">{t("chat.noSessions")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("chat.adjustSearch")}</p>
                 </div>
               ) : (
                 filteredSessions.map((session) => (
@@ -199,7 +201,7 @@ export default function AdminChatLogsPage() {
                       {session.lastMessageText}
                     </p>
                     <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
-                      <span>{session.messagesCount} messages</span>
+                      <span>{session.messagesCount} {t("chat.messages")}</span>
                       <span>{session.lastMessageTime}</span>
                     </div>
                   </button>
@@ -262,7 +264,7 @@ export default function AdminChatLogsPage() {
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {msg.sources.map((src, i) => (
                                 <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold">
-                                  Source: {src.title}
+                                  {t("chat.source")}: {src.title}
                                 </span>
                               ))}
                             </div>
@@ -271,7 +273,7 @@ export default function AdminChatLogsPage() {
                           {/* Emergency Flag for User Message */}
                           {!isAi && msg.isEmergency && (
                             <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-100 text-[10px] font-bold">
-                              <ShieldAlert className="h-3 w-3" /> System Flagged Emergency
+                              <ShieldAlert className="h-3 w-3" /> {t("chat.systemFlagged")}
                             </div>
                           )}
                         </div>
@@ -285,9 +287,9 @@ export default function AdminChatLogsPage() {
                 <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
                   <MessageSquare className="h-8 w-8 text-slate-300" />
                 </div>
-                <h3 className="text-base font-bold text-slate-700">Select a session</h3>
+                <h3 className="text-base font-bold text-slate-700">{t("chat.selectSession")}</h3>
                 <p className="text-sm font-medium text-slate-400 mt-1 max-w-xs">
-                  Choose a chat session from the left panel to review the full conversation history.
+                  {t("chat.selectSessionDesc")}
                 </p>
               </div>
             )}

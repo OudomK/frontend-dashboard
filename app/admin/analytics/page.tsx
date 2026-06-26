@@ -19,6 +19,7 @@ import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Overview = {
   total_users: number;
@@ -149,22 +150,24 @@ function AnalyticsMetricCard({ title, value, note, icon: Icon, iconTone, noteTon
 }
 
 function TriggerBadge({ value }: { value: string }) {
+  const { t } = useTranslation();
   if (value === "critical") {
-    return <Badge className="rounded-md bg-red-600 px-2.5 text-xs font-bold uppercase text-white">Critical</Badge>;
+    return <Badge className="rounded-md bg-red-600 px-2.5 text-xs font-bold uppercase text-white">{t("aly.critical")}</Badge>;
   }
 
   if (value === "urgent") {
-    return <Badge className="rounded-md bg-orange-500 px-2.5 text-xs font-bold uppercase text-white">Urgent</Badge>;
+    return <Badge className="rounded-md bg-orange-500 px-2.5 text-xs font-bold uppercase text-white">{t("aly.urgent")}</Badge>;
   }
 
   if (value === "warning") {
-    return <Badge className="rounded-md bg-amber-500 px-2.5 text-xs font-bold uppercase text-slate-950">Warning</Badge>;
+    return <Badge className="rounded-md bg-amber-500 px-2.5 text-xs font-bold uppercase text-slate-950">{t("aly.warning")}</Badge>;
   }
 
-  return <Badge className="rounded-md bg-slate-100 px-2.5 text-xs font-bold uppercase text-slate-700">None</Badge>;
+  return <Badge className="rounded-md bg-slate-100 px-2.5 text-xs font-bold uppercase text-slate-700">{t("aly.none")}</Badge>;
 }
 
 export default function AdminAnalyticsPage() {
+  const { t } = useTranslation();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [chatStats, setChatStats] = useState<ChatStats | null>(null);
   const [emergencyStats, setEmergencyStats] = useState<EmergencyStats | null>(null);
@@ -222,7 +225,7 @@ export default function AdminAnalyticsPage() {
       const counts = new Map<string, number>();
 
       records.forEach((record) => {
-        const name = record.category_id ? categoryMap.get(record.category_id) ?? "Uncategorized" : "Uncategorized";
+        const name = record.category_id ? categoryMap.get(record.category_id) ?? t("aly.uncat") : t("aly.uncat");
         counts.set(name, (counts.get(name) || 0) + 1);
       });
 
@@ -250,38 +253,38 @@ export default function AdminAnalyticsPage() {
 
   const metrics = useMemo<Metric[]>(() => [
     {
-      title: "Total AI Queries",
+      title: t("aly.totalAiQueries"),
       value: (chatStats?.total_user_messages ?? 0).toLocaleString(),
-      note: `${(chatStats?.total_chat_sessions ?? 0).toLocaleString()} chat sessions`,
+      note: `${(chatStats?.total_chat_sessions ?? 0).toLocaleString()} ${t("aly.chatSessions")}`,
       icon: MessageSquare,
       iconTone: "bg-blue-50 text-blue-600",
       noteTone: "text-emerald-600",
     },
     {
-      title: "Avg. Messages / Session",
+      title: t("aly.avgMsgs"),
       value: `${chatStats?.average_messages_per_session ?? 0}`,
-      note: `${(chatStats?.total_chat_messages ?? 0).toLocaleString()} total messages`,
+      note: `${(chatStats?.total_chat_messages ?? 0).toLocaleString()} ${t("aly.totalMsgs")}`,
       icon: Target,
       iconTone: "bg-blue-50 text-blue-600",
       noteTone: "text-slate-500",
     },
     {
-      title: "AI Response Ratio",
+      title: t("aly.aiRespRatio"),
       value: `${aiUsage?.ai_response_ratio ?? 0}x`,
-      note: `${(aiUsage?.total_ai_messages ?? 0).toLocaleString()} AI responses`,
+      note: `${(aiUsage?.total_ai_messages ?? 0).toLocaleString()} ${t("aly.aiResponses")}`,
       icon: Users,
       iconTone: "bg-emerald-50 text-emerald-600",
       noteTone: "text-emerald-600",
     },
     {
-      title: "Emergency Flags",
+      title: t("aly.emergFlags"),
       value: (emergencyStats?.total_emergency_flags ?? 0).toLocaleString(),
-      note: `${emergencyStats?.critical_cases ?? 0} critical cases`,
+      note: `${emergencyStats?.critical_cases ?? 0} ${t("aly.criticalCases")}`,
       icon: PhoneForwarded,
       iconTone: "bg-red-50 text-red-500",
       noteTone: "text-red-500",
     },
-  ], [aiUsage, chatStats, emergencyStats]);
+  ], [aiUsage, chatStats, emergencyStats, t]);
 
   const accessMethods = useMemo(() => {
     const ai = chatStats?.total_user_messages ?? 0;
@@ -290,11 +293,11 @@ export default function AdminAnalyticsPage() {
     const total = ai + docs + alerts;
 
     return [
-      { label: "AI Chatbot", value: pct(ai, total), color: "bg-blue-600" },
-      { label: "Knowledge Docs", value: pct(docs, total), color: "bg-emerald-500" },
-      { label: "Emergency Flags", value: pct(alerts, total), color: "bg-amber-500" },
+      { label: t("aly.aiChatbot"), value: pct(ai, total), color: "bg-blue-600" },
+      { label: t("aly.knowDocs"), value: pct(docs, total), color: "bg-emerald-500" },
+      { label: t("aly.emergFlags"), value: pct(alerts, total), color: "bg-amber-500" },
     ];
-  }, [chatStats, documentStats, emergencyStats]);
+  }, [chatStats, documentStats, emergencyStats, t]);
 
   const chartGrowth = growth.length > 0 ? growth.slice(-10) : [{ date: "No data", total_users: 0 }];
   const maxGrowth = Math.max(...chartGrowth.map((item) => item.total_users), 1);
@@ -322,24 +325,24 @@ export default function AdminAnalyticsPage() {
     document.body.appendChild(link);
     link.click();
     link.remove();
-    toast.success("Analytics report exported.");
+    toast.success(t("aly.reportExported"));
   };
 
   return (
     <DashboardLayout
       role="admin"
-      title="System Analytics"
-      subtitle="Deep dive into system usage, user engagement, and AI performance."
+      title={t("aly.title")}
+      subtitle={t("aly.subtitle")}
       actions={
         <>
           <Button variant="outline" className="h-10 rounded-md px-4">
             <CalendarDays />
-            Live Data
+            {t("aly.liveData")}
           </Button>
 
           <Button onClick={exportReport} className="h-10 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700">
             <Download />
-            Export Report
+            {t("aly.exportReport")}
           </Button>
         </>
       }
@@ -347,7 +350,7 @@ export default function AdminAnalyticsPage() {
       {loading ? (
         <div className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-20 text-sm font-semibold text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading analytics...
+          {t("aly.loading")}
         </div>
       ) : (
         <div className="space-y-8">
@@ -360,7 +363,7 @@ export default function AdminAnalyticsPage() {
           <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_356px]">
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
-                <h2 className="font-bold text-slate-950">User Growth Over Time</h2>
+                <h2 className="font-bold text-slate-950">{t("aly.userGrowth")}</h2>
               </div>
 
               <div className="px-4 py-6 lg:px-6">
@@ -369,8 +372,8 @@ export default function AdminAnalyticsPage() {
                     const height = Math.max(8, Math.round((item.total_users / maxGrowth) * 230));
                     return (
                       <div key={item.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                        <div className="w-full rounded-t-md bg-blue-600 transition-all" style={{ height }} title={`${item.total_users} users`} />
-                        <span className="text-[11px] font-semibold text-slate-400">{item.date === "No data" ? "No data" : formatDate(item.date)}</span>
+                        <div className="w-full rounded-t-md bg-blue-600 transition-all" style={{ height }} title={`${item.total_users} ${t("aly.users")}`} />
+                        <span className="text-[11px] font-semibold text-slate-400">{item.date === "No data" ? t("aly.noData") : formatDate(item.date)}</span>
                       </div>
                     );
                   })}
@@ -380,12 +383,12 @@ export default function AdminAnalyticsPage() {
 
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
-                <h2 className="font-bold text-slate-950">Top Health Topics</h2>
+                <h2 className="font-bold text-slate-950">{t("aly.topTopics")}</h2>
               </div>
 
               <div className="space-y-5 px-4 py-6 lg:px-6 lg:py-7">
                 {topics.length === 0 ? (
-                  <p className="py-10 text-center text-sm font-semibold text-slate-400">No topic data yet</p>
+                  <p className="py-10 text-center text-sm font-semibold text-slate-400">{t("aly.noTopicData")}</p>
                 ) : (
                   topics.map((topic) => (
                     <div key={topic.label}>
@@ -406,14 +409,14 @@ export default function AdminAnalyticsPage() {
           <div className="grid gap-6 xl:grid-cols-[356px_minmax(0,2fr)]">
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
-                <h2 className="font-bold text-slate-950">System Activity Mix</h2>
+                <h2 className="font-bold text-slate-950">{t("aly.sysActMix")}</h2>
               </div>
 
               <div className="flex min-h-[340px] flex-col justify-center px-4 py-6 lg:px-6">
                 <div className="relative mx-auto flex h-36 w-36 items-center justify-center rounded-full border-[18px] border-blue-100">
                   <div className="text-center">
                     <p className="text-2xl font-extrabold tracking-tight text-slate-950">{(overview?.total_chat_sessions ?? 0).toLocaleString()}</p>
-                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sessions</p>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("aly.sessions")}</p>
                   </div>
                 </div>
 
@@ -433,31 +436,31 @@ export default function AdminAnalyticsPage() {
 
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
-                <h2 className="font-bold text-slate-950">Recent Escalated Queries</h2>
+                <h2 className="font-bold text-slate-950">{t("aly.recentEscalated")}</h2>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs font-semibold text-slate-400">
-                      <th className="px-5 py-3">Query Summary</th>
-                      <th className="px-5 py-3">Session</th>
-                      <th className="px-5 py-3">Emergency Trigger</th>
-                      <th className="px-5 py-3">Resolution</th>
+                      <th className="px-5 py-3">{t("aly.querySummary")}</th>
+                      <th className="px-5 py-3">{t("aly.session")}</th>
+                      <th className="px-5 py-3">{t("aly.emergTrigger")}</th>
+                      <th className="px-5 py-3">{t("aly.resolution")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {flags.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="py-14 text-center text-sm font-semibold text-slate-400">
-                          No escalated queries yet
+                          {t("aly.noEscalated")}
                         </td>
                       </tr>
                     ) : (
                       flags.map((flag) => (
                         <tr key={flag.id} className="border-b border-slate-100 last:border-0">
                           <td className="max-w-[340px] px-5 py-4 font-medium text-slate-950">
-                            {flag.message_content || flag.detected_text || "Emergency term detected"}
+                            {flag.message_content || flag.detected_text || t("aly.emergTerm")}
                           </td>
                           <td className="px-5 py-4 text-slate-950">
                             #{flag.session_id ?? "N/A"}
@@ -466,7 +469,7 @@ export default function AdminAnalyticsPage() {
                             <TriggerBadge value={flag.severity_level || "none"} />
                           </td>
                           <td className="max-w-[280px] px-5 py-4 text-slate-400">
-                            {flag.advice_text || flag.rule_name || "Review required"}
+                            {flag.advice_text || flag.rule_name || t("aly.revReq")}
                           </td>
                         </tr>
                       ))
@@ -480,18 +483,18 @@ export default function AdminAnalyticsPage() {
           <section className="grid gap-6 md:grid-cols-3">
             <div className="rounded-lg border border-slate-200 bg-white p-4 lg:p-5 shadow-sm">
               <FileText className="mb-4 h-5 w-5 text-blue-600" />
-              <p className="text-sm font-semibold text-slate-400">Knowledge Base</p>
-              <p className="mt-2 text-2xl font-bold text-slate-950">{documentStats?.active_documents ?? 0} active docs</p>
+              <p className="text-sm font-semibold text-slate-400">{t("aly.knowBase")}</p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">{documentStats?.active_documents ?? 0} {t("aly.activeDocs")}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4 lg:p-5 shadow-sm">
               <MessageSquare className="mb-4 h-5 w-5 text-emerald-600" />
-              <p className="text-sm font-semibold text-slate-400">Message Split</p>
-              <p className="mt-2 text-2xl font-bold text-slate-950">{chatStats?.total_user_messages ?? 0} user / {chatStats?.total_ai_messages ?? 0} AI</p>
+              <p className="text-sm font-semibold text-slate-400">{t("aly.msgSplit")}</p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">{chatStats?.total_user_messages ?? 0} {t("aly.userAiSplit")?.split('/')[0]?.trim()} / {chatStats?.total_ai_messages ?? 0} {t("aly.userAiSplit")?.split('/')[1]?.trim()}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-4 lg:p-5 shadow-sm">
               <AlertTriangle className="mb-4 h-5 w-5 text-red-500" />
-              <p className="text-sm font-semibold text-slate-400">Severity Mix</p>
-              <p className="mt-2 text-2xl font-bold text-slate-950">{emergencyStats?.urgent_cases ?? 0} urgent / {emergencyStats?.critical_cases ?? 0} critical</p>
+              <p className="text-sm font-semibold text-slate-400">{t("aly.sevMix")}</p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">{emergencyStats?.urgent_cases ?? 0} {t("aly.urgentCriticalMix")?.split('/')[0]?.trim()} / {emergencyStats?.critical_cases ?? 0} {t("aly.urgentCriticalMix")?.split('/')[1]?.trim()}</p>
             </div>
           </section>
         </div>

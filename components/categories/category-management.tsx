@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -183,6 +184,7 @@ const ITEMS_PER_PAGE = 8;
 export function CategoryManagement({ role }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -378,10 +380,10 @@ export function CategoryManagement({ role }: Props) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-3xl">
-            Category Management
+            {t("cat.title")}
           </h1>
           <p className="text-sm text-slate-500">
-            Organize health topics used across Articles, Documents, and FAQs.
+            {t("cat.subtitle")}
           </p>
         </div>
         <div className="hidden lg:flex items-center gap-3">
@@ -390,17 +392,17 @@ export function CategoryManagement({ role }: Props) {
             className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700 transition-colors"
           >
             <Plus className="mr-1.5 h-4 w-4" />
-            New Category
+            {t("cat.newCat")}
           </Button>
         </div>
       </div>
 
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Total Categories"   value={stats.total}        icon={Layers}    color="bg-blue-50 text-blue-600" />
-        <StatCard label="Active"             value={stats.active}       icon={Tag}       color="bg-emerald-50 text-emerald-600" />
-        <StatCard label="Draft / Inactive"   value={stats.draft}        icon={FolderOpen} color="bg-amber-50 text-amber-600" />
-        <StatCard label="Total Articles"     value={stats.totalArticles} icon={BookOpen}  color="bg-purple-50 text-purple-600" />
+        <StatCard label={t("cat.totalCat")}   value={stats.total}        icon={Layers}    color="bg-blue-50 text-blue-600" />
+        <StatCard label={t("cat.active")}     value={stats.active}       icon={Tag}       color="bg-emerald-50 text-emerald-600" />
+        <StatCard label={t("cat.draft")}      value={stats.draft}        icon={FolderOpen} color="bg-amber-50 text-amber-600" />
+        <StatCard label={t("cat.totalArt")}   value={stats.totalArticles} icon={BookOpen}  color="bg-purple-50 text-purple-600" />
       </div>
 
       {/* ── Filter / Search Row ── */}
@@ -412,7 +414,7 @@ export function CategoryManagement({ role }: Props) {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-            placeholder="Search categories..."
+            placeholder={t("cat.searchPlaceholder")}
             className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-9 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
           />
           {search && (
@@ -425,29 +427,29 @@ export function CategoryManagement({ role }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Status:</span>
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{t("cat.status")}</span>
               <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val as any); setCurrentPage(1); }}>
                 <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[90px] font-bold text-slate-700">
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder={t("cat.all")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="All">{t("cat.all")}</SelectItem>
+                  <SelectItem value="ACTIVE">{t("cat.active")}</SelectItem>
+                  <SelectItem value="DRAFT">{t("cat.draftStatus")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Sort:</span>
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{t("cat.sort")}</span>
               <Select value={sortOption} onValueChange={(val) => setSortOption(val as any)}>
                 <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
-                  <SelectValue placeholder="Newest" />
+                  <SelectValue placeholder={t("cat.sortNewest")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Newest">Newest</SelectItem>
-                  <SelectItem value="Oldest">Oldest</SelectItem>
-                  <SelectItem value="Name A-Z">Name A-Z</SelectItem>
+                  <SelectItem value="Newest">{t("cat.sortNewest")}</SelectItem>
+                  <SelectItem value="Oldest">{t("cat.sortOldest")}</SelectItem>
+                  <SelectItem value="Name A-Z">{t("cat.sortAZ")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -466,12 +468,12 @@ export function CategoryManagement({ role }: Props) {
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
-                <th className="px-6 py-4 font-semibold text-slate-500">Category</th>
-                <th className="px-6 py-4 font-semibold text-slate-500">Articles</th>
-                <th className="px-6 py-4 font-semibold text-slate-500">Status</th>
-                <th className="px-6 py-4 font-semibold text-slate-500">Created</th>
-                <th className="px-6 py-4 font-semibold text-slate-500 text-right">Actions</th>
+              <tr className="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-4">{t("cat.tableCatDetails")}</th>
+                <th className="px-6 py-4">{t("cat.tableArticles")}</th>
+                <th className="px-6 py-4">{t("cat.tableStatus")}</th>
+                <th className="px-6 py-4">{t("cat.tableLastUpdated")}</th>
+                <th className="px-6 py-4 text-right">{t("cat.tableActions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm text-slate-800">
@@ -503,7 +505,6 @@ export function CategoryManagement({ role }: Props) {
                   </tr>
               ) : (
                 paginated.map((cat) => {
-                  const s = getIconStyle(cat.icon_url);
                   return (
                     <tr key={cat.id} className="hover:bg-slate-50/30 transition-colors">
                       <td className="px-6 py-4">
@@ -521,16 +522,16 @@ export function CategoryManagement({ role }: Props) {
                           <span>{cat.articleCount}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <Badge
-                          className={`rounded-sm text-[9px] font-extrabold uppercase px-1.5 py-0.5 tracking-wider border-transparent ${
-                            cat.is_active
-                              ? "bg-emerald-600 text-white"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {cat.is_active ? "Active" : "Draft"}
-                        </Badge>
+                      <td className="px-6 py-5">
+                        {cat.is_active ? (
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm hover:bg-emerald-100">
+                            {t("cat.active")}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100">
+                            {t("cat.draftStatus")}
+                          </Badge>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-slate-400 font-medium text-xs">
                         {cat.lastUpdated}
@@ -573,9 +574,9 @@ export function CategoryManagement({ role }: Props) {
               <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
                 <FolderOpen className="h-10 w-10 text-blue-500/60" />
               </div>
-              <h3 className="mb-2 text-lg font-bold text-slate-800">No categories found</h3>
+              <h3 className="mb-2 text-lg font-bold text-slate-800">{t("cat.noCat")}</h3>
               <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-                Categories help organize your medical knowledge base.
+                {t("cat.addFirstCat")}
               </p>
             </div>
           ) : (
@@ -591,7 +592,7 @@ export function CategoryManagement({ role }: Props) {
                           cat.is_active ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"
                         }`}
                       >
-                        {cat.is_active ? "Active" : "Draft"}
+                        {cat.is_active ? t("cat.active") : t("cat.draftStatus")}
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5 leading-relaxed line-clamp-2">

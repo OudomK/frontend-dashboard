@@ -40,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 
 
@@ -125,6 +126,7 @@ function StatCard({ title, value, icon: Icon, tone }: { title: string; value: st
 
 export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const isAdmin = role === "admin";
+  const { t } = useTranslation();
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -132,8 +134,30 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "All">("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [categories, setCategories] = useState<any[]>([]);
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [viewDocId, setViewDocId] = useState<number | null>(null);
   const [viewDocName, setViewDocName] = useState<string>("");
+  const [deleteDocId, setDeleteDocId] = useState<number | null>(null);
+  const [deleteDocName, setDeleteDocName] = useState<string>("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteDocId) return;
+    setIsDeleting(true);
+    const toastId = toast.loading("Deleting document...");
+    try {
+      await apiClient.delete(`/api/documents/${deleteDocId}`);
+      toast.dismiss(toastId);
+      toast.success("Document deleted successfully!");
+      fetchDocuments();
+      setDeleteDocId(null);
+    } catch (error: any) {
+      toast.dismiss(toastId);
+      toast.error(formatBackendError(error));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const fetchDocuments = useCallback(async () => {
     setLoadingList(true);
@@ -204,7 +228,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   }, [fetchDocuments]);
 
   const filteredDocs = useMemo(() => {
-    return documents.filter((doc) => {
+    const filtered = documents.filter((doc) => {
       const matchesSearch =
         doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         doc.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -222,7 +246,13 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [documents, searchQuery, selectedCategoryId, selectedStatus]);
+
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return sortBy === "newest" ? dateB - dateA : dateA - dateB;
+    });
+  }, [documents, searchQuery, selectedCategoryId, selectedStatus, sortBy]);
 
   const computedStats = useMemo(() => {
     const total = documents.length;
@@ -232,47 +262,43 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
     return [
       {
-        title: "Total Documents",
+        title: t("docs.totalDocs"),
         value: total.toString(),
         icon: FileText,
         tone: "bg-blue-50 text-blue-600",
       },
       {
-        title: "Active for AI",
+        title: t("docs.activeAi"),
         value: active.toString(),
         icon: RefreshCcw,
         tone: "bg-lime-100 text-lime-600",
       },
       {
-        title: "Processing",
+        title: t("docs.processing"),
         value: processing.toString(),
         icon: RefreshCcw,
         tone: "bg-amber-100 text-amber-600",
       },
       {
-        title: "Failed/Errors",
+        title: t("docs.failed"),
         value: failed.toString(),
         icon: File,
         tone: "bg-red-50 text-red-500",
       },
     ];
-  }, [documents]);
+  }, [documents, t]);
 
   return (
     <DashboardLayout
       role={role}
-      title={isAdmin ? "Knowledge Base Documents" : "Knowledge Base"}
-      subtitle={
-        isAdmin
-          ? "View all clinic documents indexed in the AI knowledge base. Only doctors can upload documents."
-          : "Upload and manage documents that support your clinic's AI answers."
-      }
+      title={isAdmin ? t("docs.titleAdmin") : t("docs.titleDoctor")}
+      subtitle={isAdmin ? t("docs.subtitleAdmin") : t("docs.subtitleDoctor")}
       actions={
         <>
           {isAdmin && (
             <Button variant="outline" className="h-10 rounded-md px-4">
               <RefreshCcw />
-              Sync AI DB
+              {t("docs.syncAiDb")}
             </Button>
           )}
           {!isAdmin && (
@@ -281,7 +307,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
               trigger={
                 <Button className="bg-blue-600 text-white">
                   <UploadCloud className="mr-2 h-4 w-4" />
-                  Upload Document
+                  {t("docs.uploadDoc")}
                 </Button>
               }
             />
@@ -299,7 +325,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
       trigger={
         <Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700">
           <UploadCloud className="mr-2 h-4 w-4" />
-          Upload
+          {t("docs.upload")}
         </Button>
       }
     />
@@ -321,7 +347,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   className="h-10 rounded-md bg-slate-50 pl-10"
-                  placeholder="Search by name, type, or author..."
+                  placeholder={t("docs.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -331,15 +357,15 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                   <SelectTrigger className="h-10 rounded-md bg-white">
                     <div className="flex items-center gap-2 text-slate-600">
                       <Filter className="h-4 w-4" />
-                      <SelectValue placeholder="Status: All" />
+                      <SelectValue placeholder={t("docs.statusAll")} />
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Statuses</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                    <SelectItem value="Processing">Processing</SelectItem>
-                    <SelectItem value="Failed">Failed</SelectItem>
+                    <SelectItem value="All">{t("docs.allStatuses")}</SelectItem>
+                    <SelectItem value="Active">{t("docs.statusActive")}</SelectItem>
+                    <SelectItem value="Inactive">{t("docs.statusInactive")}</SelectItem>
+                    <SelectItem value="Processing">{t("docs.statusProcessing")}</SelectItem>
+                    <SelectItem value="Failed">{t("docs.statusFailed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -348,20 +374,39 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
             <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-6">
                 <button className="border-b-2 border-blue-600 pb-3 text-sm font-semibold text-blue-700">
-                  All Documents
+                  {t("docs.allDocs")}
                 </button>
                 <button className="pb-3 text-sm font-medium text-slate-400">
-                  Needs Review
+                  {t("docs.needsReview")}
                 </button>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" className="h-9 rounded-md">
-                  <Filter />
-                  Category
-                </Button>
-                <Button variant="outline" className="h-9 rounded-md">
-                  Sort by: Date
-                </Button>
+                <Select value={String(selectedCategoryId)} onValueChange={(val) => setSelectedCategoryId(val === "All" ? "All" : Number(val))}>
+                  <SelectTrigger className="h-9 rounded-md bg-white w-[140px]">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Filter className="h-4 w-4" />
+                      <SelectValue placeholder={t("docs.category")} />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">{t("docs.allCategories")}</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={(val: any) => setSortBy(val)}>
+                  <SelectTrigger className="h-9 rounded-md bg-white w-[150px]">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <SelectValue placeholder={t("docs.sortBy")} />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">{t("docs.sortNewest")}</SelectItem>
+                    <SelectItem value="oldest">{t("docs.sortOldest")}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
@@ -371,21 +416,21 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs font-semibold text-slate-400">
-                  <th className="px-6 py-4">{isAdmin ? "Document Name" : "Document Details"}</th>
-                  {isAdmin && <th className="px-5 py-4">Size</th>}
-                  <th className="px-5 py-4">Uploaded By</th>
-                  <th className="px-5 py-4">Date Added</th>
-                  <th className="px-5 py-4">{isAdmin ? "AI Status" : "Category"}</th>
-                  {!isAdmin && <th className="px-5 py-4">AI Status</th>}
-                  <th className="px-5 py-4">Active</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{isAdmin ? t("docs.tableDocName") : t("docs.tableDocDetails")}</th>
+                  {isAdmin && <th className="px-5 py-4">{t("docs.tableSize")}</th>}
+                  <th className="px-5 py-4">{t("docs.tableUploadedBy")}</th>
+                  <th className="px-5 py-4">{t("docs.tableDate")}</th>
+                  <th className="px-5 py-4">{isAdmin ? t("docs.tableAiStatus") : t("docs.tableCategory")}</th>
+                  {!isAdmin && <th className="px-5 py-4">{t("docs.tableAiStatus")}</th>}
+                  <th className="px-5 py-4">{t("docs.tableActive")}</th>
+                  <th className="px-6 py-4 text-right">{t("docs.tableActions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDocs.length === 0 ? (
                   <tr>
                     <td colSpan={isAdmin ? 7 : 5} className="py-12 text-center text-slate-400">
-                      <p className="font-semibold">No documents found</p>
+                      <p className="font-semibold">{t("docs.noDocs")}</p>
                     </td>
                   </tr>
                 ) : (
@@ -476,18 +521,9 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                             )}
                             {!isAdmin && (
                               <button
-                                onClick={async () => {
-                                  if (!confirm(`Are you sure you want to delete ${document.name}?`)) return;
-                                  const toastId = toast.loading("Deleting document...");
-                                  try {
-                                    await apiClient.delete(`/api/documents/${document.id}`);
-                                    toast.dismiss(toastId);
-                                    toast.success("Document deleted successfully!");
-                                    fetchDocuments();
-                                  } catch (error: any) {
-                                    toast.dismiss(toastId);
-                                    toast.error(formatBackendError(error));
-                                  }
+                                onClick={() => {
+                                  setDeleteDocId(document.id);
+                                  setDeleteDocName(document.name);
                                 }}
                                 aria-label={`Delete ${document.name}`}
                                 className="transition hover:text-red-600"
@@ -503,14 +539,15 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                 )}
               </tbody>
             </table>
-            {/* Mobile Cards */}
-            <div className="space-y-3 p-3 lg:hidden bg-slate-50/50">
-              {filteredDocs.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">
-                  <p className="font-semibold">No documents found</p>
-                </div>
-              ) : (
-                filteredDocs.map((document: DocAccount) => {
+          </div>
+          {/* Mobile Cards */}
+          <div className="space-y-3 p-3 lg:hidden bg-slate-50/50">
+            {filteredDocs.length === 0 ? (
+              <div className="py-8 text-center text-slate-400">
+                <p className="font-semibold">No documents found</p>
+              </div>
+            ) : (
+              filteredDocs.map((document: DocAccount) => {
                   const Icon = document.icon;
 
                   return (
@@ -600,18 +637,9 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
                           {!isAdmin && (
                             <button
-                              onClick={async () => {
-                                if (!confirm(`Are you sure you want to delete ${document.name}?`)) return;
-                                const toastId = toast.loading("Deleting document...");
-                                try {
-                                  await apiClient.delete(`/api/documents/${document.id}`);
-                                  toast.dismiss(toastId);
-                                  toast.success("Document deleted successfully!");
-                                  fetchDocuments();
-                                } catch (error: any) {
-                                  toast.dismiss(toastId);
-                                  toast.error(formatBackendError(error));
-                                }
+                              onClick={() => {
+                                setDeleteDocId(document.id);
+                                setDeleteDocName(document.name);
                               }}
                               className="rounded-lg p-2 hover:bg-slate-100 text-red-500"
                             >
@@ -625,7 +653,6 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                 })
               )}
             </div>
-          </div>
 
           {isAdmin && (
             <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
@@ -649,6 +676,33 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
         open={viewDocId !== null}
         onOpenChange={(open) => !open && setViewDocId(null)}
       />
+
+      <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && setDeleteDocId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Document</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-semibold text-slate-900">{deleteDocName}</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDocId(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

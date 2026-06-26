@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { type AiReview, type ReviewStatus } from "./review-data";
 import { ReviewCard } from "./review-card";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 // ─── Tab empty states ─────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ function ReviewList({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ReviewAIAnswers() {
+  const { t } = useTranslation();
   const [overrides, setOverrides] = useState<Record<string, ReviewStatus>>({});
   const [flags, setFlags] = useState<AiReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,7 +172,7 @@ export function ReviewAIAnswers() {
         className="mb-6 w-full justify-start border-b border-slate-200 pb-0"
       >
         <TabsTrigger value="needs_review" className="pb-3 text-sm">
-          Needs Review
+          {t("rev.needsReview")}
           {needsReview.length > 0 && (
             <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-bold text-white">
               {needsReview.length}
@@ -179,7 +181,7 @@ export function ReviewAIAnswers() {
         </TabsTrigger>
 
         <TabsTrigger value="approved" className="pb-3 text-sm">
-          Approved
+          {t("rev.approved")}
           {approved.length > 0 && (
             <span className="ml-1.5 text-xs font-medium text-slate-400">
               ({approved.length})
@@ -188,7 +190,7 @@ export function ReviewAIAnswers() {
         </TabsTrigger>
 
         <TabsTrigger value="flagged" className="pb-3 text-sm">
-          Flagged &amp; Edited
+          {t("rev.flagged")}
           {flagged.length > 0 && (
             <span className="ml-1.5 text-xs font-medium text-slate-400">
               ({flagged.length})
@@ -205,8 +207,8 @@ export function ReviewAIAnswers() {
           onFlag={handleFlag}
           onEdit={handleEdit}
           emptyIcon={CheckCircle2}
-          emptyMessage="All caught up!"
-          emptySub="There are no AI answers waiting for your review right now."
+          emptyMessage={t("rev.caughtUp")}
+          emptySub={t("rev.caughtUpDesc")}
         />
       </TabsContent>
 
@@ -218,8 +220,8 @@ export function ReviewAIAnswers() {
           onFlag={handleFlag}
           onEdit={handleEdit}
           emptyIcon={CheckCircle2}
-          emptyMessage="No approved answers yet"
-          emptySub="Answers you approve will appear here."
+          emptyMessage={t("rev.noApproved")}
+          emptySub={t("rev.noApprovedDesc")}
         />
       </TabsContent>
 
@@ -231,8 +233,8 @@ export function ReviewAIAnswers() {
           onFlag={handleFlag}
           onEdit={handleEdit}
           emptyIcon={Flag}
-          emptyMessage="No flagged answers"
-          emptySub="Answers you flag or edit will appear here for tracking."
+          emptyMessage={t("rev.noFlagged")}
+          emptySub={t("rev.noFlaggedDesc")}
         />
       </TabsContent>
 

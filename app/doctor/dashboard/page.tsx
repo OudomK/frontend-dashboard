@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 function formatBackendError(error: any): string {
   const detail = error.response?.data?.detail;
@@ -40,11 +41,13 @@ function formatBackendError(error: any): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
+
   if (status === "Processing") {
     return (
       <Badge className="gap-1 rounded-md bg-amber-400 px-2.5 text-xs font-bold text-slate-950">
         <RotateCw className="h-3 w-3 animate-spin" />
-        Processing
+        {t("dashboard.statusProcessing")}
       </Badge>
     );
   }
@@ -52,14 +55,14 @@ function StatusBadge({ status }: { status: string }) {
   if (status === "Active") {
     return (
       <Badge className="rounded-md bg-emerald-600 px-2.5 text-xs font-bold text-white">
-        Active
+        {t("dashboard.statusActive")}
       </Badge>
     );
   }
 
   return (
     <Badge className="rounded-md bg-slate-100 px-2.5 text-xs font-bold text-slate-700">
-      Deactivated
+      {t("dashboard.statusDeactivated")}
     </Badge>
   );
 }
@@ -130,6 +133,7 @@ function DoctorMetricCard({
 }
 
 export default function DoctorDashboardPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<{
     total_documents: number;
     published_articles: number;
@@ -165,7 +169,7 @@ export default function DoctorDashboardPage() {
 
           return {
             name: doc.title || doc.file_name,
-            category: "Knowledge Base",
+            category: t("doctor.categoryKnowledgeBase"),
             status: statusName,
             icon: FileText,
             iconTone: "text-blue-600",
@@ -177,7 +181,7 @@ export default function DoctorDashboardPage() {
         const mappedFlags = flagsRes.data.slice(0, 3).map((flag: any) => {
           const warning = flag.severity_level === "warning";
           return {
-            title: flag.rule_name || "Emergency Flag Detected",
+            title: flag.rule_name || t("doctor.emergencyFlagTitle"),
             body: flag.message_content || flag.detected_text,
             icon: warning ? FileQuestion : AlertTriangle,
             tone: warning ? "bg-amber-500 text-slate-950" : "bg-red-600 text-white",
@@ -196,30 +200,30 @@ export default function DoctorDashboardPage() {
 
   const metrics = [
     {
-      title: "AI Knowledge Documents",
+      title: t("doctor.metricDocsTitle"),
       value: loading ? "..." : data?.total_documents ?? 0,
-      note: "Total uploaded medical documents",
+      note: t("doctor.metricDocsNote"),
       icon: FileCheck2,
       tone: "positive",
     },
     {
-      title: "Published Articles",
+      title: t("doctor.metricArticlesTitle"),
       value: loading ? "..." : data?.published_articles ?? 0,
-      note: "Active health articles",
+      note: t("doctor.metricArticlesNote"),
       icon: BookMarked,
       tone: "positive",
     },
     {
-      title: "Active Emergency Rules",
+      title: t("doctor.metricRulesTitle"),
       value: loading ? "..." : data?.active_emergency_rules ?? 0,
-      note: "Configured to protect users",
+      note: t("doctor.metricRulesNote"),
       icon: HeartPulse,
       tone: "warning",
     },
     {
-      title: "Pending AI Reviews",
+      title: t("doctor.metricReviewsTitle"),
       value: loading ? "..." : data?.pending_ai_reviews ?? 0,
-      note: "Flags requiring attention",
+      note: t("doctor.metricReviewsNote"),
       icon: ListChecks,
       tone: "neutral",
     },
@@ -228,21 +232,21 @@ export default function DoctorDashboardPage() {
   return (
     <DashboardLayout
       role="doctor"
-      title="Doctor Dashboard"
-      subtitle="Manage your clinic's AI knowledge base, content, and emergency protocols."
+      title={t("doctor.dashboardTitle")}
+      subtitle={t("doctor.dashboardSubtitle")}
       actions={
         <>
           <Button variant="secondary" className="h-9 rounded-md bg-slate-100 px-4 text-slate-900" asChild>
             <Link href="/doctor/articles">
               <PenLine className="mr-2 h-4 w-4" />
-              Write Article
+              {t("doctor.writeArticleBtn")}
             </Link>
           </Button>
 
           <Button className="h-9 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700" asChild>
             <Link href="/doctor/documents">
               <UploadCloud className="mr-2 h-4 w-4" />
-              Manage Documents
+              {t("doctor.manageDocsBtn")}
             </Link>
           </Button>
         </>
@@ -259,10 +263,10 @@ export default function DoctorDashboardPage() {
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <h2 className="font-bold text-slate-950">
-                Recent Knowledge Uploads
+                {t("doctor.recentUploadsTitle")}
               </h2>
               <Button variant="link" className="h-auto px-0 font-semibold text-blue-600" asChild>
-                <Link href="/doctor/documents">View All</Link>
+                <Link href="/doctor/documents">{t("doctor.viewAllBtn")}</Link>
               </Button>
             </div>
 
@@ -271,17 +275,17 @@ export default function DoctorDashboardPage() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50">
                   <tr className="border-b border-slate-200 text-xs font-medium text-slate-400">
-                    <th className="px-5 py-3">Document Name</th>
-                    <th className="px-5 py-3">Category</th>
-                    <th className="px-5 py-3">AI Status</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
+                    <th className="px-5 py-3">{t("doctor.tableColName")}</th>
+                    <th className="px-5 py-3">{t("doctor.tableColCategory")}</th>
+                    <th className="px-5 py-3">{t("doctor.tableColStatus")}</th>
+                    <th className="px-5 py-3 text-right">{t("doctor.tableColActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {uploads.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="py-12 text-center text-slate-400">
-                        <p className="font-semibold">No uploads found</p>
+                        <p className="font-semibold">{t("doctor.noUploads")}</p>
                       </td>
                     </tr>
                   ) : (
@@ -320,7 +324,7 @@ export default function DoctorDashboardPage() {
             <div className="space-y-3 p-4 lg:hidden">
               {uploads.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">
-                  <p className="text-sm font-semibold">No uploads found</p>
+                  <p className="text-sm font-semibold">{t("doctor.noUploads")}</p>
                 </div>
               ) : (
                 uploads.map((upload, idx) => {
@@ -366,14 +370,14 @@ export default function DoctorDashboardPage() {
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm h-fit">
             <div className="border-b border-slate-200 px-5 py-4">
               <h2 className="font-bold text-slate-950">
-                Action Needed
+                {t("doctor.actionNeededTitle")}
               </h2>
             </div>
 
             <div className="divide-y divide-slate-100">
               {tasks.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">
-                  <p className="text-sm font-semibold">No pending actions</p>
+                  <p className="text-sm font-semibold">{t("doctor.noPendingActions")}</p>
                 </div>
               ) : (
                 tasks.map((task, idx) => {
@@ -401,7 +405,7 @@ export default function DoctorDashboardPage() {
 
             <div className="border-t border-slate-200 px-5 py-4 text-center">
               <Button variant="link" className="h-auto px-0 font-semibold text-blue-600" asChild>
-                <Link href="/doctor/reviews">View Pending Reviews</Link>
+                <Link href="/doctor/reviews">{t("doctor.viewPendingReviewsBtn")}</Link>
               </Button>
             </div>
           </section>

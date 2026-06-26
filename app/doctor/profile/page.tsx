@@ -26,6 +26,7 @@ import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import { toast } from "sonner";
 import { useRef } from "react";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import {
   Dialog,
   DialogContent,
@@ -386,6 +387,7 @@ function ChangePasswordModal({ open, onOpenChange }: { open: boolean; onOpenChan
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DoctorProfilePage() {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [firstName,     setFirstName]    = useState("");
@@ -504,8 +506,8 @@ export default function DoctorProfilePage() {
   return (
     <DashboardLayout
       role="doctor"
-      title="Doctor Profile"
-      subtitle="Manage your personal information, clinic contact details, and account security."
+      title={t("profile.title")}
+      subtitle={t("profile.subtitle")}
       actions={
         <Button
           onClick={handleSave}

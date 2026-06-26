@@ -6,9 +6,10 @@ import { LoginForm } from "./login-form";
 
 type Props = {
   variant: AuthVariant;
+  children?: React.ReactNode;
 };
 
-export function AuthShell({ variant }: Props) {
+export function AuthShell({ variant, children }: Props) {
   const content = authContent[variant];
 
   return (
@@ -21,7 +22,7 @@ export function AuthShell({ variant }: Props) {
             ${variant === "doctor" ? "order-1" : "order-2"}
           `}
         >
-          <LoginForm variant={variant} />
+          {children ? children : <LoginForm variant={variant} />}
         </div>
 
         {/* HERO SECTION */}

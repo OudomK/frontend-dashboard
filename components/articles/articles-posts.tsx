@@ -35,6 +35,7 @@ import { toast } from "sonner";
 
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,6 +141,7 @@ function StatusBadge({ status }: { status: "PUBLISHED" | "DRAFT" }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function ArticlesPosts({ role }: { role: string }) {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -148,8 +150,8 @@ export function ArticlesPosts({ role }: { role: string }) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Topics");
-  const [selectedStatus, setSelectedStatus] = useState("Any");
+  const [selectedCategory, setSelectedCategory] = useState(t("art.allTopics"));
+  const [selectedStatus, setSelectedStatus] = useState(t("art.anyStatus"));
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -359,14 +361,14 @@ export function ArticlesPosts({ role }: { role: string }) {
     const q = searchQuery.toLowerCase();
     return articles.filter((a) => {
       const matchSearch = !q || a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q);
-      const matchCat = selectedCategory === "All Topics" || a.category === selectedCategory;
+      const matchCat = selectedCategory === t("art.allTopics") || a.category === selectedCategory;
       const matchStatus =
-        selectedStatus === "Any" ||
+        selectedStatus === t("art.anyStatus") ||
         (selectedStatus === "Published" && a.status === "PUBLISHED") ||
         (selectedStatus === "Draft" && a.status === "DRAFT");
       return matchSearch && matchCat && matchStatus;
     });
-  }, [articles, searchQuery, selectedCategory, selectedStatus]);
+  }, [articles, searchQuery, selectedCategory, selectedStatus, t]);
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, selectedCategory, selectedStatus]);
 
@@ -389,15 +391,15 @@ export function ArticlesPosts({ role }: { role: string }) {
   return (
     <DashboardLayout
       role={role as any}
-      title="Health Articles"
-      subtitle="Create and manage educational health content published to the patient app."
+      title={t("art.title")}
+      subtitle={t("art.subtitle")}
       actions={
         <Button
           onClick={() => { resetForm(); setOpenCreateDialog(true); }}
           className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition-all"
         >
           <Plus className="h-4 w-4" />
-          New Article
+          {t("art.newArticle")}
         </Button>
       }
     >
@@ -406,9 +408,9 @@ export function ArticlesPosts({ role }: { role: string }) {
         {/* ── Stats Row ── */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total Articles", value: articles.length, icon: FileText, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Published", value: publishedCount, icon: Globe, color: "text-emerald-600", bg: "bg-emerald-50" },
-            { label: "Drafts", value: draftCount, icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
+            { label: t("art.totalArticles"), value: articles.length, icon: FileText, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: t("art.published"), value: publishedCount, icon: Globe, color: "text-emerald-600", bg: "bg-emerald-50" },
+            { label: t("art.drafts"), value: draftCount, icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50" },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="rounded-2xl border border-slate-100 bg-white px-4 py-3.5 shadow-sm flex items-center gap-3">
               <div className={`${bg} ${color} p-2.5 rounded-xl`}>
@@ -431,7 +433,7 @@ export function ArticlesPosts({ role }: { role: string }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title or keyword…"
+              placeholder={t("art.searchPlaceholder")}
               className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-9 text-sm outline-none transition-shadow placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 shadow-sm"
             />
             {searchQuery && (
@@ -446,10 +448,10 @@ export function ArticlesPosts({ role }: { role: string }) {
             <div className="w-[180px]">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="h-10 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-100">
-                  <SelectValue placeholder="All Topics" />
+                  <SelectValue placeholder={t("art.allTopics")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All Topics">All Topics</SelectItem>
+                  <SelectItem value={t("art.allTopics")}>{t("art.allTopics")}</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                   ))}
@@ -460,12 +462,12 @@ export function ArticlesPosts({ role }: { role: string }) {
             <div className="w-[150px]">
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className="h-10 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-100">
-                  <SelectValue placeholder="Any Status" />
+                  <SelectValue placeholder={t("art.anyStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Any">Any Status</SelectItem>
-                  <SelectItem value="Published">Published</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value={t("art.anyStatus")}>{t("art.anyStatus")}</SelectItem>
+                  <SelectItem value="Published">{t("art.published")}</SelectItem>
+                  <SelectItem value="Draft">{t("art.draft")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -475,14 +477,14 @@ export function ArticlesPosts({ role }: { role: string }) {
               <button
                 onClick={() => setViewMode("table")}
                 className={`p-2.5 transition-colors ${viewMode === "table" ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
-                title="Table view"
+                title={t("art.tableView")}
               >
                 <List className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode("grid")}
                 className={`p-2.5 transition-colors ${viewMode === "grid" ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
-                title="Grid view"
+                title={t("art.gridView")}
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
@@ -494,22 +496,22 @@ export function ArticlesPosts({ role }: { role: string }) {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <Loader2 className="h-9 w-9 text-blue-500 animate-spin mb-3" />
-            <p className="text-sm font-semibold text-slate-500">Loading articles…</p>
+            <p className="text-sm font-semibold text-slate-500">{t("art.loading")}</p>
           </div>
         ) : paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white text-center">
             <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50/80 shadow-inner">
               <Newspaper className="h-10 w-10 text-blue-500/60" />
             </div>
-            <h3 className="mb-2 text-lg font-bold text-slate-800">No articles found</h3>
+            <h3 className="mb-2 text-lg font-bold text-slate-800">{t("art.noArticles")}</h3>
             <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
-              You haven't published any articles matching this criteria. Start writing to educate your patients!
+              {t("art.noArticlesDesc")}
             </p>
             <Button
               onClick={() => { resetForm(); setOpenCreateDialog(true); }}
               className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
             >
-              <Plus className="h-4 w-4" /> Create First Article
+              <Plus className="h-4 w-4" /> {t("art.createFirstArticle")}
             </Button>
           </div>
         ) : viewMode === "grid" ? (
@@ -535,7 +537,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                     {article.is_featured && (
                       <div className="absolute top-3 right-3">
                         <span className="inline-flex items-center gap-0.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold text-yellow-900">
-                          <Star className="h-2.5 w-2.5 fill-yellow-900" /> Featured
+                          <Star className="h-2.5 w-2.5 fill-yellow-900" /> {t("art.featured")}
                         </span>
                       </div>
                     )}
@@ -566,13 +568,13 @@ export function ArticlesPosts({ role }: { role: string }) {
                         onClick={() => handlePreviewClick(article)}
                         className="flex-1 flex items-center justify-center gap-1 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 text-xs font-semibold transition-colors"
                       >
-                        <Eye className="h-3.5 w-3.5" /> Preview
+                        <Eye className="h-3.5 w-3.5" /> {t("art.preview")}
                       </button>
                       <button
                         onClick={() => handleEditClick(article)}
                         className="flex-1 flex items-center justify-center gap-1 h-8 rounded-lg border border-blue-100 text-blue-600 hover:bg-blue-50 text-xs font-semibold transition-colors"
                       >
-                        <Pencil className="h-3.5 w-3.5" /> Edit
+                        <Pencil className="h-3.5 w-3.5" /> {t("art.edit")}
                       </button>
                       <button
                         onClick={() => setArticleToDelete(article.id)}
@@ -594,7 +596,7 @@ export function ArticlesPosts({ role }: { role: string }) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/70 border-b border-slate-100">
-                    {["Article", "Category", "Author", "Status", "Date", "Actions"].map((h, i) => (
+                    {[t("art.tableArticle"), t("art.tableCategory"), t("art.tableAuthor"), t("art.tableStatus"), t("art.tableDate"), t("art.tableActions")].map((h, i) => (
                       <th key={h} className={`px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 ${i === 5 ? "text-right" : ""}`}>{h}</th>
                     ))}
                   </tr>
@@ -620,7 +622,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                                   <Star className="h-3 w-3 shrink-0 fill-yellow-400 text-yellow-400" />
                                 )}
                               </div>
-                              <p className="text-[11px] text-slate-400 truncate leading-snug">{article.excerpt || "No excerpt"}</p>
+                              <p className="text-[11px] text-slate-400 truncate leading-snug">{article.excerpt || t("art.noExcerpt")}</p>
                               <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-300">
                                 <Clock className="h-2.5 w-2.5" />
                                 <span>{article.readTime}</span>
@@ -747,7 +749,7 @@ export function ArticlesPosts({ role }: { role: string }) {
             {/* Pagination */}
             <div className="border-t border-slate-100 px-5 py-4 flex items-center justify-between bg-white">
               <p className="text-sm text-slate-400 font-medium">
-                {filteredArticles.length === 0 ? "No results" : `${(currentPage - 1) * itemsPerPage + 1}–${Math.min(currentPage * itemsPerPage, filteredArticles.length)} of ${filteredArticles.length}`}
+                {filteredArticles.length === 0 ? t("art.noResults") : `${(currentPage - 1) * itemsPerPage + 1}–${Math.min(currentPage * itemsPerPage, filteredArticles.length)} ${t("art.of")} ${filteredArticles.length}`}
               </p>
               <div className="flex items-center gap-1">
                 <button
@@ -1027,7 +1029,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                     <StatusBadge status={selectedArticle.status} />
                     {selectedArticle.is_featured && (
                       <span className="inline-flex items-center gap-0.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold text-yellow-900">
-                        <Star className="h-2.5 w-2.5 fill-yellow-900" /> Featured
+                        <Star className="h-2.5 w-2.5 fill-yellow-900" /> {t("art.featured")}
                       </span>
                     )}
                   </div>
@@ -1068,7 +1070,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                       </div>
                       <div className="flex items-center gap-1 justify-end">
                         <Clock className="h-3 w-3" />
-                        {selectedArticle.readTime} read
+                        {selectedArticle.readTime} {t("art.read")}
                       </div>
                     </div>
                   </div>
@@ -1094,7 +1096,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                       className="flex items-center gap-2 h-9 rounded-xl border border-blue-100 bg-blue-50 px-4 text-sm font-semibold text-blue-600 hover:bg-blue-100 transition-colors"
                     >
                       <Pencil className="h-3.5 w-3.5" />
-                      Edit Article
+                      {t("art.edit")}
                     </button>
                     <Button
                       onClick={() => setOpenPreviewDialog(false)}

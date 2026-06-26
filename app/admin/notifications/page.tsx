@@ -6,8 +6,10 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 export default function AdminNotificationsPage() {
+  const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [targetAudience, setTargetAudience] = useState<"all" | "patients" | "doctors">("all");
@@ -15,11 +17,11 @@ export default function AdminNotificationsPage() {
 
   const handleSendBroadcast = async () => {
     if (!title.trim() || !body.trim()) {
-      toast.error("Please fill in both title and body of the notification.");
+      toast.error(t("notif.fillBoth"));
       return;
     }
 
-    const toastId = toast.loading("Sending broadcast...");
+    const toastId = toast.loading(t("notif.sending"));
     setIsSending(true);
 
     try {
@@ -33,11 +35,11 @@ export default function AdminNotificationsPage() {
         target_role_id: roleId,
       });
 
-      toast.success("Broadcast sent successfully!", { id: toastId });
+      toast.success(t("notif.success"), { id: toastId });
       setTitle("");
       setBody("");
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Failed to send broadcast.", { id: toastId });
+      toast.error(error.response?.data?.detail || t("notif.failed"), { id: toastId });
     } finally {
       setIsSending(false);
     }
@@ -49,10 +51,10 @@ export default function AdminNotificationsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between select-none">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-3xl">
-              Push Notifications
+              {t("notif.title")}
             </h1>
             <p className="text-sm text-slate-500 lg:text-base">
-              Send announcements and alerts to users in the mobile and web application.
+              {t("notif.subtitle")}
             </p>
           </div>
         </div>
@@ -65,36 +67,36 @@ export default function AdminNotificationsPage() {
                   <Megaphone className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Compose Broadcast</h2>
-                  <p className="text-xs text-slate-500 font-medium">Create a new push notification</p>
+                  <h2 className="text-base font-bold text-slate-900">{t("notif.compose")}</h2>
+                  <p className="text-xs text-slate-500 font-medium">{t("notif.composeDesc")}</p>
                 </div>
               </div>
 
               <div className="space-y-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700">Notification Title</label>
+                  <label className="text-sm font-bold text-slate-700">{t("notif.notifTitle")}</label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. System Maintenance Notice"
+                    placeholder={t("notif.notifTitlePlaceholder")}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700">Notification Body</label>
+                  <label className="text-sm font-bold text-slate-700">{t("notif.notifBody")}</label>
                   <textarea
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
-                    placeholder="Write your message here..."
+                    placeholder={t("notif.notifBodyPlaceholder")}
                     rows={5}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 resize-none"
                   />
                 </div>
 
                 <div className="space-y-2.5 pt-2">
-                  <label className="text-sm font-bold text-slate-700">Target Audience</label>
+                  <label className="text-sm font-bold text-slate-700">{t("notif.target")}</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       onClick={() => setTargetAudience("all")}
@@ -108,8 +110,8 @@ export default function AdminNotificationsPage() {
                         <Users className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className={`text-sm font-bold ${targetAudience === "all" ? "text-blue-900" : "text-slate-700"}`}>Everyone</div>
-                        <div className="text-xs font-medium text-slate-500">All users & doctors</div>
+                        <div className={`text-sm font-bold ${targetAudience === "all" ? "text-blue-900" : "text-slate-700"}`}>{t("notif.everyone")}</div>
+                        <div className="text-xs font-medium text-slate-500">{t("notif.everyoneDesc")}</div>
                       </div>
                     </button>
 
@@ -125,8 +127,8 @@ export default function AdminNotificationsPage() {
                         <UserRound className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className={`text-sm font-bold ${targetAudience === "patients" ? "text-purple-900" : "text-slate-700"}`}>Patients</div>
-                        <div className="text-xs font-medium text-slate-500">Only standard users</div>
+                        <div className={`text-sm font-bold ${targetAudience === "patients" ? "text-purple-900" : "text-slate-700"}`}>{t("notif.patients")}</div>
+                        <div className="text-xs font-medium text-slate-500">{t("notif.patientsDesc")}</div>
                       </div>
                     </button>
 
@@ -142,8 +144,8 @@ export default function AdminNotificationsPage() {
                         <Stethoscope className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className={`text-sm font-bold ${targetAudience === "doctors" ? "text-teal-900" : "text-slate-700"}`}>Doctors</div>
-                        <div className="text-xs font-medium text-slate-500">Only medical staff</div>
+                        <div className={`text-sm font-bold ${targetAudience === "doctors" ? "text-teal-900" : "text-slate-700"}`}>{t("notif.doctors")}</div>
+                        <div className="text-xs font-medium text-slate-500">{t("notif.doctorsDesc")}</div>
                       </div>
                     </button>
                   </div>
@@ -156,7 +158,7 @@ export default function AdminNotificationsPage() {
                     className="w-full sm:w-auto h-11 px-8 rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700 transition-all"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    Send Broadcast Now
+                    {t("notif.sendNow")}
                   </Button>
                 </div>
               </div>
@@ -166,7 +168,7 @@ export default function AdminNotificationsPage() {
           {/* Preview Card */}
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">Device Preview</h3>
+              <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">{t("notif.preview")}</h3>
               <div className="relative mx-auto w-[260px] rounded-[32px] border-[6px] border-slate-800 bg-white shadow-xl overflow-hidden h-[450px]">
                 {/* Status Bar Fake */}
                 <div className="h-6 w-full bg-white flex justify-between items-center px-4 pt-1">
@@ -186,13 +188,13 @@ export default function AdminNotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-0.5">
                         <span className="text-[11px] font-bold text-slate-900">Bellyn Clinic</span>
-                        <span className="text-[10px] font-medium text-slate-500">now</span>
+                        <span className="text-[10px] font-medium text-slate-500">{t("notif.now")}</span>
                       </div>
                       <div className="text-xs font-bold text-slate-900 truncate">
-                        {title || "Notification Title"}
+                        {title || t("notif.previewTitle")}
                       </div>
                       <div className="text-xs font-medium text-slate-600 leading-snug line-clamp-2 mt-0.5">
-                        {body || "This is a preview of how your message will appear on a user's mobile device."}
+                        {body || t("notif.previewBody")}
                       </div>
                     </div>
                   </div>
