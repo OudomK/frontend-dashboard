@@ -30,4 +30,5 @@ export default function DoctorFaqPage() {
       <FAQManagement role="doctor" addOpen={dialogOpen} onAddOpenChange={setDialogOpen} />
     </DashboardLayout>
   );
+  
 }
