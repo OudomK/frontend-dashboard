@@ -25,7 +25,8 @@ export const navKeyMap: Record<string, TranslationKey> = {
   "About Us": "nav.about",
   "System Settings": "nav.settings",
 
-  // doctorMenu
+  // doctorMenu & adminMenu additions
+  "Appointments": "nav.appointments",
   "Knowledge Base": "nav.documents",
   "Review AI Answers": "nav.chatLogs",
   "Articles & Posts": "nav.articles",
@@ -93,10 +94,10 @@ export function Sidebar({ role, isMobile = false }: Props) {
   const LogoIcon = role === "admin" ? Stethoscope : HeartPulse;
 
   // The premium dark background for the sidebar
-  const sidebarBg = "bg-[#090E1A]";
+  const sidebarBg = "bg-white border-r border-slate-100";
   
   return (
-    <aside className={`${isMobile ? 'flex w-full min-h-[calc(100vh-120px)]' : 'hidden w-[280px] lg:flex sticky top-0 h-screen'} ${sidebarBg} flex-col shadow-[4px_0_24px_rgba(0,0,0,0.05)] z-20 transition-all`}>
+    <aside className={`${isMobile ? 'flex w-full min-h-[calc(100vh-120px)]' : 'hidden w-[280px] lg:flex sticky top-0 h-screen'} ${sidebarBg} flex-col z-20 transition-all`}>
       {/* Logo Area */}
       <div className="px-6 py-8">
         <div className="flex items-center gap-4">
@@ -105,10 +106,10 @@ export function Sidebar({ role, isMobile = false }: Props) {
           </div>
 
           <div className="flex flex-col min-w-0">
-            <h1 className="text-[20px] font-extrabold tracking-tight text-white leading-tight truncate">
+            <h1 className="text-[20px] font-extrabold tracking-tight text-slate-900 leading-tight truncate font-poppins">
               {role === "admin" ? "WomenHealth" : "Aura Clinic"}
             </h1>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 ${role === "admin" ? "text-blue-400" : "text-emerald-400"}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 font-poppins ${role === "admin" ? "text-[#0ea5e9]" : "text-emerald-600"}`}>
               {role === "admin" ? "Admin Panel" : "Doctor Portal"}
             </span>
           </div>
@@ -120,7 +121,7 @@ export function Sidebar({ role, isMobile = false }: Props) {
         <div className="space-y-8">
           {groups.map((group) => (
             <div key={group.label}>
-              <p className="mb-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500/80">
+              <p className="mb-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500/80 font-poppins">
                 {group.label}
               </p>
 
@@ -137,34 +138,24 @@ export function Sidebar({ role, isMobile = false }: Props) {
                         relative group flex items-center gap-3 py-3 pl-4 transition-all duration-300
                         ${
                           isActive
-                            ? "bg-slate-50 text-slate-900 rounded-l-[24px]"
-                            : "text-slate-400 hover:text-slate-200 rounded-xl mr-4 hover:bg-white/5"
+                            ? role === "admin" 
+                              ? "bg-[#0ea5e9] text-white rounded-r-[24px] mr-4 shadow-md shadow-sky-500/20"
+                              : "bg-emerald-500 text-white rounded-r-[24px] mr-4 shadow-md shadow-emerald-500/20"
+                            : "text-slate-500 hover:text-slate-900 rounded-r-[24px] mr-4 hover:bg-slate-50"
                         }
                       `}
                     >
-                      {isActive && (
-                        <>
-                          <div className="absolute right-0 -top-6 w-6 h-6 bg-slate-50 pointer-events-none">
-                            <div className={`w-full h-full ${sidebarBg} rounded-br-[24px]`} />
-                          </div>
-                          <div className="absolute right-0 -bottom-6 w-6 h-6 bg-slate-50 pointer-events-none">
-                            <div className={`w-full h-full ${sidebarBg} rounded-tr-[24px]`} />
-                          </div>
-                        </>
-                      )}
                       
                       <div className={`
                         flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] transition-all duration-300
                         ${isActive 
-                          ? role === "admin"
-                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-[0_4px_12px_rgba(59,130,246,0.5)]" 
-                            : "bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.4)]"
-                          : "text-slate-400 group-hover:text-white"
+                          ? "text-white"
+                          : "text-slate-400 group-hover:text-slate-600"
                         }
                       `}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className={`text-[14px] truncate ${isActive ? "font-bold" : "font-medium"}`}>{t(navKeyMap[item.label] || "nav.dashboard")}</span>
+                      <span className={`text-[14px] truncate font-kantumruy-pro ${isActive ? "font-bold" : "font-medium"}`}>{t(navKeyMap[item.label] || "nav.dashboard")}</span>
                     </Link>
                   );
                 })}
@@ -176,53 +167,43 @@ export function Sidebar({ role, isMobile = false }: Props) {
 
       {/* Footer Area */}
       {role === "admin" ? (
-        <div className="py-4 pl-4 pr-0 mt-2 space-y-1.5 border-t border-white/5">
+        <div className="py-4 pl-4 pr-0 mt-2 space-y-1.5 border-t border-slate-100">
           <Link
             href={adminSettingsItem.href}
             className={`
               relative group flex items-center gap-3 py-3 pl-4 transition-all duration-300
               ${
                 pathname === adminSettingsItem.href
-                  ? "bg-slate-50 text-slate-900 rounded-l-[24px]"
-                  : "text-slate-400 hover:text-slate-200 rounded-xl mr-4 hover:bg-white/5"
+                  ? "bg-[#0ea5e9] text-white rounded-r-[24px] mr-4 shadow-md shadow-sky-500/20"
+                  : "text-slate-500 hover:text-slate-900 rounded-r-[24px] mr-4 hover:bg-slate-50"
               }
             `}
           >
-            {pathname === adminSettingsItem.href && (
-              <>
-                <div className="absolute right-0 -top-6 w-6 h-6 bg-slate-50 pointer-events-none">
-                  <div className={`w-full h-full ${sidebarBg} rounded-br-[24px]`} />
-                </div>
-                <div className="absolute right-0 -bottom-6 w-6 h-6 bg-slate-50 pointer-events-none">
-                  <div className={`w-full h-full ${sidebarBg} rounded-tr-[24px]`} />
-                </div>
-              </>
-            )}
             <div className={`
               flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] transition-all duration-300
               ${pathname === adminSettingsItem.href 
-                ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-[0_4px_12px_rgba(59,130,246,0.5)]" 
-                : "text-slate-400 group-hover:text-white"}
+                ? "text-white" 
+                : "text-slate-400 group-hover:text-slate-600"}
             `}>
               <Settings className="h-5 w-5" />
             </div>
-            <span className={`text-[14px] truncate ${pathname === adminSettingsItem.href ? "font-bold" : "font-medium"}`}>{t(navKeyMap[adminSettingsItem.label] || "nav.settings")}</span>
+            <span className={`text-[14px] truncate font-kantumruy-pro ${pathname === adminSettingsItem.href ? "font-bold" : "font-medium"}`}>{t(navKeyMap[adminSettingsItem.label] || "nav.settings")}</span>
           </Link>
           
           <button
             onClick={() => logout()}
-            className="group flex w-full items-center gap-3 py-3 pl-4 rounded-xl mr-4 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
+            className="group flex w-full items-center gap-3 py-3 pl-4 rounded-xl mr-4 text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all duration-300"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-slate-400 group-hover:text-red-400 transition-colors">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-slate-400 group-hover:text-red-500 transition-colors">
               <LogOut className="h-5 w-5" />
             </div>
-            <span className="text-[14px] font-medium">{t("nav.logout")}</span>
+            <span className="text-[14px] font-medium font-kantumruy-pro">{t("nav.logout")}</span>
           </button>
         </div>
       ) : (
-        <div className="p-5 mt-2 border-t border-white/5 bg-gradient-to-b from-transparent to-black/20">
-          <div className="flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-white/5 group cursor-pointer border border-transparent hover:border-white/10">
-            <div className="h-11 w-11 shrink-0 rounded-full bg-slate-800 overflow-hidden ring-2 ring-emerald-500/30 group-hover:ring-emerald-500/60 transition-all">
+        <div className="p-5 mt-2 border-t border-slate-100">
+          <div className="flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-slate-50 group cursor-pointer border border-transparent hover:border-slate-100">
+            <div className="h-11 w-11 shrink-0 rounded-full bg-slate-100 overflow-hidden ring-2 ring-emerald-500/30 group-hover:ring-emerald-500/60 transition-all">
               <img
                 src={sessionUser?.avatarUrl || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100"}
                 alt={doctorName}
@@ -231,17 +212,17 @@ export function Sidebar({ role, isMobile = false }: Props) {
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate font-bold text-white text-[14px]">
+              <p className="truncate font-bold text-slate-900 text-[14px] font-poppins">
                 {doctorName}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 tracking-wider uppercase mt-0.5 truncate">
+              <p className="text-[11px] font-semibold text-emerald-600 tracking-wider uppercase mt-0.5 truncate font-poppins">
                 Clinic Owner
               </p>
             </div>
 
             <Link
               href="/doctor/profile"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-emerald-500/20 hover:text-emerald-400 transition-all"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all"
             >
               <Settings className="h-4 w-4" />
             </Link>
@@ -249,10 +230,10 @@ export function Sidebar({ role, isMobile = false }: Props) {
 
           <button
             onClick={() => logout()}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-[13px] font-bold tracking-wide text-slate-300 shadow-sm transition-all duration-300 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold tracking-wide text-slate-600 shadow-sm transition-all duration-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           >
             <LogOut className="h-4 w-4" />
-            <span>{t("nav.logout")}</span>
+            <span className="font-kantumruy-pro">{t("nav.logout")}</span>
           </button>
         </div>
       )}

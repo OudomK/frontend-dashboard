@@ -13,7 +13,8 @@ import {
   Megaphone,
   AlertTriangle as AlertTriangleIcon,
   Activity,
-  Info
+  Info,
+  Calendar
 } from "lucide-react";
 
 export const doctorMenu = [
@@ -67,6 +68,11 @@ export const adminMenu = [
     href: "/admin/dashboard",
   },
 
+  {
+    label: "Appointments",
+    icon: Calendar,
+    href: "/admin/appointments",
+  },
   {
     label: "System Audit Logs",
     icon: Activity,

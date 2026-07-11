@@ -33,9 +33,8 @@ export type Faq = {
   id: number;
   category_id: number | null;
   created_by?: number | null;
-  question: string;
-  answer: string;
-  language: string;
+  question: { en: string; km: string };
+  answer: { en: string; km: string };
   display_order: number;
   is_active: boolean;
   created_at: string;
@@ -84,7 +83,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -160,10 +159,12 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
         categoryName: faq.category_id ? catMap.get(faq.category_id) ?? t("faqs.uncategorized") : t("faqs.uncategorized")
       }))
       .filter((faq) => {
+        const qStr = ((faq.question?.km || "") + " " + (faq.question?.en || "")).toLowerCase();
+        const aStr = ((faq.answer?.km || "") + " " + (faq.answer?.en || "")).toLowerCase();
         const matchesSearch =
           search === "" ||
-          faq.question.toLowerCase().includes(search.toLowerCase()) ||
-          faq.answer.toLowerCase().includes(search.toLowerCase());
+          qStr.includes(search.toLowerCase()) ||
+          aStr.includes(search.toLowerCase());
 
         const matchesCategory =
           categoryFilter === "all" || faq.category_id?.toString() === categoryFilter;
@@ -171,6 +172,23 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
         return matchesSearch && matchesCategory;
       });
   }, [faqs, categories, search, categoryFilter]);
+
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [search, categoryFilter, faqs]);
+
+  const paginatedFaqs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(startIndex, startIndex + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const startRange = filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endRange = Math.min(currentPage * itemsPerPage, filtered.length);
 
   return (
     <>
@@ -278,17 +296,17 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((faq) => (
+                  paginatedFaqs.map((faq) => (
                     <tr
                       key={faq.id}
                       className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors"
                     >
                       <td className="px-6 py-5 max-w-md">
                         <p className="font-semibold text-slate-900 leading-snug">
-                          {faq.question}
+                          {faq.question?.[language as 'en'|'km'] || faq.question?.km || faq.question?.en}
                         </p>
                         <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                          {faq.answer}
+                          {faq.answer?.[language as 'en'|'km'] || faq.answer?.km || faq.answer?.en}
                         </p>
                       </td>
 
@@ -346,16 +364,16 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                 <p className="text-sm font-medium text-slate-600">{t("faqs.noFaqs")}</p>
               </div>
             ) : (
-              filtered.map((faq) => (
+              paginatedFaqs.map((faq) => (
                 <div key={faq.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <CategoryPill category={faq.categoryName} />
                       <p className="mt-2 font-semibold leading-snug text-slate-900">
-                        {faq.question}
+                        {faq.question?.[language as 'en'|'km'] || faq.question?.km || faq.question?.en}
                       </p>
                       <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                        {faq.answer}
+                        {faq.answer?.[language as 'en'|'km'] || faq.answer?.km || faq.answer?.en}
                       </p>
                       <div className="mt-3">
                         <div className="flex items-center gap-2">
@@ -389,6 +407,32 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
               ))
             )}
           </div>
+          
+          {/* Pagination Footer */}
+          {filtered.length > 0 && (
+            <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white select-none">
+              <span className="text-sm text-slate-500 font-medium">
+                {t("pagination.showing" as any)} {startRange} {t("pagination.to" as any)} {endRange} {t("pagination.of" as any)} {filtered.length} {t("pagination.results" as any)}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+                >
+                  {t("pagination.previous" as any)}
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+                >
+                  {t("pagination.next" as any)}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -94,7 +94,7 @@ export function DashboardLayout({
                 <div className="mb-4 flex flex-col gap-3 lg:mb-8 lg:flex-row lg:items-end lg:justify-between">
                   <div className="space-y-1.5">
                     {title && (
-                      <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 lg:text-[28px] font-sans">
+                      <h1 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-[28px] font-heading">
                         {title}
                       </h1>
                     )}

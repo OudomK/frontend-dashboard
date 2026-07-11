@@ -12,11 +12,13 @@ import {
   Pencil,
   Plus,
   Search,
+  Sparkles,
   Tag,
   Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,9 +42,9 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 
 interface Category {
   id: number;
-  name: string;
+  name: Record<"km" | "en", string>;
   slug: string;
-  description: string;
+  description: Record<"km" | "en", string>;
   icon_url: string;
   is_active: boolean;
   display_order: number;
@@ -199,11 +201,33 @@ export function CategoryManagement({ role }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   // Form fields
-  const [formName, setFormName] = useState("");
-  const [formDescription, setFormDescription] = useState("");
+  const [formName, setFormName] = useState<Record<"km" | "en", string>>({ km: "", en: "" });
+  const [formDescription, setFormDescription] = useState<Record<"km" | "en", string>>({ km: "", en: "" });
   const [formIconKey, setFormIconKey] = useState<IconKey>("general");
   const [formStatus, setFormStatus] = useState<"ACTIVE" | "DRAFT">("ACTIVE");
   const [formOrder, setFormOrder] = useState("0");
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const handleTranslate = async () => {
+    setIsTranslating(true);
+    const toastId = toast.loading("Translating category info...");
+    try {
+      const res = await apiClient.post("/api/v1/categories/translate", {
+        data: {
+          name: formName.km,
+          description: formDescription.km,
+        }
+      });
+      const translated = res.data;
+      setFormName((prev) => ({ ...prev, en: translated.name || prev.en }));
+      setFormDescription((prev) => ({ ...prev, en: translated.description || prev.en }));
+      toast.success("Translated successfully!", { id: toastId });
+    } catch (err) {
+      toast.error("Translation failed.", { id: toastId });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -227,9 +251,9 @@ export function CategoryManagement({ role }: Props) {
 
       const mapped: Category[] = (catRes.data || []).map((c: any) => ({
         id: c.id,
-        name: c.name,
+        name: c.name || { km: "", en: "" },
         slug: c.slug,
-        description: c.description || "",
+        description: c.description || { km: "", en: "" },
         icon_url: c.icon_url || "general",
         is_active: c.is_active,
         display_order: c.display_order ?? 0,
@@ -252,8 +276,8 @@ export function CategoryManagement({ role }: Props) {
   // ── Form Reset ─────────────────────────────────────────────────────────────
 
   const resetForm = () => {
-    setFormName("");
-    setFormDescription("");
+    setFormName({ km: "", en: "" });
+    setFormDescription({ km: "", en: "" });
     setFormIconKey("general");
     setFormStatus("ACTIVE");
     setFormOrder("0");
@@ -265,8 +289,8 @@ export function CategoryManagement({ role }: Props) {
 
   const openEdit = (cat: Category) => {
     setSelectedCategory(cat);
-    setFormName(cat.name);
-    setFormDescription(cat.description);
+    setFormName({ km: cat.name?.km || "", en: cat.name?.en || "" });
+    setFormDescription({ km: cat.description?.km || "", en: cat.description?.en || "" });
     setFormIconKey((cat.icon_url as IconKey) || "general");
     setFormStatus(cat.is_active ? "ACTIVE" : "DRAFT");
     setFormOrder(String(cat.display_order));
@@ -277,16 +301,16 @@ export function CategoryManagement({ role }: Props) {
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
-    if (!formName.trim()) { toast.error("Category name is required."); return; }
+    if (!formName.km.trim()) { toast.error(t("cat.validationNameRequired" as any)); return; }
 
     setSubmitting(true);
-    const toastId = toast.loading(editMode ? "Saving changes..." : "Creating category...");
+    const toastId = toast.loading(editMode ? t("cat.saving" as any) : t("cat.creating" as any));
 
     try {
       const payload = {
-        name: formName.trim(),
-        slug: formName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        description: formDescription.trim() || null,
+        name: formName,
+        slug: formName.km.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        description: formDescription,
         icon_url: formIconKey,
         display_order: parseInt(formOrder) || 0,
         is_active: formStatus === "ACTIVE",
@@ -296,11 +320,11 @@ export function CategoryManagement({ role }: Props) {
       if (editMode && selectedCategory) {
         await apiClient.put(`/api/v1/categories/${selectedCategory.id}`, payload);
         toast.dismiss(toastId);
-        toast.success("Category updated successfully!");
+        toast.success(t("cat.msgUpdateSuccess" as any));
       } else {
         await apiClient.post("/api/v1/categories/", payload);
         toast.dismiss(toastId);
-        toast.success("Category created successfully!");
+        toast.success(t("cat.msgCreateSuccess" as any));
       }
 
       setOpenDialog(false);
@@ -318,16 +342,16 @@ export function CategoryManagement({ role }: Props) {
 
   const handleDelete = async (cat: Category) => {
     if (cat.articleCount > 0) {
-      toast.error(`Cannot delete "${cat.name}" — it has ${cat.articleCount} article(s). Reassign them first.`);
+      toast.error(`${t("cat.deleteError" as any)} "${cat.name?.km || cat.name?.en}" — ${t("cat.hasArticles" as any)} ${cat.articleCount} ${t("cat.articlesReassign" as any)}`);
       return;
     }
-    if (!confirm(`Delete category "${cat.name}"? This action cannot be undone.`)) return;
+    if (!confirm(`${t("cat.deleteConfirmMsg" as any)} "${cat.name?.km || cat.name?.en}"? ${t("cat.deleteConfirmDesc" as any)}`)) return;
 
-    const toastId = toast.loading("Deleting category...");
+    const toastId = toast.loading("...");
     try {
       await apiClient.delete(`/api/v1/categories/${cat.id}`);
       toast.dismiss(toastId);
-      toast.success("Category deleted successfully.");
+      toast.success(t("cat.deleteSuccess" as any));
       fetchCategories();
     } catch (err: any) {
       toast.dismiss(toastId);
@@ -343,7 +367,7 @@ export function CategoryManagement({ role }: Props) {
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (c) => c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
+        (c) => c.name?.km?.toLowerCase().includes(q) || c.name?.en?.toLowerCase().includes(q) || c.description?.km?.toLowerCase().includes(q)
       );
     }
 
@@ -352,7 +376,7 @@ export function CategoryManagement({ role }: Props) {
     }
 
     result.sort((a, b) => {
-      if (sortOption === "Name A-Z") return a.name.localeCompare(b.name);
+      if (sortOption === "Name A-Z") return (a.name?.km || "").localeCompare(b.name?.km || "");
       const dA = new Date(a.created_at).getTime();
       const dB = new Date(b.created_at).getTime();
       return sortOption === "Newest" ? dB - dA : dA - dB;
@@ -511,8 +535,8 @@ export function CategoryManagement({ role }: Props) {
                         <div className="flex items-center gap-3">
                           <CategoryIcon iconKey={cat.icon_url} />
                           <div className="min-w-0 max-w-xs">
-                            <p className="font-bold text-slate-900 leading-snug">{cat.name}</p>
-                            <p className="text-xs text-slate-400 mt-0.5 truncate">{cat.description || "—"}</p>
+                            <p className="font-bold text-slate-900 leading-snug">{cat.name?.km || cat.name?.en}</p>
+                            <p className="text-xs text-slate-400 mt-0.5 truncate">{cat.description?.km || cat.description?.en || "—"}</p>
                           </div>
                         </div>
                       </td>
@@ -586,7 +610,7 @@ export function CategoryManagement({ role }: Props) {
                   <CategoryIcon iconKey={cat.icon_url} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-slate-900 leading-snug">{cat.name}</span>
+                      <span className="font-bold text-slate-900 leading-snug">{cat.name?.km || cat.name?.en}</span>
                       <Badge
                         className={`rounded-sm text-[9px] font-extrabold uppercase px-1.5 py-0.5 tracking-wider border-transparent shrink-0 ${
                           cat.is_active ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"
@@ -596,7 +620,7 @@ export function CategoryManagement({ role }: Props) {
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
-                      {cat.description || "No description"}
+                      {cat.description?.km || cat.description?.en || "No description"}
                     </p>
                   </div>
                 </div>
@@ -634,7 +658,7 @@ export function CategoryManagement({ role }: Props) {
         {!loading && processed.length > ITEMS_PER_PAGE && (
           <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white">
             <span className="text-sm text-slate-500 font-medium">
-              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, processed.length)} of {processed.length}
+              {t("pagination.showing" as any)} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, processed.length)} {t("pagination.of" as any)} {processed.length}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -659,52 +683,74 @@ export function CategoryManagement({ role }: Props) {
 
       {/* ── Create / Edit Dialog ── */}
       <Dialog open={openDialog} onOpenChange={(open) => { if (!open) resetForm(); setOpenDialog(open); }}>
-        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-md rounded-2xl p-4 sm:p-6 shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">
-              {editMode ? "Edit Category" : "New Category"}
+        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-md rounded-[24px] p-5 sm:p-7 shadow-2xl border-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <DialogHeader className="mb-2">
+            <DialogTitle className="text-2xl font-extrabold tracking-tight text-slate-900">
+              {editMode ? t("cat.editCategoryTitle" as any) : t("cat.newCategoryTitle" as any)}
             </DialogTitle>
-            <DialogDescription className="text-slate-400 font-medium">
+            <DialogDescription className="text-slate-500 font-medium leading-relaxed mt-1.5">
               {editMode
-                ? "Update category name, description, icon and visibility."
-                : "Create a new health topic category for Articles, Documents and FAQs."}
+                ? t("cat.editCategoryDesc" as any)
+                : t("cat.newCategoryDesc" as any)}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-5">
+            <Tabs defaultValue="km" className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="km">Khmer 🇰🇭</TabsTrigger>
+                  <TabsTrigger value="en">English 🇬🇧</TabsTrigger>
+                </TabsList>
+                <Button 
+                  onClick={handleTranslate} 
+                  disabled={isTranslating}
+                  variant="outline"
+                  size="sm"
+                  className="bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:text-amber-700"
+                >
+                  {isTranslating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                  Auto Translate
+                </Button>
+              </div>
 
-            {/* Name */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-700">Category Name *</label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. Pregnancy Care"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-              {formName && (
-                <p className="text-xs text-slate-400">
-                  Slug: <code className="bg-slate-100 px-1 rounded text-slate-600">{formName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}</code>
-                </p>
-              )}
-            </div>
+              {["km", "en"].map((lang) => (
+                <TabsContent key={lang} value={lang} className="space-y-5">
+                  {/* Name */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-slate-700">{t("cat.formNameLabel" as any)} ({lang.toUpperCase()})</label>
+                    <input
+                      type="text"
+                      value={formName[lang as "km"|"en"]}
+                      onChange={(e) => setFormName({ ...formName, [lang]: e.target.value })}
+                      placeholder={t("cat.formNamePlaceholder" as any)}
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    />
+                    {lang === "km" && formName.km && (
+                      <p className="text-[11px] font-semibold text-slate-400 pl-1">
+                        {t("cat.formSlugPrefix" as any)} <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono tracking-tight">{formName.km.toLowerCase().replace(/[^a-z0-9]+/g, "-")}</code>
+                      </p>
+                    )}
+                  </div>
 
-            {/* Description */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-700">Description</label>
-              <textarea
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                rows={3}
-                placeholder="Brief summary of articles under this topic..."
-                className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none transition-all resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-slate-700">{t("cat.formDescLabel" as any)} ({lang.toUpperCase()})</label>
+                    <textarea
+                      value={formDescription[lang as "km"|"en"]}
+                      onChange={(e) => setFormDescription({ ...formDescription, [lang]: e.target.value })}
+                      rows={3}
+                      placeholder={t("cat.formDescPlaceholder" as any)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm font-medium outline-none transition-all resize-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    />
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
 
             {/* Icon picker */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-slate-700">Topic Icon</label>
+              <label className="block text-sm font-bold text-slate-700">{t("cat.formIconLabel" as any)}</label>
               <div className="grid grid-cols-3 gap-2">
                 {ICON_OPTIONS.map((opt) => {
                   const selected = formIconKey === opt.value;
@@ -713,14 +759,14 @@ export function CategoryManagement({ role }: Props) {
                       key={opt.value}
                       type="button"
                       onClick={() => setFormIconKey(opt.value)}
-                      className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
+                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center transition-all duration-200 ${
                         selected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                          ? "border-blue-500 bg-blue-50/80 shadow-sm"
+                          : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
                       }`}
                     >
                       <CategoryIcon iconKey={opt.value} size="sm" />
-                      <span className="text-[10px] font-semibold text-slate-500 leading-tight">{opt.label.split("—")[0].trim()}</span>
+                      <span className={`text-[10px] font-bold leading-tight ${selected ? "text-blue-700" : "text-slate-500"}`}>{opt.label.split("—")[0].trim()}</span>
                     </button>
                   );
                 })}
@@ -728,51 +774,51 @@ export function CategoryManagement({ role }: Props) {
             </div>
 
             {/* Status + Order row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">Status</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">{t("cat.formStatusLabel" as any)}</label>
                 <Select value={formStatus} onValueChange={(val) => setFormStatus(val as any)}>
-                  <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 bg-slate-50/50 font-medium transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    <SelectItem value="ACTIVE" className="font-medium cursor-pointer">Active</SelectItem>
+                    <SelectItem value="DRAFT" className="font-medium cursor-pointer">Draft</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">Display Order</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700">{t("cat.formOrderLabel" as any)}</label>
                 <input
                   type="number"
                   min="0"
                   value={formOrder}
                   onChange={(e) => setFormOrder(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+          <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-100/80">
             <Button
               variant="outline"
               onClick={() => { setOpenDialog(false); resetForm(); }}
               disabled={submitting}
-              className="rounded-lg border-slate-200 hover:bg-slate-50"
+              className="h-11 rounded-xl border-slate-200 px-5 font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
             >
-              Cancel
+              {t("cat.cancel" as any)}
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitting || !formName.trim()}
-              className="bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-semibold min-w-[120px]"
+              disabled={submitting || !formName.km.trim()}
+              className="h-11 rounded-xl bg-blue-600 px-6 font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 transition-all min-w-[130px]"
             >
               {submitting ? (
-                <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{editMode ? "Saving..." : "Creating..."}</span>
+                <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{editMode ? t("cat.saving" as any) : t("cat.creating" as any)}</span>
               ) : (
-                editMode ? "Save Changes" : "Create Category"
+                editMode ? t("cat.saveChanges" as any) : t("cat.createCategory" as any)
               )}
             </Button>
           </div>

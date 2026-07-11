@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Kantumruy_Pro, Poppins, Suwannaphum } from "next/font/google";
+import { Inter, Kantumruy_Pro, Poppins, Suwannaphum, Battambang, Moul } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
@@ -25,6 +25,18 @@ const suwannaphum = Suwannaphum({
   weight: ["400", "700", "900"],
 });
 
+const battambang = Battambang({
+  variable: "--font-battambang",
+  subsets: ["khmer"],
+  weight: ["100", "300", "400", "700", "900"],
+});
+
+const moul = Moul({
+  variable: "--font-moul",
+  subsets: ["khmer"],
+  weight: ["400"],
+});
+
 export const metadata: Metadata = {
   title: "Women Health AI Portal",
   description: "Clinic administrative dashboard and doctor panel for managing emergency thresholds, FAQs, and AI diagnostics.",
@@ -38,7 +50,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${kantumruyPro.variable} ${poppins.variable} ${suwannaphum.variable} h-full antialiased`}
+      className={`${inter.variable} ${kantumruyPro.variable} ${poppins.variable} ${suwannaphum.variable} ${battambang.variable} ${moul.variable} h-full antialiased`}
     >
       {/* <body className="min-h-full flex flex-col">{children}</body> */}
       <body>

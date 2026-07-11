@@ -726,7 +726,7 @@ export default function AdminUserManagementPage() {
           {/* Pagination Footer */}
           <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white select-none">
             <span className="text-sm text-slate-500 font-medium">
-              Showing {startRange} to {endRange} of {filteredUsers.length} users
+              {t("pagination.showing" as any)} {startRange} {t("pagination.to" as any)} {endRange} {t("pagination.of" as any)} {filteredUsers.length} {t("pagination.results" as any)}
             </span>
 
             <div className="flex items-center gap-2">
@@ -735,14 +735,14 @@ export default function AdminUserManagementPage() {
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
               >
-                Previous
+                {t("pagination.previous" as any)}
               </button>
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
               >
-                Next
+                {t("pagination.next" as any)}
               </button>
             </div>
           </div>

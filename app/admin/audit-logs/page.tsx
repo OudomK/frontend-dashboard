@@ -113,6 +113,23 @@ export default function AdminAuditLogsPage() {
     });
   }, [searchQuery, selectedType, selectedStatus, auditLogs]);
 
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedType, selectedStatus]);
+
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredLogs.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredLogs, currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
+  const startRange = filteredLogs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endRange = Math.min(currentPage * itemsPerPage, filteredLogs.length);
+
   return (
     <DashboardLayout
       role="admin"
@@ -239,14 +256,14 @@ export default function AdminAuditLogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {filteredLogs.length === 0 ? (
+                {paginatedLogs.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400">
                       <p className="font-semibold">{t("audit.noLogsFound")}</p>
                     </td>
                   </tr>
                 ) : (
-                  filteredLogs.map((log) => (
+                  paginatedLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-slate-600 font-medium">
@@ -303,6 +320,32 @@ export default function AdminAuditLogsPage() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Footer */}
+          {filteredLogs.length > 0 && (
+            <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white select-none">
+              <span className="text-sm text-slate-500 font-medium">
+                {t("pagination.showing" as any)} {startRange} {t("pagination.to" as any)} {endRange} {t("pagination.of" as any)} {filteredLogs.length} {t("pagination.results" as any)}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+                >
+                  {t("pagination.previous" as any)}
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+                >
+                  {t("pagination.next" as any)}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

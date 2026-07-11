@@ -1,8 +1,12 @@
+"use client";
+
 import Image from "next/image";
 
 import { AuthVariant } from "./auth-types";
 import { authContent } from "./auth-config";
 import { LoginForm } from "./login-form";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Props = {
   variant: AuthVariant;
@@ -11,6 +15,7 @@ type Props = {
 
 export function AuthShell({ variant, children }: Props) {
   const content = authContent[variant];
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-white">
@@ -18,10 +23,13 @@ export function AuthShell({ variant, children }: Props) {
         {/* LEFT/FIRST SIDE */}
         <div
           className={`
-            flex items-center justify-center px-6 py-10 lg:px-16
+            relative flex items-center justify-center px-6 py-10 lg:px-16
             ${variant === "doctor" ? "order-1" : "order-2"}
           `}
         >
+          <div className="absolute top-6 right-6">
+            <LanguageSwitcher light />
+          </div>
           {children ? children : <LoginForm variant={variant} />}
         </div>
 
@@ -46,26 +54,25 @@ export function AuthShell({ variant, children }: Props) {
           <div className="absolute inset-0 bg-black/30" />
 
           {/* Content */}
-          <div className="relative z-10 flex h-full flex-col justify-between p-16 text-white">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-blue-600" />
-
-              <span className="text-2xl font-bold">
-                {content.logoText}
-              </span>
-            </div>
+          <div className="relative z-10 flex h-full flex-col justify-end lg:justify-between p-8 lg:p-16 text-white">
+            {/* Logo removed and moved to login form */}
 
             {/* Bottom Text */}
-            <div className="max-w-xl space-y-6">
-              <h2 className="text-5xl font-bold leading-tight">
-                {content.heroTitle}
-              </h2>
+            {(content.heroTitle || content.heroDescription) && (
+              <div className="max-w-xl space-y-6">
+                {content.heroTitle && (
+                  <h2 className="text-3xl lg:text-5xl font-bold leading-tight">
+                    {variant === "admin" ? (t("login.heroTitle.admin") as React.ReactNode) : content.heroTitle}
+                  </h2>
+                )}
 
-              <p className="text-xl text-white/80">
-                {content.heroDescription}
-              </p>
-            </div>
+                {content.heroDescription && (
+                  <p className="text-lg lg:text-xl text-white/80">
+                    {variant === "admin" ? (t("login.heroDescription.admin") as React.ReactNode) : content.heroDescription}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   Trash2,
   TriangleAlert,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient } from "@/lib/api-client";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
@@ -41,7 +43,7 @@ type EmergencyRule = {
   category_id: number | null;
   keyword_pattern: string;
   severity_level: Severity;
-  advice_text: string;
+  advice_text: Record<"km" | "en", string>;
   clinic_contact_id: number | null;
   is_active: boolean;
   created_by: number | null;
@@ -53,7 +55,7 @@ type RuleForm = {
   category_id: string;
   keyword_pattern: string;
   severity_level: Severity;
-  advice_text: string;
+  advice_text: Record<"km" | "en", string>;
   is_active: boolean;
 };
 
@@ -62,7 +64,7 @@ const EMPTY_FORM: RuleForm = {
   category_id: "none",
   keyword_pattern: "",
   severity_level: "urgent",
-  advice_text: "",
+  advice_text: { km: "", en: "" },
   is_active: true,
 };
 
@@ -131,10 +133,14 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
   const [saving, setSaving] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<EmergencyRule | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   const categoryMap = useMemo(() => {
     const map = new Map<number, string>();
-    categories.forEach((category) => map.set(category.id, category.name));
+    categories.forEach((category) => {
+      const name = typeof category.name === 'string' ? category.name : (category.name as any)?.km || '';
+      map.set(category.id, name);
+    });
     return map;
   }, [categories]);
 
@@ -164,10 +170,27 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
 
     return rules.filter((rule) => {
       const category = rule.category_id ? categoryMap.get(rule.category_id) ?? "" : "";
-      return [rule.name, rule.keyword_pattern, rule.advice_text, rule.severity_level, category]
-        .some((value) => value.toLowerCase().includes(q));
+      return [rule.name, rule.keyword_pattern, rule.advice_text?.km, rule.advice_text?.en, rule.severity_level, category]
+        .some((value) => value && typeof value === 'string' && value.toLowerCase().includes(q));
     });
   }, [rules, search, categoryMap]);
+
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [search, rules]);
+
+  const paginatedRules = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredRules.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredRules, currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRules.length / itemsPerPage));
+  const startRange = filteredRules.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endRange = Math.min(currentPage * itemsPerPage, filteredRules.length);
 
   const openCreate = () => {
     setEditingRule(null);
@@ -182,15 +205,18 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
       category_id: rule.category_id ? String(rule.category_id) : "none",
       keyword_pattern: rule.keyword_pattern,
       severity_level: rule.severity_level,
-      advice_text: rule.advice_text,
+      advice_text: {
+        km: rule.advice_text?.km || "",
+        en: rule.advice_text?.en || "",
+      },
       is_active: rule.is_active,
     });
     setDialogOpen(true);
   };
 
   const saveRule = async () => {
-    if (!form.name.trim() || !form.keyword_pattern.trim() || !form.advice_text.trim()) {
-      toast.error("Name, trigger keywords, and advice text are required.");
+    if (!form.name.trim() || !form.keyword_pattern.trim() || !form.advice_text.km.trim()) {
+      toast.error("Name, trigger keywords, and Khmer advice text are required.");
       return;
     }
 
@@ -199,7 +225,10 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
       category_id: form.category_id === "none" ? null : Number(form.category_id),
       keyword_pattern: form.keyword_pattern.trim(),
       severity_level: form.severity_level,
-      advice_text: form.advice_text.trim(),
+      advice_text: {
+        km: form.advice_text.km.trim(),
+        en: form.advice_text.en.trim(),
+      },
       clinic_contact_id: null,
     };
 
@@ -260,6 +289,28 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
       toast.error(formatBackendError(error));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    setIsTranslating(true);
+    const toastId = toast.loading("Translating advice text...");
+    try {
+      const res = await apiClient.post("/api/v1/emergency-rules/translate", {
+        advice_text: form.advice_text.km,
+      });
+      const translated = res.data;
+      setForm((prev) => ({
+        ...prev,
+        advice_text: { ...prev.advice_text, en: translated.advice_text || prev.advice_text.en },
+      }));
+      toast.dismiss(toastId);
+      toast.success("Translated successfully!");
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error("Translation failed.");
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -340,7 +391,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRules.map((rule) => {
+                  {paginatedRules.map((rule) => {
                     const category = rule.category_id ? categoryMap.get(rule.category_id) ?? t("emg.uncategorized") : t("emg.uncategorized");
                     return (
                       <tr key={rule.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
@@ -362,7 +413,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                         </td>
                         <td className="px-5 py-5">
                           <p className="max-w-md rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-600">
-                            {rule.advice_text}
+                            {rule.advice_text?.km}
                           </p>
                         </td>
                         <td className="px-5 py-5">
@@ -386,7 +437,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
             </div>
 
             <div className="divide-y divide-slate-100 lg:hidden">
-              {filteredRules.map((rule) => {
+              {paginatedRules.map((rule) => {
                 const category = rule.category_id ? categoryMap.get(rule.category_id) ?? t("emg.uncategorized") : t("emg.uncategorized");
                 return (
                   <div key={rule.id} className="p-4">
@@ -409,7 +460,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                     </div>
 
                     <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm leading-relaxed text-slate-600">
-                      {rule.advice_text}
+                      {rule.advice_text?.km}
                     </p>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
@@ -429,6 +480,32 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                 );
               })}
             </div>
+            
+            {/* Pagination Footer */}
+            {filteredRules.length > 0 && (
+              <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white select-none">
+                <span className="text-sm text-slate-500 font-medium">
+                  {t("pagination.showing" as any)} {startRange} {t("pagination.to" as any)} {endRange} {t("pagination.of" as any)} {filteredRules.length} {t("pagination.results" as any)}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+                  >
+                    {t("pagination.previous" as any)}
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+                  >
+                    {t("pagination.next" as any)}
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -464,7 +541,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                     <SelectItem value="none">Uncategorized</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={String(category.id)}>
-                        {category.name}
+                        {typeof category.name === 'string' ? category.name : (category.name as any)?.km}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -510,13 +587,45 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
 
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">AI Advice Text</label>
-              <textarea
-                value={form.advice_text}
-                onChange={(event) => setForm((current) => ({ ...current, advice_text: event.target.value }))}
-                rows={5}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Seek immediate emergency medical care..."
-              />
+              <Tabs defaultValue="km" className="w-full">
+                <div className="mb-3 flex items-center justify-between">
+                  <TabsList className="h-9">
+                    <TabsTrigger value="km" className="text-xs px-4">Khmer (KM)</TabsTrigger>
+                    <TabsTrigger value="en" className="text-xs px-4">English (EN)</TabsTrigger>
+                  </TabsList>
+
+                  <Button
+                    onClick={handleTranslate}
+                    disabled={isTranslating || !form.advice_text.km.trim()}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:text-amber-700 font-semibold"
+                  >
+                    {isTranslating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
+                    Auto Translate
+                  </Button>
+                </div>
+                
+                <TabsContent value="km" className="mt-0 outline-none">
+                  <textarea
+                    value={form.advice_text.km}
+                    onChange={(event) => setForm((current) => ({ ...current, advice_text: { ...current.advice_text, km: event.target.value } }))}
+                    rows={5}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Seek immediate emergency medical care..."
+                  />
+                </TabsContent>
+
+                <TabsContent value="en" className="mt-0 outline-none">
+                  <textarea
+                    value={form.advice_text.en}
+                    onChange={(event) => setForm((current) => ({ ...current, advice_text: { ...current.advice_text, en: event.target.value } }))}
+                    rows={5}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Seek immediate emergency medical care (English)..."
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
 

@@ -23,9 +23,9 @@ export function useTranslation() {
 
   const t = useCallback(
     (key: TranslationKey): string => {
-      const locale = translations[language] || translations["en"];
+      const locale = (translations as Record<string, Record<string, string>>)[language] || translations["en"];
       // Fallback to English if key is missing in Khmer
-      return locale[key] || translations["en"][key] || key;
+      return locale[key as string] || translations["en"][key] || key;
     },
     [language]
   );

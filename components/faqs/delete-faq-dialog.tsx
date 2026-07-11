@@ -80,7 +80,7 @@ export function DeleteFaqDialog({ open, onOpenChange, faq, onSuccess }: Props) {
 
         <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
           <p className="text-sm font-medium leading-snug text-red-800">
-            {faq?.question}
+            {faq?.question?.km || faq?.question?.en}
           </p>
         </div>
 

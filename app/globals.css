@@ -90,8 +90,8 @@
 }
 
 :root[lang="km"] {
-  --font-body: var(--font-kantumruy-pro);
-  --font-heading: var(--font-suwannaphum);
+  --font-body: var(--font-battambang);
+  --font-heading: var(--font-moul);
 }
 
 .dark {

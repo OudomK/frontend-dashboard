@@ -6,9 +6,11 @@ import {
   Building2,
   Camera,
   Check,
+  ChevronRight,
   Clock,
   Info,
   KeyRound,
+  Loader2,
   Mail,
   MapPin,
   Monitor,
@@ -16,7 +18,9 @@ import {
   Save,
   Shield,
   Smartphone,
+  Upload,
   User,
+  X,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
@@ -176,126 +180,7 @@ function SaveToast({ visible }: { visible: boolean }) {
 
 // ─── Profile hero card ────────────────────────────────────────────────────────
 
-function ProfileHero({
-  firstName,
-  lastName,
-  title,
-  avatarUrl,
-  onAvatarUpload,
-  uploadingAvatar,
-}: {
-  firstName: string;
-  lastName: string;
-  title: string;
-  avatarUrl: string;
-  onAvatarUpload: () => void;
-  uploadingAvatar: boolean;
-}) {
-  const displayAvatar = avatarUrl || "https://i.pravatar.cc/80?img=47";
-  
-  return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {/* Gradient banner */}
-      <div className="h-20 bg-gradient-to-r from-blue-600 via-blue-500 to-violet-600 lg:h-24" />
-
-      {/* Mobile layout: centered */}
-      <div className="block lg:hidden">
-        <div className="flex flex-col items-center px-4 pb-5">
-          {/* Avatar overlapping banner */}
-          <div className="relative -mt-10">
-            <div className="h-20 w-20 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-slate-100">
-              <img
-                src={displayAvatar}
-                alt="Doctor Avatar"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <button
-              onClick={onAvatarUpload}
-              disabled={uploadingAvatar}
-              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white hover:bg-blue-700 disabled:opacity-50"
-              aria-label="Change avatar"
-            >
-              <Camera className="h-3 w-3" />
-            </button>
-          </div>
-
-          {/* Name & title */}
-          <div className="mt-3 text-center">
-            <h3 className="text-base font-bold text-slate-900">
-              Dr. {firstName} {lastName}
-            </h3>
-            <p className="mt-0.5 text-xs text-slate-500">{title}</p>
-          </div>
-
-          {/* Action row */}
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              onClick={onAvatarUpload}
-              disabled={uploadingAvatar}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
-            >
-              {uploadingAvatar ? "Uploading..." : "Change Avatar"}
-            </button>
-            <button className="rounded-xl px-3 py-2 text-xs font-medium text-slate-500 hover:text-red-600 transition">
-              Remove
-            </button>
-          </div>
-
-          <p className="mt-1.5 text-xs text-slate-400">
-            JPG, GIF or PNG, 1MB max.
-          </p>
-        </div>
-      </div>
-
-      {/* Desktop layout: row */}
-      <div className="hidden lg:block px-6 pb-5">
-        <div className="-mt-10 flex items-end gap-4">
-          <div className="relative">
-            <div className="h-20 w-20 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-slate-100">
-              <img
-                src={displayAvatar}
-                alt="Doctor Avatar"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <button
-              onClick={onAvatarUpload}
-              disabled={uploadingAvatar}
-              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white hover:bg-blue-700 disabled:opacity-50"
-              aria-label="Change avatar"
-            >
-              <Camera className="h-3 w-3" />
-            </button>
-          </div>
-
-          <div className="mb-1 min-w-0 flex-1">
-            <h3 className="truncate text-lg font-bold text-slate-900">
-              Dr. {firstName} {lastName}
-            </h3>
-            <p className="truncate text-sm text-slate-500">{title}</p>
-          </div>
-
-          <div className="mb-1 flex shrink-0 items-center gap-2">
-            <button 
-              onClick={onAvatarUpload}
-              disabled={uploadingAvatar}
-              className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
-            >
-              {uploadingAvatar ? "Uploading..." : "Change Avatar"}
-            </button>
-            <button className="rounded-xl px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-red-600 transition">
-              Remove
-            </button>
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-slate-400">
-          JPG, GIF or PNG, 1MB max.
-        </p>
-      </div>
-    </div>
-  );
-}
+// ─── Profile hero card removed in favor of grid layout ───────────────
 
 // ─── Change Password Modal ──────────────────────────────────────────────────────
 
@@ -407,6 +292,8 @@ export default function DoctorProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
+  const [fullImageOpen, setFullImageOpen] = useState(false);
+
   useEffect(() => {
     async function fetchProfile() {
       try {
@@ -458,6 +345,10 @@ export default function DoctorProfilePage() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size should not exceed 5MB.");
+      return;
+    }
 
     setUploadingAvatar(true);
     const formData = new FormData();
@@ -496,12 +387,42 @@ export default function DoctorProfilePage() {
     }
   };
 
+  const handleRemovePhoto = async () => {
+    try {
+      setUploadingAvatar(true);
+      await apiClient.put("/api/v1/users/profile", { avatar_url: null });
+      setAvatarUrl("");
+      useAuthStore.getState().updateAvatar("");
+      toast.success("Photo removed successfully.");
+    } catch (err: any) {
+      toast.error("Failed to remove photo.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const triggerAvatarUpload = () => {
     fileInputRef.current?.click();
   };
 
+  const getInitials = () => {
+    const f = firstName.charAt(0) || "";
+    const l = lastName.charAt(0) || "";
+    return (f + l).toUpperCase() || "DR";
+  };
+
   const fields = [firstName, lastName, title, phone, bio, clinicName, telegram, emergencyTel, clinicAddress, avatarUrl];
   const completeness = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+
+  if (loading) {
+    return (
+      <DashboardLayout role="doctor">
+        <div className="flex h-full min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout
@@ -511,9 +432,9 @@ export default function DoctorProfilePage() {
       actions={
         <Button
           onClick={handleSave}
-          className="h-10 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700"
+          className="h-10 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow"
         >
-          <Save className="h-4 w-4" />
+          <Save className="mr-2 h-4 w-4" />
           Save Changes
         </Button>
       }
@@ -525,37 +446,114 @@ export default function DoctorProfilePage() {
         ref={fileInputRef}
         onChange={handleAvatarUpload}
       />
-      {/* Mobile save button (DashboardLayout hides actions on mobile) */}
+      
+      {/* Mobile save button */}
       <div className="mb-4 lg:hidden">
         <button
           onClick={handleSave}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white active:opacity-90"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition-all active:opacity-90"
         >
           <Save className="h-4 w-4" />
           Save Changes
         </button>
       </div>
 
-      {/*
-       * Two-column layout:
-       *   - Mobile: single column, but RIGHT column is ordered BEFORE the forms
-       *     so Security/Completeness appears near the top
-       *   - Desktop: proper side-by-side grid
-       */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 pb-12 lg:pb-0">
+        {/* ── Left Column: Avatar & Overview ── */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col items-center">
+            
+            {/* Avatar */}
+            <div className="relative group mt-2">
+              {uploadingAvatar ? (
+                <div className="h-28 w-28 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 shadow-md">
+                  <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                </div>
+              ) : avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={`${firstName} ${lastName}`}
+                  onClick={() => setFullImageOpen(true)}
+                  className="h-28 w-28 rounded-full object-cover border border-slate-100 shadow-md transition-all duration-300 group-hover:opacity-90 cursor-pointer"
+                />
+              ) : (
+                <div className="h-28 w-28 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shadow-md flex items-center justify-center text-3xl font-extrabold select-none">
+                  {getInitials()}
+                </div>
+              )}
+            </div>
 
-        {/* ── Left column (forms) — appears first on mobile ─── */}
-        <div className="space-y-5">
+            <h2 className="mt-4 text-lg font-bold text-slate-900 text-center">
+              Dr. {firstName} {lastName}
+            </h2>
+            <p className="text-xs font-semibold text-slate-400 text-center mt-1">
+              {title || "Specialization not set"}
+            </p>
 
-          {/* Hero card */}
-          <ProfileHero 
-            firstName={firstName} 
-            lastName={lastName} 
-            title={title} 
-            avatarUrl={avatarUrl}
-            onAvatarUpload={triggerAvatarUpload}
-            uploadingAvatar={uploadingAvatar}
-          />
+            <div className="w-full mt-6 space-y-2 select-none">
+              <Button
+                onClick={triggerAvatarUpload}
+                disabled={uploadingAvatar}
+                className="w-full h-10 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow hover:bg-blue-700 transition-colors"
+              >
+                <Upload className="mr-1.5 h-4 w-4" />
+                Upload New
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRemovePhoto}
+                disabled={!avatarUrl || uploadingAvatar}
+                className="w-full h-10 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50"
+              >
+                Remove Picture
+              </Button>
+            </div>
+
+            {/* Profile Completeness */}
+            <div className="w-full mt-6 border-t border-slate-100 pt-6">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">Profile Completeness</span>
+                <span className={`text-xs font-bold ${completeness >= 80 ? "text-emerald-600" : "text-amber-600"}`}>
+                  {completeness}%
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    completeness >= 80 ? "bg-emerald-500" : "bg-amber-400"
+                  }`}
+                  style={{ width: `${completeness}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Meta details */}
+            <div className="w-full mt-6 space-y-3.5 text-xs">
+              <div className="flex items-center justify-between font-medium">
+                <span className="text-slate-400">Status</span>
+                <span className="text-emerald-600 font-bold">Active</span>
+              </div>
+              <div className="flex items-center justify-between font-medium">
+                <span className="text-slate-400">Account Type</span>
+                <span className="text-slate-700 font-semibold">Doctor</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Last Saved */}
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+                <Clock className="h-4 w-4 text-slate-500" />
+              </div>
+              <span className="text-xs font-semibold text-slate-700">Last saved</span>
+            </div>
+            <span className="text-xs font-semibold text-slate-400">Just now</span>
+          </div>
+        </div>
+
+        {/* ── Right Column: Forms & Settings ── */}
+        <div className="lg:col-span-2 space-y-6">
 
           {/* Personal Information */}
           <SectionCard
@@ -564,48 +562,28 @@ export default function DoctorProfilePage() {
             subtitle="Shown to users when you publish content."
             accent="blue"
           >
-            <div className="space-y-4">
-              {/* First / Last Name — always 2-col even on mobile */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel required>First Name</FieldLabel>
-                  <TextInput value={firstName} onChange={setFirstName} placeholder="Sarah" />
-                </div>
-                <div>
-                  <FieldLabel required>Last Name</FieldLabel>
-                  <TextInput value={lastName} onChange={setLastName} placeholder="Jenkins" />
-                </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <FieldLabel required>First Name</FieldLabel>
+                <TextInput value={firstName} onChange={setFirstName} placeholder="Sarah" />
               </div>
-
-              <div>
+              <div className="space-y-1.5">
+                <FieldLabel required>Last Name</FieldLabel>
+                <TextInput value={lastName} onChange={setLastName} placeholder="Jenkins" />
+              </div>
+              <div className="space-y-1.5">
                 <FieldLabel>Specialization</FieldLabel>
-                <TextInput
-                  value={title}
-                  onChange={setTitle}
-                  placeholder="E.g. Gynecologist, Clinic Owner"
-                />
-                <p className="mt-1.5 text-xs text-slate-400">
-                  E.g. Medical Doctor, Clinic Owner, Gynecologist
-                </p>
+                <TextInput value={title} onChange={setTitle} placeholder="Gynecologist" />
               </div>
-
-              <div>
+              <div className="space-y-1.5">
+                <FieldLabel>Phone Number</FieldLabel>
+                <TextInput value={phone} onChange={setPhone} icon={Phone} placeholder="+855 12 345 678" type="tel" />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
                 <FieldLabel>Email Address</FieldLabel>
                 <TextInput value={email} disabled icon={Mail} />
               </div>
-
-              <div>
-                <FieldLabel>Phone Number</FieldLabel>
-                <TextInput
-                  value={phone}
-                  onChange={setPhone}
-                  icon={Phone}
-                  placeholder="+855 12 345 678"
-                  type="tel"
-                />
-              </div>
-
-              <div>
+              <div className="space-y-1.5 sm:col-span-2">
                 <FieldLabel>Short Bio</FieldLabel>
                 <textarea
                   value={bio}
@@ -613,7 +591,7 @@ export default function DoctorProfilePage() {
                   rows={4}
                   maxLength={300}
                   placeholder="Tell patients and colleagues about your experience…"
-                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
                 <div className="mt-1 flex items-center justify-between">
                   <span className="text-xs text-slate-400">Visible on published articles</span>
@@ -632,8 +610,7 @@ export default function DoctorProfilePage() {
             subtitle="Used by the AI Assistant to guide patients to your clinic during emergencies."
             accent="violet"
           >
-            {/* AI notice */}
-            <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3">
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
               <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100">
                 <Info className="h-3 w-3 text-amber-700" />
               </div>
@@ -645,73 +622,36 @@ export default function DoctorProfilePage() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
                 <FieldLabel>Clinic / Hospital Name</FieldLabel>
                 <TextInput value={clinicName} onChange={setClinicName} icon={Building2} />
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <FieldLabel>Telegram Contact Link</FieldLabel>
-                  <TextInput value={telegram} onChange={setTelegram} placeholder="t.me/yourclinic" />
-                  <p className="mt-1.5 text-xs text-slate-400">For patient reception chat.</p>
-                </div>
-                <div>
-                  <FieldLabel>Emergency Phone</FieldLabel>
-                  <TextInput value={emergencyTel} onChange={setEmergencyTel} icon={Phone} type="tel" />
-                  <p className="mt-1.5 text-xs text-slate-400">Dedicated urgent-care line.</p>
-                </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Telegram Contact Link</FieldLabel>
+                <TextInput value={telegram} onChange={setTelegram} placeholder="t.me/yourclinic" />
+                <p className="mt-1 text-[11px] font-medium text-slate-400">For patient reception chat.</p>
               </div>
-
-              <div>
+              <div className="space-y-1.5">
+                <FieldLabel>Emergency Phone</FieldLabel>
+                <TextInput value={emergencyTel} onChange={setEmergencyTel} icon={Phone} type="tel" />
+                <p className="mt-1 text-[11px] font-medium text-slate-400">Dedicated urgent-care line.</p>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
                 <FieldLabel>Clinic Address</FieldLabel>
                 <TextInput value={clinicAddress} onChange={setClinicAddress} icon={MapPin} />
               </div>
             </div>
           </SectionCard>
 
-        </div>
-
-        {/* ── Right column — appears second on mobile ─────────── */}
-        <div className="space-y-4">
-
-          {/* Profile Completeness */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-bold text-slate-800">Profile Completeness</p>
-              <span className={`text-sm font-bold ${completeness >= 80 ? "text-emerald-600" : "text-amber-600"}`}>
-                {completeness}%
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  completeness >= 80 ? "bg-emerald-500" : "bg-amber-400"
-                }`}
-                style={{ width: `${completeness}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-slate-400">
-              {completeness >= 80
-                ? "Great — your profile is well filled."
-                : "Fill in all fields for best AI accuracy."}
-            </p>
-          </div>
-
           {/* Security Settings */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-                <Shield className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">Security Settings</h2>
-                <p className="text-xs text-slate-500">Manage your account protection.</p>
-              </div>
-            </div>
-
-            <div className="divide-y divide-slate-100 px-5">
+          <SectionCard
+            icon={Shield}
+            title="Security Settings"
+            subtitle="Manage your account protection and active sessions."
+            accent="blue"
+          >
+            <div className="divide-y divide-slate-100 -mx-4 lg:-mx-6 px-4 lg:px-6">
               <SecurityRow
                 icon={KeyRound}
                 iconBg="bg-slate-100 text-slate-600"
@@ -720,7 +660,7 @@ export default function DoctorProfilePage() {
                 action={
                   <button 
                     onClick={() => setPasswordModalOpen(true)}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
                   >
                     Update
                   </button>
@@ -739,47 +679,23 @@ export default function DoctorProfilePage() {
                   />
                 }
               />
-              <SecurityRow
-                icon={Monitor}
-                iconBg="bg-blue-50 text-blue-600"
-                title="Active Sessions"
-                description="Logged in on 2 devices."
-                action={
-                  <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
-                    Review
-                  </button>
-                }
-              />
             </div>
-          </div>
-
-          {/* Last Saved */}
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <Clock className="h-4 w-4 text-slate-500" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-700">Last saved</p>
-              <p className="text-xs text-slate-400">Today at 10:35 AM</p>
-            </div>
-          </div>
+          </SectionCard>
 
           {/* Deactivate Account */}
-          <div className="overflow-hidden rounded-2xl border border-red-200 bg-red-50/60 shadow-sm">
-            <div className="border-b border-red-100 px-5 py-3.5">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100">
-                  <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+          <div className="overflow-hidden rounded-2xl border border-red-200 bg-red-50/50 shadow-sm transition-all hover:bg-red-50">
+            <div className="border-b border-red-100 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
                 </div>
-                <h3 className="text-sm font-bold text-red-700">Deactivate Account</h3>
+                <div>
+                  <h3 className="text-sm font-bold text-red-800">Deactivate Account</h3>
+                  <p className="text-xs text-red-600 mt-0.5">Temporarily disable your doctor account.</p>
+                </div>
               </div>
-            </div>
-            <div className="px-5 py-4">
-              <p className="mb-4 text-xs leading-relaxed text-slate-500">
-                Temporarily disable your doctor account. Published content stays visible.
-              </p>
-              <button className="w-full rounded-xl border border-red-300 bg-white py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition active:opacity-80">
-                Deactivate account
+              <button className="rounded-lg border border-red-300 bg-white px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors shadow-sm">
+                Deactivate
               </button>
             </div>
           </div>
@@ -789,6 +705,20 @@ export default function DoctorProfilePage() {
 
       <SaveToast visible={saved} />
       <ChangePasswordModal open={passwordModalOpen} onOpenChange={setPasswordModalOpen} />
+      
+      {/* Full Image Dialog */}
+      <Dialog open={fullImageOpen} onOpenChange={setFullImageOpen}>
+        <DialogContent className="max-w-3xl border-none bg-transparent shadow-none p-0 flex justify-center items-center">
+          <DialogTitle className="sr-only">Full Profile Picture</DialogTitle>
+          {avatarUrl && (
+            <img
+              src={avatarUrl}
+              alt="Full Profile Picture"
+              className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

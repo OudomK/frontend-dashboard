@@ -63,13 +63,6 @@ export function ForgotPasswordForm() {
 
   return (
     <div className="w-full max-w-md">
-      <Link 
-        href="/auth/admin-login"
-        className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 mb-6"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to login
-      </Link>
 
       <div className="space-y-3">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">

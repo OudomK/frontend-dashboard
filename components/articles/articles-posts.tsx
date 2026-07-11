@@ -30,8 +30,13 @@ import {
   Upload,
   Star,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
+// Import ReactQuill dynamically to avoid SSR issues
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import "react-quill-new/dist/quill.snow.css";
 
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
@@ -64,8 +69,8 @@ export interface Category {
 
 export interface Article {
   id: number;
-  title: string;
-  excerpt: string;
+  title: { en: string; km: string };
+  excerpt: { en: string; km: string };
   category: string;
   category_id?: number;
   trimester?: number;
@@ -73,8 +78,8 @@ export interface Article {
   authorId: number;
   status: "PUBLISHED" | "DRAFT";
   date: string;
-  content: string;
-  body?: string;
+  content: { en: string; km: string };
+  body?: { en: string; km: string };
   language?: string;
   readTime: string;
   cover_image_url?: string;
@@ -141,7 +146,7 @@ function StatusBadge({ status }: { status: "PUBLISHED" | "DRAFT" }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function ArticlesPosts({ role }: { role: string }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,9 +171,9 @@ export function ArticlesPosts({ role }: { role: string }) {
 
   // Form
   const [editMode, setEditMode] = useState(false);
-  const [formTitle, setFormTitle] = useState("");
-  const [formExcerpt, setFormExcerpt] = useState("");
-  const [formContent, setFormContent] = useState("");
+  const [formTitle, setFormTitle] = useState({ en: "", km: "" });
+  const [formExcerpt, setFormExcerpt] = useState({ en: "", km: "" });
+  const [formContent, setFormContent] = useState({ en: "", km: "" });
   const [formCategoryId, setFormCategoryId] = useState<number | null>(null);
   const [formTrimester, setFormTrimester] = useState<number | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState("");
@@ -176,6 +181,8 @@ export function ArticlesPosts({ role }: { role: string }) {
   const [formFeatured, setFormFeatured] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<"en" | "km">("km");
+  const [isTranslating, setIsTranslating] = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -192,12 +199,14 @@ export function ArticlesPosts({ role }: { role: string }) {
 
       const mapped: Article[] = (articlesRes.data || []).map((a: any) => {
         const cat = cats.find((c) => c.id === a.category_id);
-        const body = (a.body || "") as string;
-        const wordCount = body.split(/\s+/).filter(Boolean).length;
+        const body = a.body || { en: "", km: "" };
+        const title = a.title || { en: "Untitled", km: "Untitled" };
+        const excerpt = a.short_description || { en: "", km: "" };
+        const wordCount = (body.km || body.en || "").split(/\s+/).filter(Boolean).length;
         return {
           id: a.id,
-          title: a.title || "Untitled",
-          excerpt: a.short_description || "",
+          title,
+          excerpt,
           content: body,
           category: cat?.name ?? "Uncategorized",
           category_id: a.category_id ?? undefined,
@@ -234,9 +243,9 @@ export function ArticlesPosts({ role }: { role: string }) {
   // ── Form helpers ───────────────────────────────────────────────────────────
 
   const resetForm = () => {
-    setFormTitle("");
-    setFormExcerpt("");
-    setFormContent("");
+    setFormTitle({ en: "", km: "" });
+    setFormExcerpt({ en: "", km: "" });
+    setFormContent({ en: "", km: "" });
     setFormCategoryId(categories[0]?.id ?? null);
     setFormTrimester(null);
     setCoverImageUrl("");
@@ -245,13 +254,14 @@ export function ArticlesPosts({ role }: { role: string }) {
     setEditMode(false);
     setSelectedArticle(null);
     setErrors({});
+    setActiveTab("km");
   };
 
   const handleEditClick = (article: Article) => {
     setSelectedArticle(article);
-    setFormTitle(article.title);
-    setFormExcerpt(article.excerpt);
-    setFormContent(article.content);
+    setFormTitle(article.title || { en: "", km: "" });
+    setFormExcerpt(article.excerpt || { en: "", km: "" });
+    setFormContent(article.content || { en: "", km: "" });
     setFormCategoryId(article.category_id ?? null);
     setFormTrimester(article.trimester ?? null);
     setCoverImageUrl(article.cover_image_url ?? "");
@@ -298,21 +308,21 @@ export function ArticlesPosts({ role }: { role: string }) {
 
   const handleFormSubmit = async () => {
     const newErrors: Record<string, boolean> = {};
-    if (!formTitle.trim()) newErrors.title = true;
-    if (!formContent.trim()) newErrors.content = true;
+    if (!formTitle.km.trim()) newErrors.title = true;
+    if (!formContent.km.trim() && formContent.km !== "<p><br></p>") newErrors.content = true;
     if (!formCategoryId) newErrors.category = true;
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast.error("Please fill in all required fields.");
+      toast.error("Please fill in all required fields (Khmer is required).");
       return;
     }
     setErrors({});
 
     const payload = {
-      title: formTitle.trim(),
-      body: formContent.trim(),
-      short_description: formExcerpt.trim(),
+      title: { km: formTitle.km.trim(), en: formTitle.en.trim() },
+      body: { km: formContent.km.trim(), en: formContent.en.trim() },
+      short_description: { km: formExcerpt.km.trim(), en: formExcerpt.en.trim() },
       category_id: formCategoryId,
       cover_image_url: coverImageUrl || null,
       status: formStatus.toLowerCase(),
@@ -339,6 +349,38 @@ export function ArticlesPosts({ role }: { role: string }) {
     }
   };
 
+  // ── Translate ──────────────────────────────────────────────────────────────
+
+  const handleTranslateAll = async () => {
+    if (!formTitle.km.trim() && !formExcerpt.km.trim() && (!formContent.km.trim() || formContent.km === "<p><br></p>")) {
+      toast.error("Please fill in Khmer content to translate.");
+      return;
+    }
+
+    setIsTranslating(true);
+    const toastId = toast.loading("Translating article using Gemini AI...");
+    try {
+      const res = await apiClient.post("/api/v1/contents/translate", {
+        title: formTitle.km,
+        short_description: formExcerpt.km,
+        body: formContent.km
+      });
+      
+      const { title, short_description, body } = res.data;
+      
+      setFormTitle(prev => ({ ...prev, en: title || prev.en }));
+      setFormExcerpt(prev => ({ ...prev, en: short_description || prev.en }));
+      setFormContent(prev => ({ ...prev, en: body || prev.en }));
+      
+      toast.success("Article translated successfully!", { id: toastId });
+      setActiveTab("en");
+    } catch (err) {
+      toast.error("Translation failed. Please try again.", { id: toastId });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   const handleDelete = async (id: number) => {
@@ -360,7 +402,9 @@ export function ArticlesPosts({ role }: { role: string }) {
   const filteredArticles = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return articles.filter((a) => {
-      const matchSearch = !q || a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q);
+      const tStr = (a.title.km || "") + " " + (a.title.en || "");
+      const eStr = (a.excerpt.km || "") + " " + (a.excerpt.en || "");
+      const matchSearch = !q || tStr.toLowerCase().includes(q) || eStr.toLowerCase().includes(q);
       const matchCat = selectedCategory === t("art.allTopics") || a.category === selectedCategory;
       const matchStatus =
         selectedStatus === t("art.anyStatus") ||
@@ -547,9 +591,9 @@ export function ArticlesPosts({ role }: { role: string }) {
                     <span className={`self-start rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${style.bg} ${style.text} ${style.border}`}>
                       {article.category}
                     </span>
-                    <h3 className="font-bold text-slate-900 leading-snug line-clamp-2">{article.title}</h3>
-                    {article.excerpt && (
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{article.excerpt}</p>
+                    <h3 className="font-bold text-slate-900 leading-snug line-clamp-2">{(article.title as any)[language] || article.title.km || article.title.en}</h3>
+                    {((article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en) && (
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{(article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en}</p>
                     )}
                     <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between text-xs text-slate-400">
                       <div className="flex items-center gap-1.5">
@@ -617,12 +661,12 @@ export function ArticlesPosts({ role }: { role: string }) {
                             )}
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 mb-0.5">
-                                <p className="font-bold text-slate-900 truncate text-sm leading-tight">{article.title}</p>
+                                <p className="font-bold text-slate-900 truncate text-sm leading-tight">{(article.title as any)[language] || article.title.km || article.title.en}</p>
                                 {article.is_featured && (
                                   <Star className="h-3 w-3 shrink-0 fill-yellow-400 text-yellow-400" />
                                 )}
                               </div>
-                              <p className="text-[11px] text-slate-400 truncate leading-snug">{article.excerpt || t("art.noExcerpt")}</p>
+                              <p className="text-[11px] text-slate-400 truncate leading-snug">{(article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en || t("art.noExcerpt")}</p>
                               <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-300">
                                 <Clock className="h-2.5 w-2.5" />
                                 <span>{article.readTime}</span>
@@ -715,9 +759,9 @@ export function ArticlesPosts({ role }: { role: string }) {
                           </span>
                           <StatusBadge status={article.status} />
                         </div>
-                        <p className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{article.title}</p>
-                        {article.excerpt && (
-                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{article.excerpt}</p>
+                        <p className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{(article.title as any)[language] || article.title.km || article.title.en}</p>
+                        {((article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en) && (
+                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{(article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en}</p>
                         )}
                       </div>
                     </div>
@@ -806,6 +850,46 @@ export function ArticlesPosts({ role }: { role: string }) {
           </div>
 
           <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
+            {/* Language Tabs & Translate Button */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex bg-slate-100/80 p-1 rounded-xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("km")}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === "km" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  🇰🇭 ខ្មែរ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("en")}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === "en" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  🇬🇧 English
+                </button>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleTranslateAll}
+                disabled={isTranslating}
+                className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
+              >
+                {isTranslating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2 fill-blue-600" />
+                )}
+                ✨ Auto Translate
+              </Button>
+            </div>
+
             {/* Title */}
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-slate-700">
@@ -813,11 +897,14 @@ export function ArticlesPosts({ role }: { role: string }) {
               </label>
               <input
                 type="text"
-                value={formTitle}
-                onChange={(e) => { setFormTitle(e.target.value); if (errors.title) setErrors({ ...errors, title: false }); }}
-                placeholder="e.g. Healthy Eating in the First Trimester"
+                value={formTitle[activeTab]}
+                onChange={(e) => {
+                  setFormTitle((prev) => ({ ...prev, [activeTab]: e.target.value }));
+                  if (errors.title) setErrors({ ...errors, title: false });
+                }}
+                placeholder={activeTab === "km" ? "ឧ. ការថែទាំសុខភាព" : "e.g. Healthy Eating in the First Trimester"}
                 className={`h-11 w-full rounded-xl border px-4 text-sm outline-none transition-all placeholder:text-slate-300 focus:ring-2 ${
-                  errors.title ? "border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-blue-100"
+                  errors.title && activeTab === "km" ? "border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-blue-100"
                 }`}
               />
             </div>
@@ -874,9 +961,9 @@ export function ArticlesPosts({ role }: { role: string }) {
               <label className="block text-sm font-semibold text-slate-700">Short Excerpt</label>
               <input
                 type="text"
-                value={formExcerpt}
-                onChange={(e) => setFormExcerpt(e.target.value)}
-                placeholder="A brief one-line description shown in the article list…"
+                value={formExcerpt[activeTab]}
+                onChange={(e) => setFormExcerpt((prev) => ({ ...prev, [activeTab]: e.target.value }))}
+                placeholder={activeTab === "km" ? "ការពិពណ៌នាខ្លី..." : "A brief one-line description shown in the article list…"}
                 className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
@@ -937,21 +1024,31 @@ export function ArticlesPosts({ role }: { role: string }) {
             </div>
 
             {/* Content */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 [&_.quill]:rounded-xl [&_.ql-toolbar]:rounded-t-xl [&_.ql-container]:rounded-b-xl [&_.ql-editor]:min-h-[250px] [&_.ql-editor]:text-sm">
               <label className="block text-sm font-semibold text-slate-700">
                 Full Content <span className="text-red-500">*</span>
               </label>
-              <textarea
-                value={formContent}
-                onChange={(e) => { setFormContent(e.target.value); if (errors.content) setErrors({ ...errors, content: false }); }}
-                rows={9}
-                placeholder="Write your article content here. Use double line breaks to separate paragraphs…"
-                className={`w-full rounded-xl border p-4 text-sm outline-none transition-all placeholder:text-slate-300 focus:ring-2 resize-y ${
-                  errors.content ? "border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-blue-100"
-                }`}
+              <ReactQuill
+                theme="snow"
+                value={formContent[activeTab]}
+                onChange={(value) => {
+                  setFormContent((prev) => ({ ...prev, [activeTab]: value }));
+                  if (errors.content) setErrors({ ...errors, content: false });
+                }}
+                placeholder={activeTab === "km" ? "សរសេរអត្ថបទរបស់អ្នកនៅទីនេះ..." : "Write your article content here..."}
+                className={errors.content && activeTab === "km" ? "[&_.ql-container]:border-red-500 [&_.ql-toolbar]:border-red-500" : ""}
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                  ],
+                }}
               />
-              <p className="text-xs text-slate-400">
-                {formContent.split(/\s+/).filter(Boolean).length} words · ~{Math.max(1, Math.ceil(formContent.split(/\s+/).filter(Boolean).length / 200))} min read
+              <p className="text-xs text-slate-400 mt-2">
+                {formContent[activeTab].replace(/<[^>]*>?/gm, '').split(/\s+/).filter(Boolean).length} words
               </p>
             </div>
 
@@ -1008,7 +1105,6 @@ export function ArticlesPosts({ role }: { role: string }) {
           {selectedArticle && (() => {
             const img = resolveImage(selectedArticle.cover_image_url);
             const style = getCategoryStyle(selectedArticle.category);
-            const paragraphs = (selectedArticle.content || "").split(/\n\n+/).filter(Boolean);
 
             return (
               <div>
@@ -1046,9 +1142,9 @@ export function ArticlesPosts({ role }: { role: string }) {
                 <div className="px-6 py-5 space-y-4">
                   {/* Title + excerpt */}
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 leading-snug">{selectedArticle.title}</h2>
-                    {selectedArticle.excerpt && (
-                      <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{selectedArticle.excerpt}</p>
+                    <h2 className="text-xl font-bold text-slate-900 leading-snug">{(selectedArticle.title as any)[language] || selectedArticle.title.km || selectedArticle.title.en}</h2>
+                    {((selectedArticle.excerpt as any)[language] || selectedArticle.excerpt.km || selectedArticle.excerpt.en) && (
+                      <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{(selectedArticle.excerpt as any)[language] || selectedArticle.excerpt.km || selectedArticle.excerpt.en}</p>
                     )}
                   </div>
 
@@ -1076,11 +1172,12 @@ export function ArticlesPosts({ role }: { role: string }) {
                   </div>
 
                   {/* Article Body */}
-                  <div className="text-sm leading-relaxed text-slate-700 space-y-3">
-                    {paragraphs.length > 0 ? (
-                      paragraphs.map((para, i) => (
-                        <p key={i} className="leading-7">{para}</p>
-                      ))
+                  <div className="text-sm leading-relaxed text-slate-700 space-y-3 pb-4">
+                    {((selectedArticle.content as any)[language] || selectedArticle.content.km || selectedArticle.content.en) ? (
+                      <div 
+                        className="quill-content prose prose-sm max-w-none [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:ml-4 [&_ol]:ml-4"
+                        dangerouslySetInnerHTML={{ __html: (selectedArticle.content as any)[language] || selectedArticle.content.km || selectedArticle.content.en }} 
+                      />
                     ) : (
                       <p className="text-slate-400 italic text-center py-4">No content has been written for this article yet.</p>
                     )}

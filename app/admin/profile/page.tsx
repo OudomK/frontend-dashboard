@@ -6,6 +6,11 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
@@ -44,6 +49,9 @@ export default function AdminProfilePage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [telegramAlerts, setTelegramAlerts] = useState(true);
   const [require2Fa, setRequire2Fa] = useState(false);
+
+  // Full image dialog state
+  const [fullImageOpen, setFullImageOpen] = useState(false);
 
   // Load Profile from API
   const loadProfile = async () => {
@@ -253,7 +261,8 @@ export default function AdminProfilePage() {
                   <img
                     src={avatar}
                     alt={`${firstName} ${lastName}`}
-                    className="h-28 w-28 rounded-full object-cover border border-slate-100 shadow-md transition-all duration-300 group-hover:opacity-90"
+                    onClick={() => setFullImageOpen(true)}
+                    className="h-28 w-28 rounded-full object-cover border border-slate-100 shadow-md transition-all duration-300 group-hover:opacity-90 cursor-pointer"
                   />
                 ) : (
                   <div className="h-28 w-28 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shadow-md flex items-center justify-center text-3xl font-extrabold select-none">
@@ -508,6 +517,20 @@ export default function AdminProfilePage() {
 
         </div>
       </div>
+
+      {/* Full Image Dialog */}
+      <Dialog open={fullImageOpen} onOpenChange={setFullImageOpen}>
+        <DialogContent className="max-w-3xl border-none bg-transparent shadow-none p-0 flex justify-center items-center">
+          <DialogTitle className="sr-only">Full Profile Picture</DialogTitle>
+          {avatar && (
+            <img
+              src={avatar}
+              alt="Full Profile Picture"
+              className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

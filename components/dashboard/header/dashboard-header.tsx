@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
-  Search,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -54,7 +53,6 @@ export function DashboardHeader({
     ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
     : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100");
 
-  const searchPlaceholder = t("header.search");
 
   const adminBreadcrumb =
     pathname === "/admin/analytics"
@@ -67,38 +65,29 @@ export function DashboardHeader({
             ? ["Admin Panel", "Profile Settings"]
             : ["Admin Panel", "Dashboard"];
 
-  // Matches the premium dark sidebar background
-  const headerBg = "bg-[#090E1A]";
+  // Matches the premium light sidebar background
+  const headerBg = "bg-white";
 
   return (
-    <header className={`sticky top-0 z-30 border-b border-white/5 ${headerBg}`}>
+    <header className={`sticky top-0 z-30 border-b border-slate-100 ${headerBg}`}>
       <div className="flex min-h-[88px] items-center justify-between gap-4 px-4 lg:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <button className="rounded-lg border border-white/10 p-2 lg:hidden hover:bg-white/5 transition-colors">
-            <Menu className="h-5 w-5 text-slate-300" />
+          <button className="rounded-lg border border-slate-200 p-2 lg:hidden hover:bg-slate-50 transition-colors">
+            <Menu className="h-5 w-5 text-slate-500" />
           </button>
 
-          {role === "admin" ? (
+          {role === "admin" && (
             <div className="hidden items-center gap-2 text-sm lg:flex">
               {adminBreadcrumb.map((item, index) => (
                 <div key={item} className="flex items-center gap-2">
                   {index > 0 && (
-                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
                   )}
-                  <span className={index === adminBreadcrumb.length - 1 ? "font-bold text-white tracking-wide" : "font-medium text-slate-400"}>
+                  <span className={index === adminBreadcrumb.length - 1 ? "font-bold text-slate-900 tracking-wide font-poppins" : "font-medium text-slate-500 font-poppins"}>
                     {item}
                   </span>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="relative hidden w-full max-w-md lg:block">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-              <Input
-                placeholder={searchPlaceholder}
-                className="h-11 rounded-xl border-white/10 bg-white/5 pl-10 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500/50 focus-visible:border-emerald-500/50 transition-all shadow-sm"
-              />
             </div>
           )}
         </div>
@@ -106,24 +95,13 @@ export function DashboardHeader({
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
 
-          {role === "admin" && (
-            <div className="relative hidden w-72 lg:block">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-              <Input
-                placeholder={searchPlaceholder}
-                className="h-11 rounded-xl border-white/10 bg-white/5 pl-10 text-white placeholder:text-slate-500 focus-visible:ring-blue-500/50 focus-visible:border-blue-500/50 transition-all shadow-sm"
-              />
-            </div>
-          )}
-
           {role === "doctor" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="rounded-xl border border-white/10 p-2.5 transition-colors hover:bg-white/5 relative group outline-none">
-                  <Bell className="h-5 w-5 text-slate-300 group-hover:text-white transition-colors" />
+                <button className="rounded-xl border border-slate-200 p-2.5 transition-colors hover:bg-slate-50 relative group outline-none">
+                  <Bell className="h-5 w-5 text-slate-500 group-hover:text-slate-900 transition-colors" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#090E1A]"></span>
+                    <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
                   )}
                 </button>
               </DropdownMenuTrigger>
@@ -189,9 +167,9 @@ export function DashboardHeader({
           {role === "admin" && (
             <Link
               href="/admin/profile"
-              className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2 hover:bg-white/5 transition-all cursor-pointer bg-white/5 shadow-sm"
+              className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 hover:bg-slate-50 transition-all cursor-pointer bg-white shadow-sm"
             >
-              <div className="h-10 w-10 rounded-full bg-slate-800 overflow-hidden border border-white/10 shadow-sm shrink-0 ring-2 ring-blue-500/30">
+              <div className="h-10 w-10 rounded-full bg-slate-100 overflow-hidden border border-slate-200 shadow-sm shrink-0 ring-2 ring-blue-500/30">
                 <img
                   src={avatarUrl}
                   alt={displayName}
@@ -200,11 +178,11 @@ export function DashboardHeader({
               </div>
 
               <div className="hidden text-left lg:block">
-                <p className="text-[14px] font-bold text-white leading-tight">
+                <p className="text-[14px] font-bold text-slate-900 leading-tight font-poppins">
                   {displayName}
                 </p>
 
-                <p className="text-[10px] font-bold text-blue-400 mt-0.5 uppercase tracking-[0.1em]">
+                <p className="text-[10px] font-bold text-blue-600 mt-0.5 uppercase tracking-[0.1em] font-poppins">
                   {displayRole}
                 </p>
               </div>

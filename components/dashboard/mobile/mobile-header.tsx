@@ -36,7 +36,7 @@ export function MobileHeader({
     <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
       <div className="w-9" /> {/* Spacer to balance the bell icon */}
 
-      <h1 className="text-base font-semibold text-slate-900 line-clamp-1 flex-1 text-center px-4">
+      <h1 className="text-base font-semibold text-slate-900 line-clamp-1 flex-1 text-center px-4 font-heading">
         {title}
       </h1>
 

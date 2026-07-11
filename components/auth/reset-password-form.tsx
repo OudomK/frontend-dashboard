@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, ArrowLeft } from "lucide-react";
+import { Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import Link from "next/link";
@@ -19,6 +19,8 @@ export function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -85,13 +87,6 @@ export function ResetPasswordForm() {
 
   return (
     <div className="w-full max-w-md">
-      <Link 
-        href="/auth/admin-login"
-        className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 mb-6"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to login
-      </Link>
 
       <div className="space-y-3">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
@@ -110,13 +105,20 @@ export function ResetPasswordForm() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
-              className="h-12 pl-10 bg-slate-50 border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-all duration-300 hover:border-blue-400"
+              className="h-12 pl-10 pr-10 bg-slate-50 border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-all duration-300 hover:border-blue-400"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
         </div>
         
@@ -127,13 +129,20 @@ export function ResetPasswordForm() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="••••••••"
-              className="h-12 pl-10 bg-slate-50 border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-all duration-300 hover:border-blue-400"
+              className="h-12 pl-10 pr-10 bg-slate-50 border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-all duration-300 hover:border-blue-400"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
         </div>
 

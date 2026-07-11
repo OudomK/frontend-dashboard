@@ -75,12 +75,12 @@ export interface DocAccount {
   iconTone: string;
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string, t: any }) {
   const normalized = status?.toLowerCase();
   if (normalized === "synced" || normalized === "completed") {
     return (
       <Badge className="rounded-md bg-emerald-600 px-2.5 text-xs font-bold uppercase text-white border-transparent">
-        Synced
+        {t("docs.badgeSynced" as any)}
       </Badge>
     );
   }
@@ -88,7 +88,7 @@ function StatusBadge({ status }: { status: string }) {
   if (normalized === "processing" || normalized === "uploaded") {
     return (
       <Badge className="rounded-md bg-amber-500 px-2.5 text-xs font-bold uppercase text-slate-950 border-transparent">
-        {normalized === "uploaded" ? "Uploaded" : "Processing"}
+        {normalized === "uploaded" ? t("docs.badgeUploaded" as any) : t("docs.badgeProcessing" as any)}
       </Badge>
     );
   }
@@ -96,14 +96,14 @@ function StatusBadge({ status }: { status: string }) {
   if (normalized === "failed") {
     return (
       <Badge className="rounded-md bg-red-600 px-2.5 text-xs font-bold uppercase text-white border-transparent">
-        Failed
+        {t("docs.badgeFailed" as any)}
       </Badge>
     );
   }
 
   return (
     <Badge className="rounded-md border border-slate-200 bg-white px-2.5 text-xs font-bold uppercase text-slate-400">
-      Inactive
+      {t("docs.badgeInactive" as any)}
     </Badge>
   );
 }
@@ -208,7 +208,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
           status: doc.status || "uploaded",
           active: doc.is_active || false,
           categoryId: doc.category_id,
-          categoryName: doc.category_id ? catMap.get(doc.category_id) : "Uncategorized",
+          categoryName: doc.category_id ? catMap.get(doc.category_id) : t("docs.uncategorized" as any),
           icon,
           iconTone,
         };
@@ -453,16 +453,16 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                         <td className="px-5 py-4 text-slate-400">{document.date}</td>
                         <td className="px-5 py-4">
                           {isAdmin ? (
-                            <StatusBadge status={document.status} />
+                            <StatusBadge status={document.status} t={t} />
                           ) : (
                             <span className="text-slate-700">
-                              {document.categoryName || "Uncategorized"}
+                              {document.categoryName || t("docs.uncategorized" as any)}
                             </span>
                           )}
                         </td>
                         {!isAdmin && (
                           <td className="px-5 py-4">
-                            <StatusBadge status={document.status} />
+                            <StatusBadge status={document.status} t={t} />
                           </td>
                         )}
                         <td className="px-5 py-4">
@@ -544,7 +544,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
           <div className="space-y-3 p-3 lg:hidden bg-slate-50/50">
             {filteredDocs.length === 0 ? (
               <div className="py-8 text-center text-slate-400">
-                <p className="font-semibold">No documents found</p>
+                <p className="font-semibold">{t("docs.noDocs" as any)}</p>
               </div>
             ) : (
               filteredDocs.map((document: DocAccount) => {
@@ -568,11 +568,11 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                           </p>
 
                           <p className="mt-1 text-xs text-slate-400">
-                            By {document.author} • {document.date}
+                            {t("docs.by" as any)} {document.author} • {document.date}
                           </p>
 
                           <p className="mt-1.5 text-xs font-semibold text-slate-500">
-                            Category: {document.categoryName || "Uncategorized"}
+                            {t("docs.category" as any)}: {document.categoryName || t("docs.uncategorized" as any)}
                           </p>
                         </div>
                       </div>
@@ -596,11 +596,11 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                             }}
                             aria-label={`Toggle ${document.name}`}
                           />
-                          <span className="text-xs text-slate-500 font-semibold">Active</span>
+                          <span className="text-xs text-slate-500 font-semibold">{t("docs.activeStatus" as any)}</span>
                         </div>
 
                         <div className="flex items-center gap-1.5">
-                          <StatusBadge status={document.status} />
+                          <StatusBadge status={document.status} t={t} />
 
                           <button
                             aria-label={`View ${document.name}`}
@@ -656,13 +656,13 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
           {isAdmin && (
             <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
-              <p className="text-sm text-slate-400">Showing 1 to 6 of 142 documents</p>
+              <p className="text-sm text-slate-400">{t("docs.showing" as any)} 1 {t("docs.to" as any)} 6 {t("docs.of" as any)} 142 {t("docs.documents" as any)}</p>
               <div className="flex gap-2">
                 <Button variant="outline" className="h-8 rounded-md text-slate-400">
-                  Previous
+                  {t("docs.previous" as any)}
                 </Button>
                 <Button variant="outline" className="h-8 rounded-md text-slate-950">
-                  Next
+                  {t("docs.next" as any)}
                 </Button>
               </div>
             </div>
@@ -680,9 +680,9 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
       <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && setDeleteDocId(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Document</DialogTitle>
+            <DialogTitle>{t("docs.deleteTitle" as any)}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-semibold text-slate-900">{deleteDocName}</span>? This action cannot be undone.
+              {t("docs.deleteConfirm" as any)} <span className="font-semibold text-slate-900">{deleteDocName}</span>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
@@ -691,14 +691,14 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
               onClick={() => setDeleteDocId(null)}
               disabled={isDeleting}
             >
-              Cancel
+              {t("docs.cancel" as any)}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={isDeleting}
             >
-              Delete
+              {t("docs.delete" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>

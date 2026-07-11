@@ -35,10 +35,9 @@ export const authContent: Record<
 
     buttonText: "Log in to Dashboard",
 
-    heroTitle:
-      "Empowering clinics to provide accurate 24/7 health guidance through doctor-approved AI knowledge.",
+    heroTitle: "",
 
-    heroDescription: "Aura Health Care Clinic Management Platform",
+    heroDescription: "",
 
      image: "/asset/image-login/doctor-login.png",
 
