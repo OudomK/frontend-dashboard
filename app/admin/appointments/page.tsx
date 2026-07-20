@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { QRScanner } from "@/components/qr-scanner";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 interface Doctor {
   id: number;
@@ -38,6 +39,11 @@ interface Appointment {
 
 export default function AdminAppointmentsPage() {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const permissions = user?.permissions || [];
+  const isRootAdmin = user?.roleId === 3;
+  const canCreate = isRootAdmin || permissions.includes("create_appointments");
+  
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   
@@ -165,12 +171,14 @@ export default function AdminAppointmentsPage() {
             >
               Scan QR
             </button>
-            <button 
-              onClick={() => setActiveTab("generate")}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'generate' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
-            >
-              {t("appointments.generateSlots")}
-            </button>
+            {canCreate && (
+              <button 
+                onClick={() => setActiveTab("generate")}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'generate' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                {t("appointments.generateSlots")}
+              </button>
+            )}
           </div>
         </div>
 
@@ -195,15 +203,18 @@ export default function AdminAppointmentsPage() {
                 <QrCode className="w-5 h-5" />
                 Scan QR
               </button>
-              <button 
-                onClick={() => setActiveTab("generate")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${activeTab === 'generate' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-              >
-                <Plus className="w-5 h-5" />
-                Generate
-              </button>
+              {canCreate && (
+                <button 
+                  onClick={() => setActiveTab("generate")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${activeTab === 'generate' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+                >
+                  <Plus className="w-5 h-5" />
+                  Generate
+                </button>
+              )}
             </div>
 
+            {canCreate && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center gap-4">
                 <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
@@ -305,6 +316,7 @@ export default function AdminAppointmentsPage() {
                 </button>
               </form>
             </div>
+            )}
           </div>
 
           {/* Right Column: Appointments List or Scanner (Hidden on mobile if generate/scan tab active) */}

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from "@/lib/hooks/use-notifications";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 import { formatDistanceToNow } from "date-fns";
 
 type Props = {
@@ -26,6 +27,7 @@ export function MobileHeader({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const permissions = useAuthStore((state) => state.user?.permissions || []);
 
   // Close sidebar on navigation
   useEffect(() => {
@@ -40,8 +42,9 @@ export function MobileHeader({
         {title}
       </h1>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      {permissions.includes("view_notifications") && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
           <button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 transition-colors relative outline-none">
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -106,6 +109,7 @@ export function MobileHeader({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      )}
     </div>
   );
 }

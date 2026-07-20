@@ -11,11 +11,13 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 export function AboutManagement() {
   const { t } = useTranslation();
+  const { roleId } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [savingClinic, setSavingClinic] = useState(false);
   const [clinic, setClinic] = useState<any>(null);
@@ -335,12 +337,13 @@ export function AboutManagement() {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6 text-rose-500" />
-            <h2 className="text-xl font-semibold text-gray-800">{t("abt.teamMembers")}</h2>
-          </div>
+      {roleId === 3 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-6 h-6 text-rose-500" />
+              <h2 className="text-xl font-semibold text-gray-800">{t("abt.teamMembers")}</h2>
+            </div>
           <Button onClick={addNewMember} variant="outline" className="text-rose-600 border-rose-200 hover:bg-rose-50">
             <Plus className="w-4 h-4 mr-2" /> {t("abt.addMember")}
           </Button>
@@ -434,6 +437,7 @@ export function AboutManagement() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

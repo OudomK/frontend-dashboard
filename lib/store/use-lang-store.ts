@@ -9,7 +9,7 @@ interface LangState {
 }
 
 export const useLangStore = create<LangState>((set) => ({
-  language: "en", // Default to English
+  language: "km", // Default to Khmer
   setLanguage: (lang: Language) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("women_health_dashboard_lang", lang);

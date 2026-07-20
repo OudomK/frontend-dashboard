@@ -167,7 +167,7 @@ function TriggerBadge({ value }: { value: string }) {
 }
 
 export default function AdminAnalyticsPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [chatStats, setChatStats] = useState<ChatStats | null>(null);
   const [emergencyStats, setEmergencyStats] = useState<EmergencyStats | null>(null);
@@ -216,7 +216,7 @@ export default function AdminAnalyticsPage() {
       setFlags(((flagsRes.data || []) as EmergencyFlag[]).slice(0, 8));
 
       const categories = (categoriesRes.data || []) as Category[];
-      const categoryMap = new Map(categories.map((category) => [category.id, category.name]));
+      const categoryMap = new Map(categories.map((category) => [category.id, typeof category.name === 'string' ? category.name : ((category.name as any)?.[language as "en" | "km"] || (category.name as any)?.en || (category.name as any)?.km || "")]));
       const records = [
         ...((documentsRes.data || []) as CategorizedRecord[]),
         ...((contentsRes.data || []) as CategorizedRecord[]),

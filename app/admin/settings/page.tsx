@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { Save, X, Plus, ChevronRight, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
-
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { AccessDenied } from "@/components/ui/access-denied";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
@@ -25,6 +25,7 @@ export default function AdminSettingsPage() {
   const [sessionTimeout, setSessionTimeout] = useState(30);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   // Keyword Tags management state
   const [newTagInput, setNewTagInput] = useState("");
@@ -45,8 +46,12 @@ export default function AdminSettingsPage() {
       setSystemPrompt(data.system_prompt || "");
       setRequire2Fa(data.require_2fa || false);
       setSessionTimeout(data.session_timeout || 30);
-    } catch (error) {
-      toast.error("Failed to load settings.");
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        setIsAccessDenied(true);
+      } else {
+        toast.error("Failed to load settings.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -112,6 +117,11 @@ export default function AdminSettingsPage() {
 
   return (
     <DashboardLayout role="admin">
+      {isAccessDenied ? (
+        <div className="mt-8">
+          <AccessDenied />
+        </div>
+      ) : (
       <div className="space-y-6 pb-24 lg:pb-8">
         {/* Breadcrumbs & Header row */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between select-none">
@@ -408,6 +418,7 @@ export default function AdminSettingsPage() {
 
         </div>
       </div>
+      )}
     </DashboardLayout>
   );
 }

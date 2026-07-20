@@ -4,8 +4,10 @@ import { apiClient } from "../api-client";
 interface UserInfo {
   email: string;
   roleId: number;
+  roleName?: string;
   avatarUrl?: string;
   name?: string;
+  permissions?: string[];
 }
 
 interface AuthState {
@@ -15,7 +17,7 @@ interface AuthState {
   user: UserInfo | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, expectedRole: "admin" | "doctor") => Promise<void>;
+  login: (email: string, password: string, expectedRole: "admin" | "doctor" | "unified") => Promise<void>;
   logout: () => Promise<void>;
   initialize: () => void;
   updateAvatar: (url: string) => void;
@@ -80,12 +82,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const { access_token, refresh_token, role_id } = response.data;
 
         // Verify role mapping compatibility
-        // Role ID mappings: 2 = doctor, 3 = admin
-        if (expectedRole === "admin" && role_id !== 3) {
+        if (expectedRole === "admin" && (role_id === 1 || role_id === 2)) {
           throw new Error("Unauthorized: This account does not have admin permissions.");
         }
         if (expectedRole === "doctor" && role_id !== 2) {
           throw new Error("Unauthorized: This account does not have doctor permissions.");
+        }
+        if (expectedRole === "unified" && role_id === 1) {
+          throw new Error("Unauthorized: Patients cannot access the dashboard.");
         }
 
         // Save tokens in local storage
@@ -97,6 +101,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
         // Fetch User Profile to retrieve avatar and name if present
         let avatarUrl = undefined;
         let fullName = undefined;
+        let roleName = undefined;
+        let permissions: string[] = [];
         try {
           const profileResponse = await apiClient.get("/api/v1/users/me", {
             headers: {
@@ -105,7 +111,17 @@ export const useAuthStore = create<AuthState>((set, get) => {
           });
           avatarUrl = profileResponse.data.avatar_url;
           fullName = profileResponse.data.full_name;
+          roleName = profileResponse.data.role_name;
+          permissions = profileResponse.data.permissions || [];
           
+          if (permissions.length > 0) {
+            localStorage.setItem("women_health_user_permissions", JSON.stringify(permissions));
+          }
+
+          if (roleName) {
+            localStorage.setItem("women_health_role_name", roleName);
+          }
+
           if (avatarUrl) {
             // Ensure full URL is stored
             if (!avatarUrl.startsWith('http')) {
@@ -133,8 +149,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
           user: {
             email: email,
             roleId: role_id,
+            roleName: roleName,
             avatarUrl: avatarUrl,
             name: formattedName,
+            permissions: permissions,
           },
           isAuthenticated: true,
           isLoading: false,
@@ -164,6 +182,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         localStorage.removeItem("women_health_role_id");
         localStorage.removeItem("women_health_user_email");
         localStorage.removeItem("women_health_user_name");
+        localStorage.removeItem("women_health_role_name");
         localStorage.removeItem("women_health_avatar_url");
 
         set({
@@ -175,13 +194,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
           isLoading: false,
         });
 
+        // Clear permissions
+        localStorage.removeItem("women_health_user_permissions");
+
         // Redirect appropriately
         if (typeof window !== "undefined") {
-          if (currentRoleId === 3) {
-            window.location.href = "/auth/admin-login";
-          } else {
-            window.location.href = "/auth/doctor-login";
-          }
+          window.location.href = "/auth/login";
         }
       }
     },
@@ -195,6 +213,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const email = localStorage.getItem("women_health_user_email");
       const avatarUrl = localStorage.getItem("women_health_avatar_url") || undefined;
       const name = localStorage.getItem("women_health_user_name") || undefined;
+      const roleName = localStorage.getItem("women_health_role_name") || undefined;
+      const permsStr = localStorage.getItem("women_health_user_permissions");
+      let permissions: string[] = [];
+      if (permsStr) {
+        try {
+          permissions = JSON.parse(permsStr);
+        } catch (e) {
+          // ignore
+        }
+      }
 
       if (token && refreshToken && roleIdStr && email) {
         const roleId = Number(roleIdStr);
@@ -205,8 +233,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
           user: {
             email,
             roleId,
+            roleName,
             avatarUrl,
             name,
+            permissions,
           },
           isAuthenticated: true,
           isLoading: false,

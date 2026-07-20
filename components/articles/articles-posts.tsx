@@ -155,8 +155,8 @@ export function ArticlesPosts({ role }: { role: string }) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(t("art.allTopics"));
-  const [selectedStatus, setSelectedStatus] = useState(t("art.anyStatus"));
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -208,7 +208,7 @@ export function ArticlesPosts({ role }: { role: string }) {
           title,
           excerpt,
           content: body,
-          category: cat?.name ?? "Uncategorized",
+          category: typeof cat?.name === 'string' ? cat?.name : ((cat?.name as any)?.[language as "en"|"km"] || (cat?.name as any)?.en || (cat?.name as any)?.km || "Uncategorized"),
           category_id: a.category_id ?? undefined,
           trimester: a.trimester ?? undefined,
           authorName: a.author_id === 1 ? "Admin" : "Dr. Anderson",
@@ -405,9 +405,9 @@ export function ArticlesPosts({ role }: { role: string }) {
       const tStr = (a.title.km || "") + " " + (a.title.en || "");
       const eStr = (a.excerpt.km || "") + " " + (a.excerpt.en || "");
       const matchSearch = !q || tStr.toLowerCase().includes(q) || eStr.toLowerCase().includes(q);
-      const matchCat = selectedCategory === t("art.allTopics") || a.category === selectedCategory;
+      const matchCat = selectedCategory === "all" || a.category === selectedCategory;
       const matchStatus =
-        selectedStatus === t("art.anyStatus") ||
+        selectedStatus === "all" ||
         (selectedStatus === "Published" && a.status === "PUBLISHED") ||
         (selectedStatus === "Draft" && a.status === "DRAFT");
       return matchSearch && matchCat && matchStatus;
@@ -495,10 +495,11 @@ export function ArticlesPosts({ role }: { role: string }) {
                   <SelectValue placeholder={t("art.allTopics")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={t("art.allTopics")}>{t("art.allTopics")}</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                  ))}
+                  <SelectItem value="all">{t("art.allTopics")}</SelectItem>
+                  {categories.map((c) => {
+                    const catName = typeof c.name === 'string' ? c.name : ((c.name as any)?.[language as "en"|"km"] || (c.name as any)?.en || (c.name as any)?.km || "");
+                    return <SelectItem key={c.id} value={catName as string}>{catName}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -509,7 +510,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                   <SelectValue placeholder={t("art.anyStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={t("art.anyStatus")}>{t("art.anyStatus")}</SelectItem>
+                  <SelectItem value="all">{t("art.anyStatus")}</SelectItem>
                   <SelectItem value="Published">{t("art.published")}</SelectItem>
                   <SelectItem value="Draft">{t("art.draft")}</SelectItem>
                 </SelectContent>
@@ -569,7 +570,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                   {/* Cover */}
                   <div className="relative h-40 overflow-hidden bg-slate-50">
                     {img ? (
-                      <img src={img} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={img} alt={article.title.en} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className={`w-full h-full flex flex-col items-center justify-center ${style.bg}`}>
                         <CategoryAvatar category={article.category} size="lg" />
@@ -591,7 +592,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                     <span className={`self-start rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${style.bg} ${style.text} ${style.border}`}>
                       {article.category}
                     </span>
-                    <h3 className="font-bold text-slate-900 leading-snug line-clamp-2">{(article.title as any)[language] || article.title.km || article.title.en}</h3>
+                    <h3 className="font-bold text-slate-900 leading-snug line-clamp-2">{article.title[language as "en" | "km"] || article.title.en}</h3>
                     {((article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en) && (
                       <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{(article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en}</p>
                     )}
@@ -655,13 +656,13 @@ export function ArticlesPosts({ role }: { role: string }) {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3 max-w-sm">
                             {img ? (
-                              <img src={img} alt={article.title} className="h-11 w-11 shrink-0 rounded-xl object-cover border border-slate-100 shadow-sm" />
+                              <img src={img} alt={article.title.en} className="h-11 w-11 shrink-0 rounded-xl object-cover border border-slate-100 shadow-sm" />
                             ) : (
                               <CategoryAvatar category={article.category} size="md" />
                             )}
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 mb-0.5">
-                                <p className="font-bold text-slate-900 truncate text-sm leading-tight">{(article.title as any)[language] || article.title.km || article.title.en}</p>
+                                <p className="font-bold text-slate-900 truncate text-sm leading-tight">{article.title[language as "en" | "km"] || article.title.en}</p>
                                 {article.is_featured && (
                                   <Star className="h-3 w-3 shrink-0 fill-yellow-400 text-yellow-400" />
                                 )}
@@ -748,7 +749,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                   <div key={article.id} className="p-4">
                     <div className="flex items-start gap-3">
                       {img ? (
-                        <img src={img} alt={article.title} className="h-14 w-14 shrink-0 rounded-xl object-cover border border-slate-100 shadow-sm" />
+                        <img src={img} alt={article.title.en} className="h-14 w-14 shrink-0 rounded-xl object-cover border border-slate-100 shadow-sm" />
                       ) : (
                         <CategoryAvatar category={article.category} size="md" />
                       )}
@@ -759,7 +760,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                           </span>
                           <StatusBadge status={article.status} />
                         </div>
-                        <p className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{(article.title as any)[language] || article.title.km || article.title.en}</p>
+                        <p className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{article.title[language as "en" | "km"] || article.title.en}</p>
                         {((article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en) && (
                           <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{(article.excerpt as any)[language] || article.excerpt.km || article.excerpt.en}</p>
                         )}
@@ -923,9 +924,10 @@ export function ArticlesPosts({ role }: { role: string }) {
                   }`}
                 >
                   <option value="" disabled>Select category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  {categories.map((c) => {
+                    const catName = typeof c.name === 'string' ? c.name : ((c.name as any)?.[language as "en"|"km"] || (c.name as any)?.en || (c.name as any)?.km || "");
+                    return <option key={c.id} value={c.id}>{catName}</option>;
+                  })}
                 </select>
               </div>
 
@@ -1098,7 +1100,7 @@ export function ArticlesPosts({ role }: { role: string }) {
           {/* Visually hidden title for screen readers — required by Radix Dialog */}
           <VisuallyHidden.Root>
             <DialogTitle>
-              {selectedArticle ? selectedArticle.title : "Article Preview"}
+              {selectedArticle ? selectedArticle.title.en : "Article Preview"}
             </DialogTitle>
           </VisuallyHidden.Root>
 
@@ -1111,7 +1113,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                 {/* Hero Image / Cover */}
                 <div className="relative h-52 overflow-hidden rounded-t-2xl">
                   {img ? (
-                    <img src={img} alt={selectedArticle.title} className="w-full h-full object-cover" />
+                    <img src={img} alt={selectedArticle.title.en} className="w-full h-full object-cover" />
                   ) : (
                     <div className={`w-full h-full flex flex-col items-center justify-center ${style.bg}`}>
                       <CategoryAvatar category={selectedArticle.category} size="lg" />
@@ -1142,7 +1144,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                 <div className="px-6 py-5 space-y-4">
                   {/* Title + excerpt */}
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 leading-snug">{(selectedArticle.title as any)[language] || selectedArticle.title.km || selectedArticle.title.en}</h2>
+                    <h2 className="text-xl font-bold text-slate-900 leading-snug">{selectedArticle.title[language as "en" | "km"] || selectedArticle.title.en}</h2>
                     {((selectedArticle.excerpt as any)[language] || selectedArticle.excerpt.km || selectedArticle.excerpt.en) && (
                       <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{(selectedArticle.excerpt as any)[language] || selectedArticle.excerpt.km || selectedArticle.excerpt.en}</p>
                     )}
@@ -1221,7 +1223,7 @@ export function ArticlesPosts({ role }: { role: string }) {
       <Dialog open={!!articleToDelete} onOpenChange={(open) => !open && setArticleToDelete(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle>Confirm Deletion - {articles.find(a => a.id === articleToDelete)?.title[language as "en" | "km"] || articles.find(a => a.id === articleToDelete)?.title.en}</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this article? This action cannot be undone.
             </DialogDescription>

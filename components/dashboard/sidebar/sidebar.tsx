@@ -22,8 +22,11 @@ export const navKeyMap: Record<string, TranslationKey> = {
   "Categories": "nav.categories",
   "FAQ Management": "nav.faqs",
   "User Management": "nav.users",
+  "Roles & Permissions": "nav.roles",
   "About Us": "nav.about",
   "System Settings": "nav.settings",
+  "Static Pages": "nav.staticPages",
+  "Banners Management": "nav.banners",
 
   // doctorMenu & adminMenu additions
   "Appointments": "nav.appointments",
@@ -60,97 +63,104 @@ export function Sidebar({ role, isMobile = false }: Props) {
     ? (typeof window !== "undefined" ? localStorage.getItem("women_health_user_name") : null) || sessionUser.email.split("@")[0]
     : "Dr. Sarah Jenkins";
 
-  const doctorGroups = [
-    {
-      label: "Overview",
-      items: doctorMenu.slice(0, 1),
-    },
-    {
-      label: "AI & Knowledge",
-      items: doctorMenu.slice(1, 4),
-    },
-    {
-      label: "Content Management",
-      items: doctorMenu.slice(4),
-    },
-  ];
+  const permissions = sessionUser?.permissions || [];
+  const isRootAdmin = sessionUser?.roleId === 3;
+
+  // Filter adminMenu based on permissions
+  const filteredMenu = adminMenu.filter((item: any) => {
+    if (isRootAdmin) return true; // Root admin sees all
+    if (!item.permission) return true; // Items without specific permission requirement
+    return permissions.includes(item.permission);
+  });
 
   const adminGroups = [
     {
       label: "Overview",
-      items: adminMenu.slice(0, 2),
+      items: filteredMenu.filter((item) => ["Dashboard", "Appointments", "System Audit Logs", "System Analytics"].includes(item.label)),
     },
     {
       label: "AI & Knowledge",
-      items: adminMenu.slice(2, 4),
+      items: filteredMenu.filter((item) => ["Knowledge Base Docs", "Emergency Rules", "Push Notifications", "AI Chat Logs"].includes(item.label)),
     },
     {
       label: "Content Management",
-      items: adminMenu.slice(4),
+      items: filteredMenu.filter((item) => ["Health Articles", "Categories", "FAQ Management", "User Management", "Roles & Permissions", "About Us", "System Settings", "Static Pages", "Banners Management"].includes(item.label)),
     },
   ];
 
-  const groups = role === "admin" ? adminGroups : doctorGroups;
-  const LogoIcon = role === "admin" ? Stethoscope : HeartPulse;
+  const groups = adminGroups;
+  const LogoIcon = Stethoscope;
 
   // The premium dark background for the sidebar
-  const sidebarBg = "bg-white border-r border-slate-100";
+  const sidebarBg = "bg-white/80 backdrop-blur-xl border-r border-slate-200/50";
   
   return (
     <aside className={`${isMobile ? 'flex w-full min-h-[calc(100vh-120px)]' : 'hidden w-[280px] lg:flex sticky top-0 h-screen'} ${sidebarBg} flex-col z-20 transition-all`}>
       {/* Logo Area */}
       <div className="px-6 py-8">
         <div className="flex items-center gap-4">
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-white shadow-[0_0_20px_rgba(255,255,255,0.15)] ring-1 ring-white/20`}>
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-white shadow-[0_4px_12px_rgba(14,165,233,0.15)] ring-1 ring-slate-100`}>
             <img src="/asset/logo.jpg" alt="Logo" className="h-full w-full object-cover" />
           </div>
 
           <div className="flex flex-col min-w-0">
-            <h1 className="text-[20px] font-extrabold tracking-tight text-slate-900 leading-tight truncate font-poppins">
-              {role === "admin" ? "WomenHealth" : "Aura Clinic"}
+            <h1 className="text-[20px] font-black tracking-tight text-slate-900 leading-tight truncate font-poppins">
+              WomenHealth AI
             </h1>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 font-poppins ${role === "admin" ? "text-[#0ea5e9]" : "text-emerald-600"}`}>
-              {role === "admin" ? "Admin Panel" : "Doctor Portal"}
+            <span className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 font-poppins text-[#0ea5e9]`}>
+              Dashboard
             </span>
           </div>
         </div>
       </div>
 
       {/* Menu Area */}
-      <div className="flex-1 overflow-y-auto py-2 pl-4 pr-0 scrollbar-hide">
-        <div className="space-y-8">
-          {groups.map((group) => (
+      <div className="flex-1 overflow-y-auto py-2 pl-3 pr-0 scrollbar-hide flex flex-col justify-between">
+        <div className="space-y-6">
+          {groups.map((group) => {
+            if (group.items.length === 0) return null;
+            return (
             <div key={group.label}>
-              <p className="mb-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500/80 font-poppins">
+              <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-widest text-slate-400 font-poppins">
                 {group.label}
               </p>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
+                  
+                  const navKey = navKeyMap[item.label];
+                  const labelToDisplay = navKey ? (t(navKey) || item.label) : item.label;
 
                   return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={`
-                        relative group flex items-center gap-3 py-3 pl-4 transition-all duration-300
-                        ${
-                          isActive
-                            ? role === "admin" 
-                              ? "bg-[#0ea5e9] text-white rounded-r-[24px] mr-4 shadow-md shadow-sky-500/20"
-                              : "bg-emerald-500 text-white rounded-r-[24px] mr-4 shadow-md shadow-emerald-500/20"
-                            : "text-slate-500 hover:text-slate-900 rounded-r-[24px] mr-4 hover:bg-slate-50"
-                        }
-                      `}
-                    >
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        className={`
+                          relative group flex items-center gap-3 py-2.5 pl-3 transition-all duration-300
+                          ${
+                            isActive
+                              ? "bg-slate-900 text-white rounded-l-[24px]"
+                              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-xl mr-3"
+                          }
+                        `}
+                      >
+                        {isActive && (
+                          <>
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-[#0ea5e9] rounded-r-full" />
+                            {/* Top curve */}
+                            <div className="absolute -top-[20px] right-0 h-[20px] w-[20px] pointer-events-none" style={{ background: "radial-gradient(circle at top left, transparent 20px, #0f172a 21px)" }} />
+                            {/* Bottom curve */}
+                            <div className="absolute -bottom-[20px] right-0 h-[20px] w-[20px] pointer-events-none" style={{ background: "radial-gradient(circle at bottom left, transparent 20px, #0f172a 21px)" }} />
+                          </>
+                        )}
                       
                       <div className={`
-                        flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] transition-all duration-300
+                        flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300
                         ${isActive 
-                          ? "text-white"
-                          : "text-slate-400 group-hover:text-slate-600"
+                          ? "bg-white/10 text-white"
+                          : "bg-white text-slate-400 shadow-sm border border-slate-200 group-hover:text-slate-600 group-hover:border-slate-300 group-hover:shadow"
                         }
                       `}>
                         <Icon className="h-5 w-5" />
@@ -161,82 +171,96 @@ export function Sidebar({ role, isMobile = false }: Props) {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
+        </div>
+
+        {/* Footer Area moved inside scrollable div */}
+        <div className="mt-8 mb-4">
+          {role === "admin" ? (
+            <div className="py-4 pl-1 pr-0 space-y-1.5 border-t border-slate-100">
+              {(!adminSettingsItem.permission || isRootAdmin || permissions.includes(adminSettingsItem.permission)) && (
+              <Link
+                href={adminSettingsItem.href}
+                className={`
+                  relative group flex items-center gap-3 py-3 pl-3 transition-all duration-300
+                  ${
+                    pathname === adminSettingsItem.href
+                      ? "bg-slate-900 text-white rounded-l-[24px]"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-xl mr-3"
+                  }
+                `}
+              >
+                {pathname === adminSettingsItem.href && (
+                  <>
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-[#0ea5e9] rounded-r-full" />
+                    <div className="absolute -top-[20px] right-0 h-[20px] w-[20px] pointer-events-none" style={{ background: "radial-gradient(circle at top left, transparent 20px, #0f172a 21px)" }} />
+                    <div className="absolute -bottom-[20px] right-0 h-[20px] w-[20px] pointer-events-none" style={{ background: "radial-gradient(circle at bottom left, transparent 20px, #0f172a 21px)" }} />
+                  </>
+                )}
+                <div className={`
+                  flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300
+                  ${pathname === adminSettingsItem.href 
+                    ? "bg-white/10 text-white" 
+                    : "bg-white text-slate-400 shadow-sm border border-slate-200 group-hover:text-slate-600 group-hover:border-slate-300 group-hover:shadow"}
+                `}>
+                  <Settings className="h-5 w-5" />
+                </div>
+                <span className={`text-[14px] truncate font-kantumruy-pro ${pathname === adminSettingsItem.href ? "font-bold" : "font-medium"}`}>{t(navKeyMap[adminSettingsItem.label] || "nav.settings")}</span>
+              </Link>
+              )}
+              
+              <button
+                onClick={() => logout()}
+                className="group flex w-full items-center gap-3 py-3 pl-3 rounded-xl mr-3 text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all duration-300"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm border border-slate-200 group-hover:text-red-500 group-hover:border-red-200 transition-all duration-300">
+                  <LogOut className="h-5 w-5" />
+                </div>
+                <span className="text-[14px] font-medium font-kantumruy-pro">{t("nav.logout")}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 border-t border-slate-100 pr-3">
+              <div className="flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-slate-50 group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="h-11 w-11 shrink-0 rounded-full bg-slate-100 overflow-hidden ring-2 ring-emerald-500/30 group-hover:ring-emerald-500/60 transition-all">
+                  <img
+                    src={sessionUser?.avatarUrl || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100"}
+                    alt={doctorName}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-slate-900 text-[14px] font-poppins">
+                    {doctorName}
+                  </p>
+                  <p className="text-[11px] font-semibold text-emerald-600 tracking-wider uppercase mt-0.5 truncate font-poppins">
+                    {sessionUser?.roleName || "Doctor"}
+                  </p>
+                </div>
+
+                {(!permissions || permissions.includes("manage_profile")) && (
+                  <Link
+                    href="/doctor/profile"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Link>
+                )}
+              </div>
+
+              <button
+                onClick={() => logout()}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold tracking-wide text-slate-600 shadow-sm transition-all duration-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="font-kantumruy-pro">{t("nav.logout")}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Footer Area */}
-      {role === "admin" ? (
-        <div className="py-4 pl-4 pr-0 mt-2 space-y-1.5 border-t border-slate-100">
-          <Link
-            href={adminSettingsItem.href}
-            className={`
-              relative group flex items-center gap-3 py-3 pl-4 transition-all duration-300
-              ${
-                pathname === adminSettingsItem.href
-                  ? "bg-[#0ea5e9] text-white rounded-r-[24px] mr-4 shadow-md shadow-sky-500/20"
-                  : "text-slate-500 hover:text-slate-900 rounded-r-[24px] mr-4 hover:bg-slate-50"
-              }
-            `}
-          >
-            <div className={`
-              flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] transition-all duration-300
-              ${pathname === adminSettingsItem.href 
-                ? "text-white" 
-                : "text-slate-400 group-hover:text-slate-600"}
-            `}>
-              <Settings className="h-5 w-5" />
-            </div>
-            <span className={`text-[14px] truncate font-kantumruy-pro ${pathname === adminSettingsItem.href ? "font-bold" : "font-medium"}`}>{t(navKeyMap[adminSettingsItem.label] || "nav.settings")}</span>
-          </Link>
-          
-          <button
-            onClick={() => logout()}
-            className="group flex w-full items-center gap-3 py-3 pl-4 rounded-xl mr-4 text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all duration-300"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-slate-400 group-hover:text-red-500 transition-colors">
-              <LogOut className="h-5 w-5" />
-            </div>
-            <span className="text-[14px] font-medium font-kantumruy-pro">{t("nav.logout")}</span>
-          </button>
-        </div>
-      ) : (
-        <div className="p-5 mt-2 border-t border-slate-100">
-          <div className="flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-slate-50 group cursor-pointer border border-transparent hover:border-slate-100">
-            <div className="h-11 w-11 shrink-0 rounded-full bg-slate-100 overflow-hidden ring-2 ring-emerald-500/30 group-hover:ring-emerald-500/60 transition-all">
-              <img
-                src={sessionUser?.avatarUrl || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100"}
-                alt={doctorName}
-                className="h-full w-full object-cover"
-              />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-bold text-slate-900 text-[14px] font-poppins">
-                {doctorName}
-              </p>
-              <p className="text-[11px] font-semibold text-emerald-600 tracking-wider uppercase mt-0.5 truncate font-poppins">
-                Clinic Owner
-              </p>
-            </div>
-
-            <Link
-              href="/doctor/profile"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all"
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
-          </div>
-
-          <button
-            onClick={() => logout()}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold tracking-wide text-slate-600 shadow-sm transition-all duration-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="font-kantumruy-pro">{t("nav.logout")}</span>
-          </button>
-        </div>
-      )}
     </aside>
   );
 }

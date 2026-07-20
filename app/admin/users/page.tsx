@@ -17,6 +17,8 @@ import {
   UserCheck,
   Users,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,7 +49,8 @@ interface UserAccount {
   name: string;
   email: string;
   avatar: string;
-  role: "USER" | "DOCTOR" | "ADMIN" | "MODERATOR";
+  role: string;
+  roleId: number;
   status: "Active" | "Suspended";
   joinedDate: string;
   lastActive: string;
@@ -57,77 +60,15 @@ interface UserAccount {
 
 // ─── Role Badge Styles ────────────────────────────────────────────────────────
 
-const roleStyles = {
-  USER: "bg-slate-100 text-slate-700 border-transparent dark:bg-slate-800 dark:text-slate-300",
-  DOCTOR: "bg-blue-600 text-white border-transparent hover:bg-blue-700",
-  ADMIN: "bg-amber-500 text-white border-transparent hover:bg-amber-600",
-  MODERATOR: "bg-emerald-600 text-white border-transparent hover:bg-emerald-700",
+const roleStyles: Record<string, string> = {
+  USER: "bg-slate-100 text-slate-700 border-slate-200",
+  DOCTOR: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  ADMIN: "bg-rose-50 text-rose-700 border-rose-200",
+  MODERATOR: "bg-purple-50 text-purple-700 border-purple-200",
+  MANAGER: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200", // Fallback for manager
 };
 
-// ─── Initial Seed Mock Users matching screenshot exactly ──────────────────────
-
-const initialUsers: UserAccount[] = [
-  {
-    id: 1,
-    name: "Sarah Jenkins",
-    email: "sarah.j@example.com",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
-    role: "USER",
-    status: "Active",
-    joinedDate: "Oct 12, 2023",
-    lastActive: "2 mins ago",
-  },
-  {
-    id: 2,
-    name: "Dr. Emily Chen",
-    email: "emily.chen@clinic.com",
-    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100",
-    role: "DOCTOR",
-    status: "Active",
-    joinedDate: "Jan 05, 2023",
-    lastActive: "1 hr ago",
-  },
-  {
-    id: 3,
-    name: "Marcus Johnson",
-    email: "marcus.j@clinic.com",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
-    role: "ADMIN",
-    status: "Active",
-    joinedDate: "Mar 01, 2022",
-    lastActive: "Online",
-  },
-  {
-    id: 4,
-    name: "Amanda Torres",
-    email: "amandat99@mail.com",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
-    role: "USER",
-    status: "Suspended",
-    joinedDate: "Aug 14, 2023",
-    lastActive: "Oct 20, 2023",
-  },
-  {
-    id: 5,
-    name: "Fatima Al-Sayed",
-    email: "fatima.sayed@example.com",
-    avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100",
-    role: "USER",
-    status: "Active",
-    joinedDate: "Nov 02, 2023",
-    lastActive: "3 hrs ago",
-  },
-  {
-    id: 6,
-    name: "James Peterson",
-    email: "j.peterson@clinic.com",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100",
-    role: "MODERATOR",
-    status: "Active",
-    joinedDate: "May 10, 2023",
-    lastActive: "yesterday",
-  },
-];
+// ─── Initial Seed Mock Users removed ──────────────────────
 
 function formatBackendError(error: any): string {
   const detail = error.response?.data?.detail;
@@ -169,19 +110,27 @@ export default function AdminUserManagementPage() {
   // Form inputs
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
-  const [formRole, setFormRole] = useState<UserAccount["role"]>("USER");
+  const [formRole, setFormRole] = useState<string>("1");
   const [formStatus, setFormStatus] = useState<UserAccount["status"]>("Active");
   const [formPassword, setFormPassword] = useState("");
   const [formPhone, setFormPhone] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
 
   const fetchUsers = async () => {
     setLoadingList(true);
     try {
-      const response = await apiClient.get("/api/v1/admin/users");
-      const mapped: UserAccount[] = response.data.map((u: any) => {
-        let roleName: UserAccount["role"] = "USER";
-        if (u.role_id === 2) roleName = "DOCTOR";
-        else if (u.role_id === 3) roleName = "ADMIN";
+      const [rolesRes, usersRes] = await Promise.all([
+        apiClient.get("/api/v1/admin/rbac/roles"),
+        apiClient.get("/api/v1/admin/users")
+      ]);
+      const rolesData = rolesRes.data;
+      setAvailableRoles(rolesData);
+
+      const mapped: UserAccount[] = usersRes.data.map((u: any) => {
+        const roleObj = rolesData.find((r: any) => r.id === u.role_id);
+        const roleName = roleObj ? roleObj.name : (u.role_id === 3 ? "ADMIN" : u.role_id === 2 ? "DOCTOR" : "USER");
 
         const statusName: UserAccount["status"] = u.status === "active" ? "Active" : "Suspended";
         const formattedDate = u.created_at
@@ -196,6 +145,7 @@ export default function AdminUserManagementPage() {
           email: u.email,
           avatar,
           role: roleName,
+          roleId: u.role_id,
           status: statusName,
           joinedDate: formattedDate,
           lastActive: "Online",
@@ -218,10 +168,11 @@ export default function AdminUserManagementPage() {
   const resetForm = () => {
     setFormName("");
     setFormEmail("");
-    setFormRole("USER");
+    setFormRole("1");
     setFormStatus("Active");
     setFormPassword("");
     setFormPhone("");
+    setShowPassword(false);
     setEditMode(false);
     setSelectedUser(null);
   };
@@ -230,10 +181,11 @@ export default function AdminUserManagementPage() {
     setSelectedUser(user);
     setFormName(user.name);
     setFormEmail(user.email);
-    setFormRole(user.role);
+    setFormRole(String(user.roleId));
     setFormStatus(user.status);
     setFormPhone(user.phone || "");
     setFormPassword("");
+    setShowPassword(false);
     setEditMode(true);
     setOpenDialog(true);
     setActiveMenuId(null);
@@ -250,13 +202,13 @@ export default function AdminUserManagementPage() {
       return;
     }
 
-    if (!editMode && formPassword.length < 6) {
-      toast.error(t("users.passwordMinLen"));
+    if (!editMode && formPassword.length < 8) {
+      toast.error(t("users.passwordMinLen", { defaultValue: "Password must be at least 8 characters" }));
       return;
     }
 
-    if (editMode && formPassword && formPassword.length < 6) {
-      toast.error(t("users.passwordNewMinLen"));
+    if (editMode && formPassword && formPassword.length < 8) {
+      toast.error(t("users.passwordNewMinLen", { defaultValue: "New password must be at least 8 characters" }));
       return;
     }
 
@@ -274,8 +226,8 @@ export default function AdminUserManagementPage() {
         });
 
         // Patch role assignment separately if updated
-        const targetRoleId = formRole === "ADMIN" ? 3 : formRole === "DOCTOR" ? 2 : 1;
-        const currentRoleId = selectedUser.role === "ADMIN" ? 3 : selectedUser.role === "DOCTOR" ? 2 : 1;
+        const targetRoleId = parseInt(formRole, 10);
+        const currentRoleId = selectedUser.roleId;
         if (targetRoleId !== currentRoleId) {
           await apiClient.patch(`/api/v1/admin/users/${selectedUser.id}/assign-role`, {
             role_id: targetRoleId,
@@ -286,7 +238,8 @@ export default function AdminUserManagementPage() {
         toast.success(t("users.userUpdated"));
       } else {
         // Create new user
-        if (formRole === "DOCTOR") {
+        const targetRoleId = parseInt(formRole, 10);
+        if (targetRoleId === 2) {
           await apiClient.post("/api/v1/admin/create-doctor", {
             email: formEmail,
             full_name: formName,
@@ -300,7 +253,7 @@ export default function AdminUserManagementPage() {
             full_name: formName,
             password: formPassword,
             phone: formPhone || null,
-            role_id: formRole === "ADMIN" ? 3 : 1,
+            role_id: targetRoleId,
           });
         }
         toast.dismiss(toastId);
@@ -407,7 +360,17 @@ export default function AdminUserManagementPage() {
   return (
     <DashboardLayout
       role="admin"
-      title={t("users.title")}
+      title={
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+              {t("users.title")}
+            </h1>
+            <Badge className="bg-rose-100 text-rose-600 border border-rose-200 hover:bg-rose-100 uppercase tracking-wider font-bold text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1.5 hidden sm:flex">
+              <ShieldAlert className="w-3 h-3" />
+              Admin Area
+            </Badge>
+          </div>
+      }
       subtitle={t("users.subtitle")}
       actions={
         <div className="flex items-center gap-2">
@@ -426,7 +389,7 @@ export default function AdminUserManagementPage() {
               resetForm();
               setOpenDialog(true);
             }}
-            className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700 transition-all"
+            className="h-10 rounded-lg bg-[#12A8EA] px-4 text-sm font-semibold text-white shadow hover:bg-[#0F96DE] transition-all"
           >
             <Plus className="mr-1.5 h-4 w-4" />
             {t("users.addUser")}
@@ -522,10 +485,9 @@ export default function AdminUserManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">{t("users.allRoles")}</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
-                  <SelectItem value="DOCTOR">Doctor</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="MODERATOR">Moderator</SelectItem>
+                  {availableRoles.map(r => (
+                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -792,13 +754,23 @@ export default function AdminUserManagementPage() {
               <label className="block text-sm font-semibold text-slate-700">
                 {editMode ? "New Password (Optional)" : "Initial Password *"}
               </label>
-              <input
-                type="password"
-                value={formPassword}
-                onChange={(e) => setFormPassword(e.target.value)}
-                placeholder={editMode ? "Leave blank to keep current password" : "Minimum 6 characters"}
-                className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  placeholder={editMode ? "Leave blank to keep current password" : "Minimum 8 characters"}
+                  className="h-11 w-full rounded-xl border border-slate-200 pl-4 pr-10 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-[#12A8EA] focus:ring-2 focus:ring-[#12A8EA]/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Phone Number (Optional) */}
@@ -822,9 +794,9 @@ export default function AdminUserManagementPage() {
                     <SelectValue placeholder="Select Role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USER">User</SelectItem>
-                    <SelectItem value="DOCTOR">Doctor</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    {availableRoles.map(r => (
+                      <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -854,7 +826,7 @@ export default function AdminUserManagementPage() {
             </Button>
             <Button
               onClick={handleFormSubmit}
-              className="bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-semibold"
+              className="bg-[#12A8EA] text-white hover:bg-[#0F96DE] rounded-lg font-semibold"
             >
               {editMode ? "Save Changes" : "Create User"}
             </Button>
@@ -868,7 +840,7 @@ export default function AdminUserManagementPage() {
           resetForm();
           setOpenDialog(true);
         }}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all lg:hidden"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#12A8EA] text-white shadow-xl hover:bg-[#0F96DE] hover:scale-105 active:scale-95 transition-all lg:hidden"
         aria-label="Add New User"
       >
         <Plus className="h-6 w-6" />
@@ -893,7 +865,7 @@ export default function AdminUserManagementPage() {
           
           <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/5">
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-900/20"
+              className="w-full bg-[#12A8EA] hover:bg-[#0F96DE] text-white shadow-md shadow-[#12A8EA]/20"
               onClick={() => {
                 if (deleteDialogUser) {
                   // If they aren't already suspended, suspend them

@@ -227,11 +227,14 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("faqs.allCategories")}</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  {categories.map((cat) => {
+                    const catName = typeof cat.name === 'string' ? cat.name : ((cat.name as any)?.[language as 'en'|'km'] || (cat.name as any)?.en || (cat.name as any)?.km || "");
+                    return (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {catName}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             ) : (
@@ -246,7 +249,10 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                 <Filter className="h-4 w-4" />
                 {categoryFilter === "all"
                   ? t("faqs.filterCategory")
-                  : categories.find((c) => c.id.toString() === categoryFilter)?.name || t("faqs.category")}
+                  : (() => {
+                      const c = categories.find((c) => c.id.toString() === categoryFilter);
+                      return c ? (typeof c.name === 'string' ? c.name : ((c.name as any)?.[language as 'en'|'km'] || (c.name as any)?.en || (c.name as any)?.km || "")) : t("faqs.category");
+                    })()}
               </button>
             )}
           </div>
@@ -311,7 +317,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                       </td>
 
                       <td className="px-6 py-5">
-                        <CategoryPill category={faq.categoryName} />
+                        <CategoryPill category={typeof faq.categoryName === 'string' ? faq.categoryName : ((faq.categoryName as any)?.[language as 'en'|'km'] || (faq.categoryName as any)?.en || (faq.categoryName as any)?.km || "")} />
                       </td>
 
                       <td className="px-6 py-5">
@@ -368,7 +374,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                 <div key={faq.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <CategoryPill category={faq.categoryName} />
+                      <CategoryPill category={typeof faq.categoryName === 'string' ? faq.categoryName : ((faq.categoryName as any)?.[language as 'en'|'km'] || (faq.categoryName as any)?.en || (faq.categoryName as any)?.km || "")} />
                       <p className="mt-2 font-semibold leading-snug text-slate-900">
                         {faq.question?.[language as 'en'|'km'] || faq.question?.km || faq.question?.en}
                       </p>

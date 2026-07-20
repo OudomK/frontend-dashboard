@@ -14,7 +14,7 @@ import { MobilePageWrapper } from "../mobile/mobile-page-wrapper";
 type Props = {
   children: ReactNode;
   role: "admin" | "doctor";
-  title?: string;
+  title?: ReactNode;
   subtitle?: string;
   actions?: ReactNode;
 };
@@ -36,17 +36,11 @@ export function DashboardLayout({
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        if (role === "admin") {
-          router.replace("/auth/admin-login");
-        } else {
-          router.replace("/auth/doctor-login");
-        }
+        router.replace("/auth/login");
       } else {
-        // Enforce strict role matching
-        if (role === "admin" && roleId !== 3) {
-          router.replace("/auth/admin-login");
-        } else if (role === "doctor" && roleId !== 2) {
-          router.replace("/auth/doctor-login");
+        // Enforce strict role matching (only block basic users/patients)
+        if (roleId === 1) {
+          router.replace("/auth/login");
         }
       }
     }
@@ -64,8 +58,12 @@ export function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="flex">
+    <div className="min-h-screen bg-slate-50/50 relative">
+      {/* Subtle Premium Background Pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 opacity-20 blur-[100px]" />
+      
+      <div className="flex relative z-10">
         {/* Desktop Sidebar */}
         <Sidebar role={role} />
 

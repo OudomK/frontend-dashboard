@@ -17,10 +17,10 @@ export const authContent: Record<
     subtitle: "Log in to the WomenHealth Admin Portal",
     buttonText: "Sign In to Dashboard",
 
-    heroTitle: "Empowering Women's Health Care.",
+    heroTitle: "Empowering Healthcare with AI.",
 
     heroDescription:
-      "Manage the knowledge base, review AI interactions, update health content, and oversee the emergency warning system from one central platform.",
+      "Access patient records, manage appointments, and utilize AI-driven diagnostic tools in one unified dashboard.",
 
     image: "/asset/image-login/admin-login.png",
 
@@ -42,5 +42,14 @@ export const authContent: Record<
      image: "/asset/image-login/doctor-login.png",
 
     logoText: "Aura Health Care",
+  },
+  unified: {
+    title: "Welcome Back",
+    subtitle: "Log in to securely access tools, records, and insights based on your role and permissions.",
+    buttonText: "Sign In",
+    heroTitle: "Welcome to WomenHealth AI Portal",
+    heroDescription: "Log in to securely access tools, records, and insights based on your role and permissions.",
+    image: "/asset/image-login/admin-login.png",
+    logoText: "WomenHealth AI",
   },
 };

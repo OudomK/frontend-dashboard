@@ -1,1 +1,1 @@
-export type AuthVariant = "admin" | "doctor";
+export type AuthVariant = "admin" | "doctor" | "unified";

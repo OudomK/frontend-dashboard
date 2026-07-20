@@ -19,6 +19,7 @@ import {
 import { UploadDocumentDialog } from "@/app/doctor/documents/upload-document-dialog";
 import { ViewDocumentDialog } from "./view-document-dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { AccessDenied } from "@/components/ui/access-denied";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -126,7 +127,7 @@ function StatCard({ title, value, icon: Icon, tone }: { title: string; value: st
 
 export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const isAdmin = role === "admin";
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -159,8 +160,11 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
     }
   };
 
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
+
   const fetchDocuments = useCallback(async () => {
     setLoadingList(true);
+    setIsAccessDenied(false);
     try {
       const [docRes, catRes] = await Promise.all([
         apiClient.get("/api/documents/"),
@@ -169,7 +173,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
       const catMap = new Map<number, string>();
       catRes.data.forEach((c: any) => {
-        catMap.set(c.id, c.name);
+        catMap.set(c.id, typeof c.name === 'string' ? c.name : ((c.name as any)?.[language as "en" | "km"] || (c.name as any)?.en || (c.name as any)?.km || ""));
       });
 
       const mapped: DocAccount[] = docRes.data.map((doc: any) => {
@@ -217,11 +221,15 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
       setDocuments(mapped);
       setCategories(catRes.data || []);
     } catch (error: any) {
-      toast.error(formatBackendError(error));
+      if (error.response?.status === 403) {
+        setIsAccessDenied(true);
+      } else {
+        toast.error(formatBackendError(error));
+      }
     } finally {
       setLoadingList(false);
     }
-  }, []);
+  }, [t, language]);
 
   useEffect(() => {
     fetchDocuments();
@@ -294,43 +302,45 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
       title={isAdmin ? t("docs.titleAdmin") : t("docs.titleDoctor")}
       subtitle={isAdmin ? t("docs.subtitleAdmin") : t("docs.subtitleDoctor")}
       actions={
-        <>
+        <div className="flex gap-2">
           {isAdmin && (
             <Button variant="outline" className="h-10 rounded-md px-4">
-              <RefreshCcw />
+              <RefreshCcw className="mr-2 h-4 w-4" />
               {t("docs.syncAiDb")}
             </Button>
           )}
-          {!isAdmin && (
-            <UploadDocumentDialog
-              onUploadSuccess={fetchDocuments}
-              trigger={
-                <Button className="bg-blue-600 text-white">
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  {t("docs.uploadDoc")}
-                </Button>
-              }
-            />
-          )}
-        </>
+          <UploadDocumentDialog
+            onUploadSuccess={fetchDocuments}
+            trigger={
+              <Button className="bg-blue-600 text-white h-10">
+                <UploadCloud className="mr-2 h-4 w-4" />
+                {t("docs.uploadDoc")}
+              </Button>
+            }
+          />
+        </div>
       }
       
       
     >
-      {/* Mobile Actions - Doctor only */}
-{!isAdmin && (
-  <div className="mb-4 flex gap-2 lg:hidden">
-    <UploadDocumentDialog
-      onUploadSuccess={fetchDocuments}
-      trigger={
-        <Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700">
-          <UploadCloud className="mr-2 h-4 w-4" />
-          {t("docs.upload")}
-        </Button>
-      }
-    />
-  </div>
-)}
+      {isAccessDenied ? (
+        <div className="mt-8">
+          <AccessDenied />
+        </div>
+      ) : (
+        <>
+      {/* Mobile Actions */}
+      <div className="mb-4 flex gap-2 lg:hidden">
+        <UploadDocumentDialog
+          onUploadSuccess={fetchDocuments}
+          trigger={
+            <Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700">
+              <UploadCloud className="mr-2 h-4 w-4" />
+              {t("docs.upload")}
+            </Button>
+          }
+        />
+      </div>
       <div className="space-y-8">
         {isAdmin && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -391,7 +401,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                   <SelectContent>
                     <SelectItem value="All">{t("docs.allCategories")}</SelectItem>
                     {categories.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={String(c.id)}>{typeof c.name === 'string' ? c.name : ((c.name as any)?.[language as "en" | "km"] || (c.name as any)?.en || (c.name as any)?.km || "")}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -656,7 +666,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
           {isAdmin && (
             <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
-              <p className="text-sm text-slate-400">{t("docs.showing" as any)} 1 {t("docs.to" as any)} 6 {t("docs.of" as any)} 142 {t("docs.documents" as any)}</p>
+              <p className="text-sm text-slate-400">{t("docs.showing" as any)} 1 {t("docs.to" as any)} {filteredDocs.length} {t("docs.of" as any)} {filteredDocs.length} {t("docs.documents" as any)}</p>
               <div className="flex gap-2">
                 <Button variant="outline" className="h-8 rounded-md text-slate-400">
                   {t("docs.previous" as any)}
@@ -703,6 +713,8 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </DashboardLayout>
   );
 }

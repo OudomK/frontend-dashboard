@@ -32,15 +32,16 @@ export function DashboardHeader({
   role,
 }: Props) {
   const pathname = usePathname();
-  const sessionUser = useAuthStore((state) => state.user);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const sessionUser = useAuthStore((state) => state.user);
+  const permissions = useAuthStore((state) => state.user?.permissions || []);
   const { t } = useTranslation();
 
   const displayName = sessionUser?.name || (sessionUser?.email
     ? sessionUser.email.split("@")[0]
     : (role === "admin" ? "Dr. Anderson" : "Dr. Sarah Jenkins"));
 
-  const displayRole = role === "admin" ? "System Admin" : "Clinic Owner";
+  const displayRole = sessionUser?.roleName || (role === "admin" ? "System Admin" : "Clinic Owner");
   
   const getFullAvatarUrl = (url?: string) => {
     if (!url) return null;
@@ -56,14 +57,18 @@ export function DashboardHeader({
 
   const adminBreadcrumb =
     pathname === "/admin/analytics"
-      ? ["Admin Panel", "System Analytics"]
+      ? [t("chat.adminPanel"), t("nav.analytics")]
+      : pathname.startsWith("/admin/banners")
+        ? [t("chat.adminPanel"), t("nav.banners")]
       : pathname === "/admin/documents"
-        ? ["Admin Panel", "AI & Knowledge", "Knowledge Base Docs"]
+        ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.documents")]
         : pathname === "/admin/settings"
-          ? ["Admin Panel", "System Settings"]
-          : pathname === "/admin/profile"
-            ? ["Admin Panel", "Profile Settings"]
-            : ["Admin Panel", "Dashboard"];
+          ? [t("chat.adminPanel"), t("nav.settings")]
+          : pathname === "/admin/profile" || pathname === "/doctor/profile"
+            ? [t("chat.adminPanel"), t("nav.profile")]
+            : pathname === "/admin/appointments"
+              ? [t("chat.adminPanel"), t("nav.appointments")]
+              : [t("chat.adminPanel"), t("nav.dashboard")];
 
   // Matches the premium light sidebar background
   const headerBg = "bg-white";
@@ -79,7 +84,7 @@ export function DashboardHeader({
           {role === "admin" && (
             <div className="hidden items-center gap-2 text-sm lg:flex">
               {adminBreadcrumb.map((item, index) => (
-                <div key={item} className="flex items-center gap-2">
+                <div key={`${item}-${index}`} className="flex items-center gap-2">
                   {index > 0 && (
                     <ChevronRight className="h-4 w-4 text-slate-400" />
                   )}
@@ -95,78 +100,77 @@ export function DashboardHeader({
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
 
-          {role === "doctor" && (
+          {permissions.includes("view_notifications") && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="rounded-xl border border-slate-200 p-2.5 transition-colors hover:bg-slate-50 relative group outline-none">
-                  <Bell className="h-5 w-5 text-slate-500 group-hover:text-slate-900 transition-colors" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 bg-white border-slate-200 shadow-xl rounded-xl mt-2">
-                <div className="flex justify-between items-center py-3 px-4">
-                  <DropdownMenuLabel className="font-bold text-slate-900 text-base tracking-tight p-0">Notifications</DropdownMenuLabel>
-                  {unreadCount > 0 && (
-                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {unreadCount} New
-                    </span>
-                  )}
-                </div>
-                <DropdownMenuSeparator className="bg-slate-100" />
-                <div className="flex flex-col max-h-[350px] overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="py-8 text-center px-4">
-                      <p className="text-sm font-semibold text-slate-900">All caught up!</p>
-                      <p className="text-xs text-slate-500 mt-1">You have no new notifications.</p>
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <DropdownMenuItem 
-                        key={notification.id}
-                        onClick={() => {
-                          if (!notification.is_read) {
-                            markAsRead(notification.id);
-                          }
-                        }}
-                        className={`flex flex-col items-start gap-1 p-4 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-0 focus:bg-slate-50 transition-colors ${notification.is_read ? 'opacity-60' : ''}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${notification.is_read ? 'bg-slate-300' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`}></span>
-                          <p className="text-[13px] font-bold text-slate-900 tracking-wide">{notification.title}</p>
-                        </div>
-                        <p className="text-xs text-slate-500 ml-4 font-medium leading-relaxed">{notification.body}</p>
-                        <p className="text-[10px] text-slate-400 ml-4 mt-1.5 font-semibold uppercase tracking-wider">
-                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                        </p>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </div>
-                {notifications.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator className="bg-slate-100" />
-                    <div className="p-2">
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          markAllAsRead();
-                        }}
-                        className="w-full text-center text-[13px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg py-2 transition-colors"
-                      >
-                        Mark all as read
-                      </button>
-                    </div>
-                  </>
+            <DropdownMenuTrigger asChild>
+              <button className="rounded-xl border border-slate-200 p-2.5 transition-colors hover:bg-slate-50 relative group outline-none">
+                <Bell className="h-5 w-5 text-slate-500 group-hover:text-slate-900 transition-colors" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 bg-white border-slate-200 shadow-xl rounded-xl mt-2">
+              <div className="flex justify-between items-center py-3 px-4">
+                <DropdownMenuLabel className="font-bold text-slate-900 text-base tracking-tight p-0">Notifications</DropdownMenuLabel>
+                {unreadCount > 0 && (
+                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {unreadCount} New
+                  </span>
+                )}
+              </div>
+              <DropdownMenuSeparator className="bg-slate-100" />
+              <div className="flex flex-col max-h-[350px] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center px-4">
+                    <p className="text-sm font-semibold text-slate-900">All caught up!</p>
+                    <p className="text-xs text-slate-500 mt-1">You have no new notifications.</p>
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <DropdownMenuItem 
+                      key={notification.id}
+                      onClick={() => {
+                        if (!notification.is_read) {
+                          markAsRead(notification.id);
+                        }
+                      }}
+                      className={`flex flex-col items-start gap-1 p-4 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-0 focus:bg-slate-50 transition-colors ${notification.is_read ? 'opacity-60' : ''}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${notification.is_read ? 'bg-slate-300' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`}></span>
+                        <p className="text-[13px] font-bold text-slate-900 tracking-wide">{notification.title}</p>
+                      </div>
+                      <p className="text-xs text-slate-500 ml-4 font-medium leading-relaxed">{notification.body}</p>
+                      <p className="text-[10px] text-slate-400 ml-4 mt-1.5 font-semibold uppercase tracking-wider">
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                      </p>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </div>
+              {notifications.length > 0 && (
+                <>
+                  <DropdownMenuSeparator className="bg-slate-100" />
+                  <div className="p-2">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        markAllAsRead();
+                      }}
+                      className="w-full text-center text-[13px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg py-2 transition-colors"
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           )}
 
-          {role === "admin" && (
-            <Link
-              href="/admin/profile"
+          <Link
+            href={`/${role}/profile`}
               className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 hover:bg-slate-50 transition-all cursor-pointer bg-white shadow-sm"
             >
               <div className="h-10 w-10 rounded-full bg-slate-100 overflow-hidden border border-slate-200 shadow-sm shrink-0 ring-2 ring-blue-500/30">
@@ -189,7 +193,6 @@ export function DashboardHeader({
 
               <ChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
             </Link>
-          )}
         </div>
       </div>
     </header>

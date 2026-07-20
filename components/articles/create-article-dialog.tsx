@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { Category, Article } from "./articles-posts";
 
 type Props = {
@@ -29,6 +30,7 @@ export function CreateArticleDialog({
   article,
 }: Props) {
   const { token } = useAuthStore();
+  const { language: appLang } = useTranslation();
   
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -42,10 +44,11 @@ export function CreateArticleDialog({
   useEffect(() => {
     if (open) {
       if (article) {
-        setTitle(article.title || "");
+        const lang = article.language || "km";
+        setTitle(article.title?.[lang as "en"|"km"] || article.title?.km || article.title?.en || "");
         setCategoryId(article.category_id?.toString() || "");
-        setLanguage(article.language || "km");
-        setContent(article.body || "");
+        setLanguage(lang);
+        setContent(article.body?.[lang as "en"|"km"] || article.body?.km || article.body?.en || "");
         setExistingImageUrl(article.cover_image_url || null);
         setImage(null);
       } else {
@@ -148,9 +151,10 @@ export function CreateArticleDialog({
                 className="w-full rounded-lg border border-slate-200 px-4 py-3"
               >
                 <option value="">Select category...</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {categories.map((c) => {
+                  const catName = typeof c.name === 'string' ? c.name : ((c.name as any)?.[appLang as 'en'|'km'] || (c.name as any)?.en || (c.name as any)?.km || "");
+                  return <option key={c.id} value={c.id}>{catName}</option>;
+                })}
               </select>
             </div>
 

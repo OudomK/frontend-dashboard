@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api-client";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Props = {
   trigger: ReactNode;
@@ -31,6 +32,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
   const [description, setDescription] = useState("");
   const [language, setLanguage] = useState("km"); // Default Khmer language
   const [isUploading, setIsUploading] = useState(false);
+  const { language: currentAppLanguage } = useTranslation();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -241,7 +243,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
               ) : (
                 categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {typeof c.name === 'string' ? c.name : ((c.name as any)?.[currentAppLanguage as "en" | "km"] || (c.name as any)?.en || (c.name as any)?.km || "")}
                   </option>
                 ))
               )}

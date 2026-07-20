@@ -186,7 +186,7 @@ const ITEMS_PER_PAGE = 8;
 export function CategoryManagement({ role }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Filters
   const [search, setSearch] = useState("");
@@ -342,10 +342,12 @@ export function CategoryManagement({ role }: Props) {
 
   const handleDelete = async (cat: Category) => {
     if (cat.articleCount > 0) {
-      toast.error(`${t("cat.deleteError" as any)} "${cat.name?.km || cat.name?.en}" — ${t("cat.hasArticles" as any)} ${cat.articleCount} ${t("cat.articlesReassign" as any)}`);
+      const catName = cat.name?.[language as "en"|"km"] || cat.name?.km || cat.name?.en;
+      toast.error(`${t("cat.deleteError" as any)} "${catName}" — ${t("cat.hasArticles" as any)} ${cat.articleCount} ${t("cat.articlesReassign" as any)}`);
       return;
     }
-    if (!confirm(`${t("cat.deleteConfirmMsg" as any)} "${cat.name?.km || cat.name?.en}"? ${t("cat.deleteConfirmDesc" as any)}`)) return;
+    const catName = cat.name?.[language as "en"|"km"] || cat.name?.km || cat.name?.en;
+    if (!confirm(`${t("cat.deleteConfirmMsg" as any)} "${catName}"? ${t("cat.deleteConfirmDesc" as any)}`)) return;
 
     const toastId = toast.loading("...");
     try {
@@ -367,7 +369,7 @@ export function CategoryManagement({ role }: Props) {
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (c) => c.name?.km?.toLowerCase().includes(q) || c.name?.en?.toLowerCase().includes(q) || c.description?.km?.toLowerCase().includes(q)
+        (c) => c.name?.km?.toLowerCase().includes(q) || c.name?.en?.toLowerCase().includes(q) || c.description?.km?.toLowerCase().includes(q) || c.description?.en?.toLowerCase().includes(q)
       );
     }
 
@@ -376,7 +378,11 @@ export function CategoryManagement({ role }: Props) {
     }
 
     result.sort((a, b) => {
-      if (sortOption === "Name A-Z") return (a.name?.km || "").localeCompare(b.name?.km || "");
+      if (sortOption === "Name A-Z") {
+        const nameA = a.name?.[language as "en"|"km"] || a.name?.km || "";
+        const nameB = b.name?.[language as "en"|"km"] || b.name?.km || "";
+        return nameA.localeCompare(nameB);
+      }
       const dA = new Date(a.created_at).getTime();
       const dB = new Date(b.created_at).getTime();
       return sortOption === "Newest" ? dB - dA : dA - dB;
@@ -535,8 +541,8 @@ export function CategoryManagement({ role }: Props) {
                         <div className="flex items-center gap-3">
                           <CategoryIcon iconKey={cat.icon_url} />
                           <div className="min-w-0 max-w-xs">
-                            <p className="font-bold text-slate-900 leading-snug">{cat.name?.km || cat.name?.en}</p>
-                            <p className="text-xs text-slate-400 mt-0.5 truncate">{cat.description?.km || cat.description?.en || "—"}</p>
+                            <p className="font-bold text-slate-900 leading-snug">{cat.name?.[language as "en"|"km"] || cat.name?.km || cat.name?.en}</p>
+                            <p className="text-xs text-slate-400 mt-0.5 truncate">{cat.description?.[language as "en"|"km"] || cat.description?.km || cat.description?.en || "—"}</p>
                           </div>
                         </div>
                       </td>
@@ -610,7 +616,7 @@ export function CategoryManagement({ role }: Props) {
                   <CategoryIcon iconKey={cat.icon_url} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-slate-900 leading-snug">{cat.name?.km || cat.name?.en}</span>
+                      <span className="font-bold text-slate-900 leading-snug">{cat.name?.[language as "en"|"km"] || cat.name?.km || cat.name?.en}</span>
                       <Badge
                         className={`rounded-sm text-[9px] font-extrabold uppercase px-1.5 py-0.5 tracking-wider border-transparent shrink-0 ${
                           cat.is_active ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"
@@ -620,7 +626,7 @@ export function CategoryManagement({ role }: Props) {
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
-                      {cat.description?.km || cat.description?.en || "No description"}
+                      {cat.description?.[language as "en"|"km"] || cat.description?.km || cat.description?.en || "No description"}
                     </p>
                   </div>
                 </div>

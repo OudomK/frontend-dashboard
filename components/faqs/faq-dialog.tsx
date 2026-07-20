@@ -60,7 +60,7 @@ function formatBackendError(error: unknown): string {
 }
 
 export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess }: Props) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const isEdit = faq !== null;
 
   const [question, setQuestion] = useState<{ en: string; km: string }>({ en: "", km: "" });
@@ -81,8 +81,8 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess }: Pr
       targetLang = otherLang;
     }
 
-    const sourceQ = question[sourceLang];
-    const sourceA = answer[sourceLang];
+    const sourceQ = question[sourceLang as keyof typeof question];
+    const sourceA = answer[sourceLang as keyof typeof answer];
 
     if (!sourceQ.trim() && !sourceA.trim()) {
       toast.error(t("faqs.nothingToTranslate" as any));
@@ -290,9 +290,10 @@ export function FaqDialog({ open, onOpenChange, faq, categories, onSuccess }: Pr
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
-                ))}
+                  {categories.map(cat => {
+                    const catName = typeof cat.name === 'string' ? cat.name : ((cat.name as any)?.[language as 'en'|'km'] || (cat.name as any)?.en || (cat.name as any)?.km || "");
+                    return <SelectItem key={cat.id} value={cat.id.toString()}>{catName}</SelectItem>;
+                  })}
               </SelectContent>
             </Select>
           </div>
