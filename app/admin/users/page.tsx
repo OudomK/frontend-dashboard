@@ -203,12 +203,12 @@ export default function AdminUserManagementPage() {
     }
 
     if (!editMode && formPassword.length < 8) {
-      toast.error(t("users.passwordMinLen", { defaultValue: "Password must be at least 8 characters" }));
+      toast.error(t("users.passwordMinLen"));
       return;
     }
 
     if (editMode && formPassword && formPassword.length < 8) {
-      toast.error(t("users.passwordNewMinLen", { defaultValue: "New password must be at least 8 characters" }));
+      toast.error(t("users.passwordNewMinLen"));
       return;
     }
 
