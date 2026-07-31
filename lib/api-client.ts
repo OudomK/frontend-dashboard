@@ -123,13 +123,7 @@ function handleSessionExpired() {
     if (!window.location.pathname.startsWith("/auth/")) {
       // Dispatch custom logout event so Zustand store knows
       window.dispatchEvent(new Event("auth:logout"));
-      
-      const currentRole = localStorage.getItem("women_health_role_id");
-      if (currentRole === "3") {
-        window.location.href = "/auth/admin-login";
-      } else {
-        window.location.href = "/auth/doctor-login";
-      }
+      window.location.href = "/auth/login";
     }
   }
 }
