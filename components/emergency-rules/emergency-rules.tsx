@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -317,7 +318,19 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
   return (
     <DashboardLayout
       role={role}
-      title={t("emg.title")}
+      title={
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+            {t("emg.title")}
+          </h1>
+          {isAdmin && (
+            <Badge className="bg-rose-100 text-rose-600 border border-rose-200 hover:bg-rose-100 uppercase tracking-wider font-bold text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1.5 hidden sm:flex">
+              <ShieldAlert className="w-3 h-3" />
+              Admin Area
+            </Badge>
+          )}
+        </div>
+      }
       subtitle={t("emg.subtitle")}
       actions={
         <Button onClick={openCreate} className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">

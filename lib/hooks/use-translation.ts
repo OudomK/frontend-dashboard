@@ -32,3 +32,5 @@ export function useTranslation() {
 
   return { t, language };
 }
+
+// Trigger hot reload

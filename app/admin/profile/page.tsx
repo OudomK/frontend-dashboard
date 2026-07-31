@@ -124,7 +124,11 @@ export default function AdminProfilePage() {
           avatar_url: fileUrl
         });
 
-        const fullUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${fileUrl}`;
+        let fullUrl = fileUrl;
+        if (!fullUrl.startsWith("http")) {
+          fullUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${fileUrl}`;
+        }
+        
         setAvatar(fullUrl);
         updateAvatar(fullUrl);
         

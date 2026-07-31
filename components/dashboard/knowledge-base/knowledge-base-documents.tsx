@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   FileText,
   Filter,
+  Loader2,
   Pencil,
   RefreshCcw,
   Search,
@@ -19,6 +20,7 @@ import {
 import { UploadDocumentDialog } from "@/app/doctor/documents/upload-document-dialog";
 import { ViewDocumentDialog } from "./view-document-dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { ExportDropdown } from "@/components/shared/export-dropdown";
 import { AccessDenied } from "@/components/ui/access-denied";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +43,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 
 
@@ -128,6 +137,8 @@ function StatCard({ title, value, icon: Icon, tone }: { title: string; value: st
 export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const isAdmin = role === "admin";
   const { t, language } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions || []);
+  const canCreate = permissions.includes("create_documents");
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -141,6 +152,51 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const [deleteDocId, setDeleteDocId] = useState<number | null>(null);
   const [deleteDocName, setDeleteDocName] = useState<string>("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sync AI DB state
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  // Load last synced from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("docs_last_synced");
+    if (saved) setLastSyncedAt(saved);
+  }, []);
+
+  const timeAgo = useCallback((isoDate: string): string => {
+    const diff = Date.now() - new Date(isoDate).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("docs.justNow" as any);
+    if (mins < 60) return t("docs.agoMinutes" as any).replace("{n}", String(mins));
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t("docs.agoHours" as any).replace("{n}", String(hrs));
+    const days = Math.floor(hrs / 24);
+    return t("docs.agoDays" as any).replace("{n}", String(days));
+  }, [t]);
+
+  const handleSync = async () => {
+    setShowSyncConfirm(false);
+    setIsSyncing(true);
+    const toastId = toast.loading(t("docs.syncing" as any));
+    try {
+      const res = await apiClient.post("/api/documents/sync");
+      toast.dismiss(toastId);
+      const msg = t("docs.syncSuccess" as any)
+        .replace("{synced}", String(res.data.synced_count))
+        .replace("{failed}", String(res.data.failed_count));
+      toast.success(msg);
+      const now = new Date().toISOString();
+      localStorage.setItem("docs_last_synced", now);
+      setLastSyncedAt(now);
+      fetchDocuments();
+    } catch (error: any) {
+      toast.dismiss(toastId);
+      toast.error(formatBackendError(error));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteDocId) return;
@@ -296,28 +352,80 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
     ];
   }, [documents, t]);
 
+  const handleExportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,ID,Name,Type,Category,Status,Upload Date,Size\n";
+    documents.forEach((d) => {
+      csvContent += `${d.id},"${d.name}","${d.type}","${d.category}",${d.status},"${d.uploadDate}","${d.size}"\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", encodedUri);
+    downloadAnchor.setAttribute("download", "documents_export.csv");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    toast.success("Documents exported to CSV");
+  };
+
   return (
     <DashboardLayout
       role={role}
       title={isAdmin ? t("docs.titleAdmin") : t("docs.titleDoctor")}
       subtitle={isAdmin ? t("docs.subtitleAdmin") : t("docs.subtitleDoctor")}
       actions={
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           {isAdmin && (
-            <Button variant="outline" className="h-10 rounded-md px-4">
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              {t("docs.syncAiDb")}
-            </Button>
+            <>
+              <ExportDropdown onExportCsv={handleExportCSV} label={t("docs.export" as any) || "Export"} />
+              {/* Last synced timestamp */}
+              {lastSyncedAt && (
+                <span className="text-xs text-slate-400 hidden lg:inline">
+                  {t("docs.lastSynced" as any)}: {timeAgo(lastSyncedAt)}
+                </span>
+              )}
+              {!lastSyncedAt && (
+                <span className="text-xs text-slate-400 hidden lg:inline">
+                  {t("docs.neverSynced" as any)}
+                </span>
+              )}
+
+              {/* Sync AI DB button with Tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-10 rounded-md px-4"
+                      disabled={isSyncing}
+                      onClick={() => setShowSyncConfirm(true)}
+                    >
+                      {isSyncing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                      )}
+                      {isSyncing ? t("docs.syncing" as any) : t("docs.syncAiDb")}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px]">
+                    <p>{t("docs.syncTooltip" as any)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
           )}
-          <UploadDocumentDialog
-            onUploadSuccess={fetchDocuments}
-            trigger={
-              <Button className="bg-blue-600 text-white h-10">
-                <UploadCloud className="mr-2 h-4 w-4" />
-                {t("docs.uploadDoc")}
-              </Button>
-            }
-          />
+          {/* Upload button: visible if user has create_documents permission */}
+          {canCreate && (
+            <UploadDocumentDialog
+              onUploadSuccess={fetchDocuments}
+              trigger={
+                <Button className="bg-blue-600 text-white h-10">
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                  {t("docs.uploadDoc")}
+                </Button>
+              }
+            />
+          )}
         </div>
       }
       
@@ -329,18 +437,20 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
         </div>
       ) : (
         <>
-      {/* Mobile Actions */}
-      <div className="mb-4 flex gap-2 lg:hidden">
-        <UploadDocumentDialog
-          onUploadSuccess={fetchDocuments}
-          trigger={
-            <Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700">
-              <UploadCloud className="mr-2 h-4 w-4" />
-              {t("docs.upload")}
-            </Button>
-          }
-        />
-      </div>
+      {/* Mobile Actions - visible if user has create_documents permission */}
+      {canCreate && (
+        <div className="mb-4 flex gap-2 lg:hidden">
+          <UploadDocumentDialog
+            onUploadSuccess={fetchDocuments}
+            trigger={
+              <Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700">
+                <UploadCloud className="mr-2 h-4 w-4" />
+                {t("docs.upload")}
+              </Button>
+            }
+          />
+        </div>
+      )}
       <div className="space-y-8">
         {isAdmin && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -709,6 +819,34 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
               disabled={isDeleting}
             >
               {t("docs.delete" as any)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sync AI DB Confirmation Dialog */}
+      <Dialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <RefreshCcw className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <DialogTitle>{t("docs.syncConfirmTitle" as any)}</DialogTitle>
+                <DialogDescription className="mt-2">
+                  {t("docs.syncConfirmDesc" as any)}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setShowSyncConfirm(false)}>
+              {t("docs.cancel" as any)}
+            </Button>
+            <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSync}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {t("docs.syncConfirm" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>

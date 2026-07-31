@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { ExportDropdown } from "@/components/shared/export-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +65,7 @@ const roleStyles: Record<string, string> = {
   USER: "bg-slate-100 text-slate-700 border-slate-200",
   DOCTOR: "bg-emerald-50 text-emerald-700 border-emerald-200",
   ADMIN: "bg-rose-50 text-rose-700 border-rose-200",
+  "DOCTOR MANAGER": "bg-slate-900 text-white border-slate-900",
   MODERATOR: "bg-purple-50 text-purple-700 border-purple-200",
   MANAGER: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200", // Fallback for manager
 };
@@ -93,6 +95,7 @@ export default function AdminUserManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("Active");
+  const [selectedJoined, setSelectedJoined] = useState("All");
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -292,16 +295,32 @@ export default function AdminUserManagementPage() {
     setActiveMenuId(null);
   };
 
-  // CSV Export simulation
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,ID,Name,Email,Role,Status,Joined Date,Last Active\n";
     users.forEach((u) => {
-      csvContent += `${u.id},"${u.name}",${u.email},${u.role},${u.status},"${u.joinedDate}","${u.lastActive}"\n`;
+      csvContent += `${u.id},"${u.name}","${u.email}","${u.role}","${u.status}","${u.joinedDate}","${u.lastActive}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", encodedUri);
     downloadAnchor.setAttribute("download", "women_health_users_export.csv");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    toast.success(t("users.exportStarted"));
+  };
+
+  const handleExportExcel = () => {
+    let content = "<table><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined Date</th><th>Last Active</th></tr>";
+    users.forEach((u) => {
+      content += `<tr><td>${u.id}</td><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${u.status}</td><td>${u.joinedDate}</td><td>${u.lastActive}</td></tr>`;
+    });
+    content += "</table>";
+    const blob = new Blob([content], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.href = url;
+    downloadAnchor.download = "women_health_users_export.xls";
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -318,9 +337,25 @@ export default function AdminUserManagementPage() {
       const matchesRole = selectedRole === "All" || u.role === selectedRole;
       const matchesStatus = selectedStatus === "All" || u.status === selectedStatus;
 
-      return matchesSearch && matchesRole && matchesStatus;
+      let matchesJoined = true;
+      if (selectedJoined !== "All") {
+        if (!u.createdAt) {
+          matchesJoined = false;
+        } else {
+          const now = new Date();
+          const joined = new Date(u.createdAt);
+          const diffDays = (now.getTime() - joined.getTime()) / (1000 * 3600 * 24);
+          if (selectedJoined === "Last 7 days") {
+            matchesJoined = diffDays <= 7;
+          } else if (selectedJoined === "Last 30 days") {
+            matchesJoined = diffDays <= 30;
+          }
+        }
+      }
+
+      return matchesSearch && matchesRole && matchesStatus && matchesJoined;
     });
-  }, [users, searchQuery, selectedRole, selectedStatus]);
+  }, [users, searchQuery, selectedRole, selectedStatus, selectedJoined]);
 
   // Pagination calculations
   const paginatedUsers = useMemo(() => {
@@ -339,7 +374,7 @@ export default function AdminUserManagementPage() {
 
   const stats = useMemo(() => {
     const total = users.length;
-    const activeUsers = users.filter((u) => u.role === "USER" && u.status === "Active").length;
+    const activeUsers = users.filter((u) => u.status === "Active").length;
     const doctorsAndStaff = users.filter((u) => u.role === "DOCTOR" || u.role === "ADMIN").length;
     
     const sevenDaysAgo = new Date();
@@ -374,15 +409,7 @@ export default function AdminUserManagementPage() {
       subtitle={t("users.subtitle")}
       actions={
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            className="h-10 rounded-lg border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50"
-          >
-            <Download className="mr-1.5 h-4 w-4 text-slate-500" />
-            {t("users.exportCsv")}
-          </Button>
+          <ExportDropdown onExportCsv={handleExportCSV} onExportExcel={handleExportExcel} label={t("users.exportCsv") || "Export"} />
 
           <Button
             onClick={() => {
@@ -480,14 +507,17 @@ export default function AdminUserManagementPage() {
             <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{t("users.roleLabel")}</span>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[130px] font-bold text-slate-700">
                   <SelectValue placeholder={t("users.allRoles")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">{t("users.allRoles")}</SelectItem>
-                  {availableRoles.map(r => (
-                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
-                  ))}
+                  <SelectItem value="All">{t("users.allRoles")} ({users.length})</SelectItem>
+                  {availableRoles.map(r => {
+                    const count = users.filter(u => u.role === r.name).length;
+                    return (
+                      <SelectItem key={r.id} value={r.name}>{r.name} ({count})</SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -502,6 +532,20 @@ export default function AdminUserManagementPage() {
                   <SelectItem value="All">{t("users.allStatuses")}</SelectItem>
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">JOINED</span>
+              <Select value={selectedJoined} onValueChange={setSelectedJoined}>
+                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[120px] font-bold text-slate-700">
+                  <SelectValue placeholder="Any time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">Any time</SelectItem>
+                  <SelectItem value="Last 7 days">Last 7 days</SelectItem>
+                  <SelectItem value="Last 30 days">Last 30 days</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -1,34 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Save, RotateCcw, Info, Shield, CheckCircle2, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Shield, Trash2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { apiClient } from "@/lib/api-client";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
+import Link from "next/link";
 
 export default function RolesPage() {
+  const { t } = useTranslation();
   const [roles, setRoles] = useState<any[]>([]);
-  const [permissions, setPermissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const [draftPermissions, setDraftPermissions] = useState<Record<number, number[]>>({});
-  const [originalPermissions, setOriginalPermissions] = useState<Record<number, number[]>>({});
   
   // Create Role Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newRole, setNewRole] = useState({ name: "", description: "" });
   const [isCreating, setIsCreating] = useState(false);
+
+  // Delete modal state
+  const [roleToDelete, setRoleToDelete] = useState<{ id: number, name: string } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -37,23 +31,11 @@ export default function RolesPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [rolesRes, permsRes] = await Promise.all([
-        apiClient.get("/api/v1/admin/rbac/roles"),
-        apiClient.get("/api/v1/admin/rbac/permissions"),
-      ]);
-      const fetchedRoles = rolesRes.data;
-      setRoles(fetchedRoles);
-      setPermissions(permsRes.data);
-
-      const initialDraft: Record<number, number[]> = {};
-      fetchedRoles.forEach((r: any) => {
-        initialDraft[r.id] = r.permissions.map((p: any) => p.id);
-      });
-      setDraftPermissions(initialDraft);
-      setOriginalPermissions(initialDraft);
+      const rolesRes = await apiClient.get("/api/v1/admin/rbac/roles");
+      setRoles(rolesRes.data);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to fetch RBAC data");
+      toast.error("Failed to fetch roles");
     } finally {
       setIsLoading(false);
     }
@@ -79,103 +61,32 @@ export default function RolesPage() {
     }
   };
 
-  const togglePermission = (roleId: number, permId: number) => {
-    setDraftPermissions(prev => {
-      const current = prev[roleId] || [];
-      if (current.includes(permId)) {
-        return { ...prev, [roleId]: current.filter(id => id !== permId) };
-      } else {
-        return { ...prev, [roleId]: [...current, permId] };
-      }
-    });
-  };
-
-  const toggleModuleForRole = (roleId: number, modulePermIds: number[]) => {
-    setDraftPermissions(prev => {
-      const current = prev[roleId] || [];
-      const allSelected = modulePermIds.every(id => current.includes(id));
-      
-      if (allSelected) {
-        // Deselect all
-        return { ...prev, [roleId]: current.filter(id => !modulePermIds.includes(id)) };
-      } else {
-        // Select all
-        const newIds = new Set([...current, ...modulePermIds]);
-        return { ...prev, [roleId]: Array.from(newIds) };
-      }
-    });
-  };
-
-  const hasChanges = useMemo(() => {
-    return Object.keys(draftPermissions).some(roleIdStr => {
-      const roleId = Number(roleIdStr);
-      const draft = [...(draftPermissions[roleId] || [])].sort();
-      const orig = [...(originalPermissions[roleId] || [])].sort();
-      return JSON.stringify(draft) !== JSON.stringify(orig);
-    });
-  }, [draftPermissions, originalPermissions]);
-
-  const handleRevert = () => {
-    setDraftPermissions(originalPermissions);
-    toast.info("Changes reverted");
-  };
-
-  const handleSaveChanges = async () => {
+  const confirmDeleteRole = async () => {
+    if (!roleToDelete) return;
+    
     try {
-      setIsSaving(true);
+      await apiClient.delete(`/api/v1/admin/rbac/roles/${roleToDelete.id}`);
       
-      // Find roles that changed
-      const changedRoleIds = Object.keys(draftPermissions)
-        .map(Number)
-        .filter(roleId => {
-          const draft = [...(draftPermissions[roleId] || [])].sort();
-          const orig = [...(originalPermissions[roleId] || [])].sort();
-          return JSON.stringify(draft) !== JSON.stringify(orig);
-        });
-
-      if (changedRoleIds.length === 0) {
-        toast.info("No changes to save");
-        return;
-      }
-
-      // Update each changed role
-      const promises = changedRoleIds.map(roleId => {
-        const role = roles.find(r => r.id === roleId);
-        if (!role) return Promise.resolve();
-        return apiClient.put(`/api/v1/admin/rbac/roles/${roleId}`, {
-          name: role.name,
-          description: role.description,
-          permission_ids: draftPermissions[roleId]
-        });
-      });
-
-      await Promise.all(promises);
-      toast.success("Permissions updated successfully");
+      const successMsg = t("roles.deleteSuccess") || `Role "${roleToDelete.name}" deleted successfully`;
+      toast.success(successMsg.includes('{roleName}') 
+        ? successMsg.replace('{roleName}', roleToDelete.name) 
+        : successMsg);
       
-      // Sync original permissions with new draft
-      setOriginalPermissions(draftPermissions);
-      
+      setRoles(prev => prev.filter(r => r.id !== roleToDelete.id));
+      setRoleToDelete(null);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.detail || "Failed to update permissions");
-    } finally {
-      setIsSaving(false);
+      toast.error(err.response?.data?.detail || t("roles.deleteError") || "Failed to delete role");
     }
   };
 
-  // Group permissions by module
-  const groupedPermissions = useMemo(() => {
-    return permissions.reduce((acc: any, perm: any) => {
-      const mod = perm.module || "Application";
-      if (!acc[mod]) acc[mod] = [];
-      acc[mod].push(perm);
-      return acc;
-    }, {});
-  }, [permissions]);
+  const handleDeleteRole = (roleId: number, roleName: string) => {
+    setRoleToDelete({ id: roleId, name: roleName });
+  };
 
   return (
     <DashboardLayout role="admin">
-      <div className="space-y-8 max-w-[1600px] pb-32 mx-auto">
+      <div className="space-y-8 max-w-[1200px] mx-auto pb-12">
         {/* Header Section */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <div>
@@ -183,180 +94,91 @@ export default function RolesPage() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                 <Shield className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Access Control</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Role Management</h1>
             </div>
             <p className="text-slate-500 max-w-2xl text-sm ml-13">
-              Configure fine-grained permissions for every role in the system. 
-              Changes are applied immediately across the entire workspace.
+              Create and manage user roles in the system. To assign specific permissions to these roles, please visit the Permission Management page.
             </p>
           </div>
-          <Button 
-            onClick={() => setIsModalOpen(true)} 
-            className="bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all active:scale-95 px-6"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add New Role
-          </Button>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/permissions">
+              <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50 transition-all">
+                <ShieldAlert className="mr-2 h-4 w-4 text-blue-500" /> Manage Permissions
+              </Button>
+            </Link>
+            <Button 
+              onClick={() => setIsModalOpen(true)} 
+              className="bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all active:scale-95 px-6"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New Role
+            </Button>
+          </div>
         </div>
 
-        {/* Matrix Container */}
-        <div className="relative">
+        {/* Roles List */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {isLoading ? (
-            <div className="h-[400px] flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <div className="relative w-12 h-12">
+            <div className="p-12 flex flex-col items-center justify-center">
+              <div className="relative w-10 h-10">
                 <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
                 <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
               </div>
-              <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading access matrix...</p>
+              <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading roles...</p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto" style={{ maxHeight: 'none' }}>
-                <table className="w-full text-left text-sm border-collapse min-w-[800px]">
-                  <thead>
-                    <tr>
-                      <th className="py-5 px-6 font-semibold text-slate-900 border-b border-slate-200 w-[300px] sticky left-0 top-0 bg-white z-20 shadow-[1px_0_0_0_#e2e8f0]">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">System Modules</span>
-                        </div>
-                      </th>
-                      {roles.map(role => (
-                        <th key={role.id} className="py-5 px-4 text-center border-b border-l border-slate-200 min-w-[160px] bg-slate-50/50">
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="font-bold text-slate-900 text-base">{role.name}</span>
-                            <span className="text-xs text-slate-500 font-normal max-w-[140px] truncate" title={role.description}>
-                              {role.description || "Custom Role"}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="py-4 px-6 font-semibold text-slate-900 w-[250px]">Role Name</th>
+                    <th className="py-4 px-6 font-semibold text-slate-900">Description</th>
+                    <th className="py-4 px-6 font-semibold text-slate-900 w-[120px] text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {roles.map(role => {
+                    const isSystemRole = ['user', 'admin', 'doctor manager', 'doctor'].includes(role.name.toLowerCase());
+                    
+                    return (
+                      <tr key={role.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="py-4 px-6">
+                          <span className="font-bold text-slate-900 text-base">{role.name}</span>
+                          {isSystemRole && (
+                            <span className="ml-3 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                              System
                             </span>
-                          </div>
-                        </th>
-                      ))}
+                          )}
+                        </td>
+                        <td className="py-4 px-6 text-slate-500">
+                          {role.description || "No description provided."}
+                        </td>
+                        <td className="py-4 px-6 text-center">
+                          {!isSystemRole ? (
+                            <button
+                              onClick={() => handleDeleteRole(role.id, role.name)}
+                              className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors"
+                              title="Delete Role"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-slate-300 text-xs font-medium uppercase tracking-widest">Protected</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {roles.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-slate-500">No roles found.</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {Object.keys(groupedPermissions).map((moduleName) => {
-                      const modulePerms = groupedPermissions[moduleName];
-                      const modulePermIds = modulePerms.map((p: any) => p.id);
-                      
-                      return (
-                        <React.Fragment key={moduleName}>
-                          {/* Module Group Header */}
-                          <tr className="bg-slate-50 group">
-                            <td className="py-3 px-6 font-bold text-slate-900 border-r border-slate-200 sticky left-0 bg-slate-50 z-10 shadow-[1px_0_0_0_#e2e8f0]">
-                              <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
-                                {moduleName}
-                              </div>
-                            </td>
-                            {roles.map(role => {
-                              const rolePerms = draftPermissions[role.id] || [];
-                              const allSelected = modulePermIds.every((id: number) => rolePerms.includes(id));
-                              const isAdmin = role.name === "ADMIN";
-
-                              return (
-                                <td key={`header-${role.id}`} className="py-3 px-4 text-center border-l border-slate-200 bg-slate-50">
-                                  {!isAdmin && (
-                                    <button 
-                                      onClick={() => toggleModuleForRole(role.id, modulePermIds)}
-                                      className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                                        allSelected 
-                                          ? "bg-blue-100 text-blue-700 hover:bg-blue-200" 
-                                          : "bg-slate-200 text-slate-600 hover:bg-slate-300"
-                                      }`}
-                                    >
-                                      {allSelected ? "Deselect All" : "Select All"}
-                                    </button>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                          
-                          {/* Individual Permissions */}
-                          {modulePerms.map((perm: any, pIdx: number) => {
-                            const isLastInModule = pIdx === modulePerms.length - 1;
-                            return (
-                              <tr key={perm.id} className="hover:bg-blue-50/30 transition-colors group/row">
-                                <td className={`py-4 px-6 border-r border-slate-200 pl-10 sticky left-0 bg-white group-hover/row:bg-slate-50/50 z-10 shadow-[1px_0_0_0_#e2e8f0] ${isLastInModule ? '' : ''}`}>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-slate-700 font-medium capitalize">{perm.name.replace(/_/g, " ")}</span>
-                                    <TooltipProvider delayDuration={200}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-blue-100 hover:text-blue-600 transition-colors cursor-help">
-                                            <Info className="w-3 h-3" />
-                                          </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="bg-slate-900 text-white border-none shadow-xl">
-                                          <p>{perm.description}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                </td>
-                                
-                                {roles.map(role => {
-                                  const isSelected = (draftPermissions[role.id] || []).includes(perm.id);
-                                  const isAdmin = role.name === "ADMIN";
-                                  
-                                  return (
-                                    <td key={`${role.id}-${perm.id}`} className="py-4 px-4 text-center border-l border-slate-100">
-                                      <div className="flex justify-center">
-                                        <Switch 
-                                          checked={isSelected}
-                                          onCheckedChange={() => !isAdmin && togglePermission(role.id, perm.id)}
-                                          disabled={isAdmin}
-                                          className={`
-                                            data-[state=checked]:bg-blue-600
-                                            ${isAdmin ? 'opacity-40 cursor-not-allowed' : ''}
-                                          `}
-                                        />
-                                      </div>
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            );
-                          })}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
-
-      {/* Floating Action Bar for Unsaved Changes */}
-      {hasChanges && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
-          <div className="bg-slate-900 text-white px-6 py-4 rounded-full shadow-2xl border border-slate-700 flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
-                <AlertCircle className="w-4 h-4" />
-              </div>
-              <span className="font-medium text-sm">You have unsaved permission changes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                onClick={handleRevert} 
-                disabled={isSaving} 
-                className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-full px-4"
-              >
-                Discard
-              </Button>
-              <Button 
-                onClick={handleSaveChanges} 
-                disabled={isSaving} 
-                className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-6 shadow-lg shadow-blue-900/50"
-              >
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Create Role Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -365,7 +187,7 @@ export default function RolesPage() {
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Create New Role</DialogTitle>
               <DialogDescription className="text-blue-100 mt-1">
-                Define a new set of permissions for your team members.
+                Define a new role for your team members.
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -395,13 +217,48 @@ export default function RolesPage() {
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="text-slate-600">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700 shadow-md">
+              <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
                 {isCreating ? "Creating..." : "Create Role"}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!roleToDelete} onOpenChange={(open) => !open && setRoleToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px] p-6 rounded-2xl">
+          <DialogHeader>
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-slate-900 text-center w-full">
+                {t("roles.deleteConfirmTitle") || "Delete Role?"}
+              </DialogTitle>
+              <DialogDescription className="text-slate-500 text-base">
+                {t("roles.deleteConfirmDesc") ? (
+                  t("roles.deleteConfirmDesc").replace("{roleName}", roleToDelete?.name || "")
+                ) : (
+                  <>
+                    Are you sure you want to delete the <strong className="text-slate-900">{roleToDelete?.name}</strong> role? 
+                    This action cannot be undone and may affect users assigned to this role.
+                  </>
+                )}
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center">
+            <Button variant="outline" onClick={() => setRoleToDelete(null)} className="w-full sm:w-auto sm:min-w-[120px]">
+              {t("roles.cancel") || "Cancel"}
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteRole} className="w-full sm:w-auto sm:min-w-[120px] bg-red-600 hover:bg-red-700 text-white">
+              {t("roles.deleteConfirmBtn") || "Yes, delete role"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </DashboardLayout>
   );
 }

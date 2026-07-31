@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -23,6 +24,12 @@ import { toast } from "sonner";
 import { FaqDialog } from "./faq-dialog";
 import { DeleteFaqDialog } from "./delete-faq-dialog";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Category = {
   id: number;
@@ -52,7 +59,7 @@ type Props = {
 
 function CategoryPill({ category }: { category: string }) {
   return (
-    <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+    <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 border border-slate-200/60 max-w-full truncate align-bottom">
       {category}
     </span>
   );
@@ -93,6 +100,9 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingFaq, setDeletingFaq] = useState<Faq | null>(null);
+
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewingFaq, setPreviewingFaq] = useState<Faq | null>(null);
 
   const canManage = role === "admin" || role === "doctor";
 
@@ -146,6 +156,11 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
     if (!canManage) return;
     setDeletingFaq(faq);
     setDeleteDialogOpen(true);
+  }
+
+  function handlePreviewClick(faq: Faq) {
+    setPreviewingFaq(faq);
+    setPreviewDialogOpen(true);
   }
 
   // Filter Logic
@@ -336,6 +351,13 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                       <td className="px-6 py-5">
                         <div className="flex items-center justify-end gap-3">
                           <button
+                            onClick={() => handlePreviewClick(faq)}
+                            aria-label={`Preview FAQ`}
+                            className="text-slate-400 transition hover:text-slate-600"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleEdit(faq)}
                             aria-label={`Edit FAQ`}
                             className="text-slate-400 transition hover:text-blue-600"
@@ -395,6 +417,12 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                     </div>
 
                     <div className="flex shrink-0 flex-col gap-2 pt-1">
+                      <button
+                        onClick={() => handlePreviewClick(faq)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => handleEdit(faq)}
                         className="text-slate-400 hover:text-blue-600"
@@ -466,6 +494,59 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
         faq={deletingFaq}
         onSuccess={fetchFaqs}
       />
+
+      {/* Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-2xl bg-white rounded-2xl shadow-2xl border-slate-100 p-0 overflow-hidden">
+          {/* Header with gradient line */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+          
+          <div className="px-6 py-5 sm:px-8 sm:py-6">
+            <DialogHeader className="mb-6">
+              <div className="flex items-start gap-4">
+                <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 shadow-sm border border-blue-100">
+                  <MessageCircleQuestion className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-[19px] font-bold text-slate-900 leading-snug">
+                    {previewingFaq?.question?.[language as 'en'|'km'] || previewingFaq?.question?.km || previewingFaq?.question?.en}
+                  </DialogTitle>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
+                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                  {t("faqs.answerLabel" as any) || "Answer"}
+                </h3>
+                <p className="text-[15px] text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {previewingFaq?.answer?.[language as 'en'|'km'] || previewingFaq?.answer?.km || previewingFaq?.answer?.en}
+                </p>
+              </div>
+
+              {previewingFaq && (
+                <div className="grid grid-cols-[1fr_auto] items-center gap-3 w-full pt-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="min-w-0 truncate">
+                      <CategoryPill category={typeof (previewingFaq as any).categoryName === 'string' ? (previewingFaq as any).categoryName : (((previewingFaq as any).categoryName as any)?.[language as 'en'|'km'] || ((previewingFaq as any).categoryName as any)?.en || ((previewingFaq as any).categoryName as any)?.km || "")} />
+                    </div>
+                    <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${previewingFaq.is_active ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
+                      <div className={`mr-1.5 h-1.5 w-1.5 rounded-full ${previewingFaq.is_active ? "bg-emerald-500" : "bg-slate-400"}`} />
+                      {previewingFaq.is_active ? t("faqs.active") : t("faqs.inactive")}
+                    </span>
+                  </div>
+                  
+                  <Button variant="outline" className="rounded-xl border-slate-200 text-slate-600 font-semibold" onClick={() => setPreviewDialogOpen(false)}>
+                    {t("faqs.cancel" as any) || "Close"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

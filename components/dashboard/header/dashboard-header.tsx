@@ -7,7 +7,13 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
+  Maximize,
+  Minimize,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSidebarStore } from "@/lib/store/use-sidebar-store";
 
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/lib/store/use-auth-store";
@@ -43,6 +49,31 @@ export function DashboardHeader({
 
   const displayRole = sessionUser?.roleName || (role === "admin" ? "System Admin" : "Clinic Owner");
   
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+  
   const getFullAvatarUrl = (url?: string) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
@@ -62,6 +93,12 @@ export function DashboardHeader({
         ? [t("chat.adminPanel"), t("nav.banners")]
       : pathname === "/admin/documents"
         ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.documents")]
+      : pathname === "/admin/faqs"
+        ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.faqs")]
+      : pathname === "/admin/articles"
+        ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.articles")]
+      : pathname === "/admin/users"
+        ? [t("chat.adminPanel"), t("nav.users") || "User Management"]
         : pathname === "/admin/settings"
           ? [t("chat.adminPanel"), t("nav.settings")]
           : pathname === "/admin/profile" || pathname === "/doctor/profile"
@@ -79,6 +116,15 @@ export function DashboardHeader({
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <button className="rounded-lg border border-slate-200 p-2 lg:hidden hover:bg-slate-50 transition-colors">
             <Menu className="h-5 w-5 text-slate-500" />
+          </button>
+          
+          {/* Desktop sidebar toggle */}
+          <button 
+            onClick={toggleSidebar}
+            className="hidden lg:flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors mr-1 outline-none"
+            title="Toggle Sidebar"
+          >
+            {isCollapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
           </button>
 
           {role === "admin" && (
@@ -98,6 +144,14 @@ export function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-4">
+          <button 
+            onClick={handleFullscreen}
+            className="hidden lg:flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors outline-none"
+            title="Toggle Fullscreen"
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          </button>
+
           <LanguageSwitcher />
 
           {permissions.includes("view_notifications") && (

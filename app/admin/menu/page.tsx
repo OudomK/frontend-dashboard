@@ -16,20 +16,8 @@ export default function AdminMenuPage() {
     ? (typeof window !== "undefined" ? localStorage.getItem("women_health_user_name") : null) || sessionUser.email.split("@")[0]
     : t("mnu.sysAdmin");
 
-  const groups = [
-    {
-      label: t("mnu.overview"),
-      items: adminMenu.slice(0, 2),
-    },
-    {
-      label: t("mnu.aiKnow"),
-      items: adminMenu.slice(2, 4),
-    },
-    {
-      label: t("mnu.contentMgmt"),
-      items: adminMenu.slice(4),
-    },
-  ];
+  // adminMenu is already structured in groups
+  const groups = adminMenu.filter(group => group.items && group.items.length > 0);
 
   return (
     <DashboardLayout
@@ -62,12 +50,13 @@ export default function AdminMenuPage() {
           <div key={group.label} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {group.label}
+                {navKeyMap[group.label] ? t(navKeyMap[group.label]) : group.label}
               </span>
             </div>
             <div className="divide-y divide-slate-100">
-              {group.items.map((item) => {
+              {group.items?.map((item) => {
                 const Icon = item.icon;
+                if (!item.href) return null; // Skip sub-groups if any
                 return (
                   <Link
                     key={item.label}
@@ -75,7 +64,7 @@ export default function AdminMenuPage() {
                     className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors active:bg-slate-100"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                      <Icon className="h-5 w-5" />
+                      {Icon && <Icon className="h-5 w-5" />}
                     </div>
                     <span className="font-semibold text-slate-700 flex-1">{t(navKeyMap[item.label] || "nav.dashboard")}</span>
                   </Link>

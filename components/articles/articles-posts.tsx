@@ -304,6 +304,33 @@ export function ArticlesPosts({ role }: { role: string }) {
     }
   };
 
+  // ── Quick Actions ──────────────────────────────────────────────────────────
+
+  const handleTogglePublish = async () => {
+    if (!selectedArticle) return;
+    const newStatus = selectedArticle.status === "PUBLISHED" ? "draft" : "published";
+    try {
+      await apiClient.put(`/api/v1/contents/${selectedArticle.id}/status`, { status: newStatus });
+      toast.success(newStatus === "published" ? "Article published" : "Article unpublished");
+      setOpenPreviewDialog(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail ?? "Failed to update status");
+    }
+  };
+
+  const handleToggleFeatured = async () => {
+    if (!selectedArticle) return;
+    try {
+      await apiClient.put(`/api/v1/contents/${selectedArticle.id}`, { is_featured: !selectedArticle.is_featured });
+      toast.success(selectedArticle.is_featured ? "Removed from featured" : "Marked as featured");
+      setOpenPreviewDialog(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail ?? "Failed to update featured status");
+    }
+  };
+
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleFormSubmit = async () => {
@@ -637,12 +664,12 @@ export function ArticlesPosts({ role }: { role: string }) {
           /* ── Table View ── */
           <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
             {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
+            <div className="hidden lg:block">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/70 border-b border-slate-100">
                     {[t("art.tableArticle"), t("art.tableCategory"), t("art.tableAuthor"), t("art.tableStatus"), t("art.tableDate"), t("art.tableActions")].map((h, i) => (
-                      <th key={h} className={`px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 ${i === 5 ? "text-right" : ""}`}>{h}</th>
+                      <th key={h} className={`px-3 lg:px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 ${i === 5 ? "text-right" : ""}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -653,8 +680,8 @@ export function ArticlesPosts({ role }: { role: string }) {
                     return (
                       <tr key={article.id} className="group hover:bg-blue-50/20 transition-colors">
                         {/* Article Title + Excerpt */}
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3 max-w-sm">
+                        <td className="px-3 lg:px-4 py-4 w-full max-w-[200px] xl:max-w-[280px]">
+                          <div className="flex items-center gap-3 w-full">
                             {img ? (
                               <img src={img} alt={article.title.en} className="h-11 w-11 shrink-0 rounded-xl object-cover border border-slate-100 shadow-sm" />
                             ) : (
@@ -677,7 +704,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                         </td>
 
                         {/* Category */}
-                        <td className="px-5 py-4 whitespace-nowrap">
+                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold border ${style.bg} ${style.text} ${style.border}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
                             {article.category}
@@ -685,7 +712,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                         </td>
 
                         {/* Author */}
-                        <td className="px-5 py-4 whitespace-nowrap">
+                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
                               {article.authorName[0]}
@@ -695,12 +722,12 @@ export function ArticlesPosts({ role }: { role: string }) {
                         </td>
 
                         {/* Status */}
-                        <td className="px-5 py-4 whitespace-nowrap">
+                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
                           <StatusBadge status={article.status} />
                         </td>
 
                         {/* Date */}
-                        <td className="px-5 py-4 whitespace-nowrap">
+                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-sm text-slate-400 font-medium">
                             <Calendar className="h-3.5 w-3.5" />
                             {article.date}
@@ -708,7 +735,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                         </td>
 
                         {/* Actions */}
-                        <td className="px-5 py-4 whitespace-nowrap">
+                        <td className="px-3 lg:px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handlePreviewClick(article)}
@@ -1096,7 +1123,7 @@ export function ArticlesPosts({ role }: { role: string }) {
           Dialog: Article Preview Modal
       ════════════════════════════════════════════════════════ */}
       <Dialog open={openPreviewDialog} onOpenChange={setOpenPreviewDialog}>
-        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-2xl rounded-2xl shadow-2xl p-0">
+        <DialogContent className="bg-white max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-2xl rounded-2xl shadow-2xl p-0">
           {/* Visually hidden title for screen readers — required by Radix Dialog */}
           <VisuallyHidden.Root>
             <DialogTitle>
@@ -1111,26 +1138,17 @@ export function ArticlesPosts({ role }: { role: string }) {
             return (
               <div>
                 {/* Hero Image / Cover */}
-                <div className="relative h-52 overflow-hidden rounded-t-2xl">
+                <div className="relative overflow-hidden rounded-t-2xl sm:rounded-2xl bg-slate-900/5 flex justify-center sm:m-2 sm:mb-4">
                   {img ? (
-                    <img src={img} alt={selectedArticle.title.en} className="w-full h-full object-cover" />
+                    <img src={img} alt={selectedArticle.title.en} className="w-full h-auto max-h-[70vh] object-contain" />
                   ) : (
-                    <div className={`w-full h-full flex flex-col items-center justify-center ${style.bg}`}>
+                    <div className={`w-full h-52 flex flex-col items-center justify-center ${style.bg}`}>
                       <CategoryAvatar category={selectedArticle.category} size="lg" />
                       <p className={`mt-2 text-xs font-bold uppercase tracking-wider ${style.text}`}>{selectedArticle.category}</p>
                     </div>
                   )}
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  {/* Top badges */}
-                  <div className="absolute top-4 left-4 flex items-center gap-2">
-                    <StatusBadge status={selectedArticle.status} />
-                    {selectedArticle.is_featured && (
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold text-yellow-900">
-                        <Star className="h-2.5 w-2.5 fill-yellow-900" /> {t("art.featured")}
-                      </span>
-                    )}
-                  </div>
                   {/* Category badge on image */}
                   <div className="absolute bottom-4 left-4">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${style.bg} ${style.text} ${style.border} border shadow-sm`}>
@@ -1145,6 +1163,17 @@ export function ArticlesPosts({ role }: { role: string }) {
                   {/* Title + excerpt */}
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 leading-snug">{selectedArticle.title[language as "en" | "km"] || selectedArticle.title.en}</h2>
+                    
+                    {/* Status Badges Row */}
+                    <div className="flex items-center gap-2 mt-3">
+                      <StatusBadge status={selectedArticle.status} />
+                      {selectedArticle.is_featured && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-yellow-900">
+                          <Star className="h-3 w-3 fill-yellow-900" /> {t("art.featured")}
+                        </span>
+                      )}
+                    </div>
+                    
                     {((selectedArticle.excerpt as any)[language] || selectedArticle.excerpt.km || selectedArticle.excerpt.en) && (
                       <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{(selectedArticle.excerpt as any)[language] || selectedArticle.excerpt.km || selectedArticle.excerpt.en}</p>
                     )}

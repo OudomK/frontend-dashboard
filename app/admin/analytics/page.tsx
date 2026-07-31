@@ -1,25 +1,44 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
   CalendarDays,
+  ChevronDown,
   Download,
+  FileSpreadsheet,
   FileText,
+  Info,
   Loader2,
   MessageSquare,
   PhoneForwarded,
+  Printer,
   Target,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
+import { ExportDropdown } from "@/components/shared/export-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { apiClient } from "@/lib/api-client";
 import { useTranslation } from "@/lib/hooks/use-translation";
+
+/* ── Types ──────────────────────────────────────────────────────── */
 
 type Overview = {
   total_users: number;
@@ -92,15 +111,22 @@ type Metric = {
   icon: LucideIcon;
   iconTone: string;
   noteTone: string;
+  variant?: "danger";
+  href?: string;
 };
 
 type TopicStat = {
   label: string;
   value: number;
   color: string;
+  isUncategorized?: boolean;
 };
 
+type DateRange = "7d" | "30d" | "90d" | "all";
+
 const topicColors = ["bg-blue-600", "bg-emerald-500", "bg-amber-500", "bg-violet-500", "bg-rose-500"];
+
+/* ── Helpers ────────────────────────────────────────────────────── */
 
 function formatBackendError(error: unknown): string {
   const response = error && typeof error === "object" && "response" in error
@@ -130,23 +156,53 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function AnalyticsMetricCard({ title, value, note, icon: Icon, iconTone, noteTone }: Metric) {
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 lg:p-6 shadow-sm">
+/* ── Sub-components ─────────────────────────────────────────────── */
+
+function AnalyticsMetricCard({ title, value, note, icon: Icon, iconTone, noteTone, variant, href }: Metric) {
+  const isDanger = variant === "danger";
+  const hasCritical = isDanger && parseInt(value) > 0;
+
+  const cardContent = (
+    <section
+      className={`rounded-lg border p-4 lg:p-6 shadow-sm transition-all ${
+        isDanger
+          ? "border-red-200 bg-gradient-to-br from-red-50 to-white hover:shadow-md hover:border-red-300 cursor-pointer"
+          : "border-slate-200 bg-white"
+      }`}
+      onClick={href ? () => {
+        const el = document.getElementById("escalated-section");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      } : undefined}
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-slate-400">{title}</p>
-          <p className="mt-7 text-4xl font-bold tracking-tight text-slate-950">{value}</p>
+          <p className={`text-sm font-semibold ${isDanger ? "text-red-400" : "text-slate-400"}`}>{title}</p>
+          <p className={`mt-7 text-4xl font-bold tracking-tight ${isDanger ? "text-red-700" : "text-slate-950"}`}>{value}</p>
         </div>
 
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconTone}`}>
-          <Icon className="h-5 w-5" />
+        <div className="relative">
+          {hasCritical && (
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+            </span>
+          )}
+          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconTone}`}>
+            <Icon className="h-5 w-5" />
+          </div>
         </div>
       </div>
 
-      <p className={`mt-3 text-sm ${noteTone}`}>{note}</p>
+      <p className={`mt-3 text-sm ${noteTone}`}>
+        {note}
+        {isDanger && href && (
+          <span className="ml-2 text-red-500 underline underline-offset-2 text-xs font-semibold">→ View Cases</span>
+        )}
+      </p>
     </section>
   );
+
+  return cardContent;
 }
 
 function TriggerBadge({ value }: { value: string }) {
@@ -166,6 +222,8 @@ function TriggerBadge({ value }: { value: string }) {
   return <Badge className="rounded-md bg-slate-100 px-2.5 text-xs font-bold uppercase text-slate-700">{t("aly.none")}</Badge>;
 }
 
+/* ── Main Page ──────────────────────────────────────────────────── */
+
 export default function AdminAnalyticsPage() {
   const { t, language } = useTranslation();
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -178,8 +236,19 @@ export default function AdminAnalyticsPage() {
   const [flags, setFlags] = useState<EmergencyFlag[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAnalytics = async () => {
-    setLoading(true);
+  // ── Feature 1: Live Data toggle ──
+  const [isLive, setIsLive] = useState(false);
+  const liveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Feature 3: Date-range selector ──
+  const [dateRange, setDateRange] = useState<DateRange>("30d");
+
+  const fetchAnalytics = useCallback(async () => {
+    if (!loading) {
+      // Don't show loading spinner on live refresh, only on initial load
+    } else {
+      setLoading(true);
+    }
     try {
       const [
         overviewRes,
@@ -236,7 +305,8 @@ export default function AdminAnalyticsPage() {
         .map(([label, count], index) => ({
           label,
           value: pct(count, total),
-          color: topicColors[index] ?? "bg-slate-500",
+          color: label === t("aly.uncat") ? "bg-amber-400" : (topicColors[index] ?? "bg-slate-500"),
+          isUncategorized: label === t("aly.uncat"),
         }));
 
       setTopics(mappedTopics);
@@ -245,12 +315,42 @@ export default function AdminAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [language, t]);
 
   useEffect(() => {
     void Promise.resolve().then(fetchAnalytics);
+  }, [fetchAnalytics]);
+
+  // ── Feature 1: Live toggle interval management ──
+  const toggleLive = useCallback(() => {
+    if (isLive) {
+      // Turn off
+      if (liveIntervalRef.current) {
+        clearInterval(liveIntervalRef.current);
+        liveIntervalRef.current = null;
+      }
+      setIsLive(false);
+      toast.info(t("aly.autoRefreshOff"));
+    } else {
+      // Turn on
+      setIsLive(true);
+      toast.success(t("aly.autoRefreshOn"));
+      liveIntervalRef.current = setInterval(() => {
+        void fetchAnalytics();
+      }, 30_000);
+    }
+  }, [isLive, fetchAnalytics, t]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (liveIntervalRef.current) {
+        clearInterval(liveIntervalRef.current);
+      }
+    };
   }, []);
 
+  // ── Feature 4: Emergency Flags card (distinct) ──
   const metrics = useMemo<Metric[]>(() => [
     {
       title: t("aly.totalAiQueries"),
@@ -281,8 +381,10 @@ export default function AdminAnalyticsPage() {
       value: (emergencyStats?.total_emergency_flags ?? 0).toLocaleString(),
       note: `${emergencyStats?.critical_cases ?? 0} ${t("aly.criticalCases")}`,
       icon: PhoneForwarded,
-      iconTone: "bg-red-50 text-red-500",
+      iconTone: "bg-red-100 text-red-600",
       noteTone: "text-red-500",
+      variant: "danger" as const,
+      href: "#escalated",
     },
   ], [aiUsage, chatStats, emergencyStats, t]);
 
@@ -299,10 +401,28 @@ export default function AdminAnalyticsPage() {
     ];
   }, [chatStats, documentStats, emergencyStats, t]);
 
-  const chartGrowth = growth.length > 0 ? growth.slice(-10) : [{ date: "No data", total_users: 0 }];
+  // ── Feature 3: Date-range filtered chart data ──
+  const chartGrowth = useMemo(() => {
+    if (growth.length === 0) return [{ date: "No data", total_users: 0 }];
+
+    const now = new Date();
+    let daysBack: number;
+    switch (dateRange) {
+      case "7d": daysBack = 7; break;
+      case "30d": daysBack = 30; break;
+      case "90d": daysBack = 90; break;
+      default: return growth.slice(-30); // 'all' but cap at last 30 bars for readability
+    }
+
+    const cutoff = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+    const filtered = growth.filter(item => new Date(item.date) >= cutoff);
+    return filtered.length > 0 ? filtered : [{ date: "No data", total_users: 0 }];
+  }, [growth, dateRange]);
+
   const maxGrowth = Math.max(...chartGrowth.map((item) => item.total_users), 1);
 
-  const exportReport = () => {
+  // ── Feature 2: Export functions ──
+  const exportCSV = () => {
     const lines = [
       ["Metric", "Value"],
       ["Total Users", overview?.total_users ?? 0],
@@ -321,12 +441,25 @@ export default function AdminAnalyticsPage() {
     const csv = `data:text/csv;charset=utf-8,${lines.map((line) => line.join(",")).join("\n")}`;
     const link = document.createElement("a");
     link.href = encodeURI(csv);
-    link.download = "analytics_report.csv";
+    link.download = `analytics_report_${dateRange}.csv`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     toast.success(t("aly.reportExported"));
   };
+
+  const exportPDF = () => {
+    window.print();
+    toast.success(t("aly.reportExported"));
+  };
+
+  // ── Date range labels ──
+  const dateRangeOptions: { key: DateRange; label: string }[] = [
+    { key: "7d", label: t("aly.range7d") },
+    { key: "30d", label: t("aly.range30d") },
+    { key: "90d", label: t("aly.range90d") },
+    { key: "all", label: t("aly.rangeAll") },
+  ];
 
   return (
     <DashboardLayout
@@ -335,15 +468,34 @@ export default function AdminAnalyticsPage() {
       subtitle={t("aly.subtitle")}
       actions={
         <>
-          <Button variant="outline" className="h-10 rounded-md px-4">
-            <CalendarDays />
-            {t("aly.liveData")}
+          {/* ── Feature 1: Live Data Toggle ── */}
+          <Button
+            variant={isLive ? "default" : "outline"}
+            onClick={toggleLive}
+            className={`h-10 rounded-md px-4 transition-all ${
+              isLive
+                ? "bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600"
+                : ""
+            }`}
+          >
+            {isLive ? (
+              <>
+                <span className="relative flex h-2.5 w-2.5 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+                </span>
+                {t("aly.liveOn")}
+              </>
+            ) : (
+              <>
+                <CalendarDays className="mr-1.5 h-4 w-4" />
+                {t("aly.liveOff")}
+              </>
+            )}
           </Button>
 
-          <Button onClick={exportReport} className="h-10 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700">
-            <Download />
-            {t("aly.exportReport")}
-          </Button>
+          {/* ── Feature 2: Export Dropdown ── */}
+          <ExportDropdown onExportCsv={exportCSV} onExportPdf={exportPDF} label={t("aly.exportReport") || "Export"} />
         </>
       }
     >
@@ -354,26 +506,47 @@ export default function AdminAnalyticsPage() {
         </div>
       ) : (
         <div className="space-y-8">
+          {/* ── Stat Cards (Feature 4: Emergency card stands out) ── */}
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {metrics.map((metric) => (
               <AnalyticsMetricCard key={metric.title} {...metric} />
             ))}
           </div>
 
+          {/* ── Charts Row ── */}
           <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_356px]">
+            {/* ── Feature 3: User Growth with Date Range Selector ── */}
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
                 <h2 className="font-bold text-slate-950">{t("aly.userGrowth")}</h2>
+
+                {/* Date Range Selector */}
+                <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+                  {dateRangeOptions.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setDateRange(key)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                        dateRange === key
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="px-4 py-6 lg:px-6">
                 <div className="flex h-[270px] items-end gap-3 border-b border-slate-100">
-                  {chartGrowth.map((item) => {
+                  {chartGrowth.map((item, i) => {
                     const height = Math.max(8, Math.round((item.total_users / maxGrowth) * 230));
                     return (
-                      <div key={item.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                        <div className="w-full rounded-t-md bg-blue-600 transition-all" style={{ height }} title={`${item.total_users} ${t("aly.users")}`} />
-                        <span className="text-[11px] font-semibold text-slate-400">{item.date === "No data" ? t("aly.noData") : formatDate(item.date)}</span>
+                      <div key={`${item.date}-${i}`} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                        <span className="text-[10px] font-bold text-slate-500">{item.total_users}</span>
+                        <div className="w-full rounded-t-md bg-blue-600 transition-all hover:bg-blue-500" style={{ height }} title={`${item.total_users} ${t("aly.users")}`} />
+                        <span className="text-[10px] font-semibold text-slate-400 whitespace-nowrap">{item.date === "No data" ? t("aly.noData") : formatDate(item.date)}</span>
                       </div>
                     );
                   })}
@@ -381,6 +554,7 @@ export default function AdminAnalyticsPage() {
               </div>
             </section>
 
+            {/* ── Feature 5: Top Health Topics with Uncategorized Warning ── */}
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
                 <h2 className="font-bold text-slate-950">{t("aly.topTopics")}</h2>
@@ -393,11 +567,29 @@ export default function AdminAnalyticsPage() {
                   topics.map((topic) => (
                     <div key={topic.label}>
                       <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-950">{topic.label}</span>
-                        <span className="text-slate-950">{topic.value}%</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${topic.isUncategorized ? "text-amber-700" : "text-slate-950"}`}>{topic.label}</span>
+                          {/* Feature 5: Uncategorized warning tooltip */}
+                          {topic.isUncategorized && topic.value > 30 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[10px] font-bold">
+                                    <Info className="h-3 w-3" />
+                                    ⚠
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[220px]">
+                                  <p>{t("aly.uncatWarning")}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                        <span className={topic.isUncategorized ? "text-amber-700 font-bold" : "text-slate-950"}>{topic.value}%</span>
                       </div>
                       <div className="h-2 rounded-full bg-slate-100">
-                        <div className={`h-2 rounded-full ${topic.color}`} style={{ width: `${topic.value}%` }} />
+                        <div className={`h-2 rounded-full ${topic.color} transition-all`} style={{ width: `${topic.value}%` }} />
                       </div>
                     </div>
                   ))
@@ -406,6 +598,7 @@ export default function AdminAnalyticsPage() {
             </section>
           </div>
 
+          {/* ── Bottom Row ── */}
           <div className="grid gap-6 xl:grid-cols-[356px_minmax(0,2fr)]">
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
@@ -434,7 +627,8 @@ export default function AdminAnalyticsPage() {
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            {/* ── Feature 4: Escalated section with id anchor ── */}
+            <section id="escalated-section" className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
                 <h2 className="font-bold text-slate-950">{t("aly.recentEscalated")}</h2>
               </div>
@@ -480,6 +674,7 @@ export default function AdminAnalyticsPage() {
             </section>
           </div>
 
+          {/* ── Bottom Stats Row ── */}
           <section className="grid gap-6 md:grid-cols-3">
             <div className="rounded-lg border border-slate-200 bg-white p-4 lg:p-5 shadow-sm">
               <FileText className="mb-4 h-5 w-5 text-blue-600" />
