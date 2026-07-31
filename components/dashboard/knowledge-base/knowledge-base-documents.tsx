@@ -355,7 +355,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,ID,Name,Type,Category,Status,Upload Date,Size\n";
     documents.forEach((d) => {
-      csvContent += `${d.id},"${d.name}","${d.type}","${d.category}",${d.status},"${d.uploadDate}","${d.size}"\n`;
+      csvContent += `${d.id},"${d.name}","${d.type}","${d.categoryName || ''}",${d.status},"${d.date}","${d.size}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const downloadAnchor = document.createElement("a");
