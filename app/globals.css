@@ -159,6 +159,12 @@
     print-color-adjust: exact !important;
   }
 
+  /* Prevent page breaks inside cards and sections */
+  section, .rounded-lg, .shadow-sm, tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   /* Hide the mobile bottom bar when printing */
   .fixed.bottom-0.left-0.right-0.z-50.border-t {
     display: none !important;
