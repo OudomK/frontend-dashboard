@@ -188,6 +188,7 @@
   "doc.title": "Knowledge Base & Documents",
   "docs.titleAdmin": "Knowledge Base Documents",
   "docs.titleDoctor": "Knowledge Base",
+  "docs.export": "Export CSV",
   "docs.subtitleAdmin": "Manage all clinic documents indexed in the AI knowledge base.",
   "docs.subtitleDoctor": "Upload and manage documents that support your clinic's AI answers.",
   "docs.syncAiDb": "Sync AI DB",

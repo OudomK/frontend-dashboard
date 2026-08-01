@@ -187,6 +187,7 @@
   "users.deleteUser": "លុបអ្នកប្រើប្រាស់",
   "docs.titleAdmin": "ឯកសារចំណេះដឹង",
   "docs.titleDoctor": "មូលដ្ឋានចំណេះដឹង",
+  "docs.export": "ទាញយក CSV",
   "docs.subtitleAdmin": "គ្រប់គ្រងឯកសារគ្លីនិកទាំងអស់ដែលបានបញ្ចូលទៅក្នុង AI knowledge base។",
   "docs.subtitleDoctor": "បញ្ចូល និងគ្រប់គ្រងឯកសារដែលគាំទ្រចម្លើយ AI របស់គ្លីនិកអ្នក។",
   "docs.syncAiDb": "ធ្វើសមកាលកម្ម AI DB",
