@@ -12,7 +12,7 @@ const translations = {
 };
 
 type Translations = typeof en;
-export type TranslationKey = keyof Translations;
+export type TranslationKey = keyof Translations | (string & {});
 
 export function useTranslation() {
   const { language, initialize } = useLangStore();
@@ -25,7 +25,7 @@ export function useTranslation() {
     (key: TranslationKey): string => {
       const locale = (translations as Record<string, Record<string, string>>)[language] || translations["en"];
       // Fallback to English if key is missing in Khmer
-      return locale[key as string] || translations["en"][key] || key;
+      return locale[key as string] || (translations["en"] as Record<string, string>)[key as string] || (key as string);
     },
     [language]
   );

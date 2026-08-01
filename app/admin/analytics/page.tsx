@@ -425,18 +425,19 @@ export default function AdminAnalyticsPage() {
   const exportCSV = () => {
     const lines = [
       ["Metric", "Value"],
-      ["Total Users", overview?.total_users ?? 0],
-      ["Total Doctors", overview?.total_doctors ?? 0],
-      ["Total Admins", overview?.total_admins ?? 0],
-      ["Chat Sessions", chatStats?.total_chat_sessions ?? 0],
-      ["User Messages", chatStats?.total_user_messages ?? 0],
-      ["AI Messages", chatStats?.total_ai_messages ?? 0],
-      ["Documents", documentStats?.total_documents ?? 0],
-      ["Document Chunks", documentStats?.total_document_chunks ?? 0],
+      ["Total AI Queries", chatStats?.total_user_messages ?? 0],
+      ["Average Msgs/Session", chatStats?.average_messages_per_session ?? 0],
+      ["AI Response Ratio", `${aiUsage?.ai_response_ratio ?? 0}x`],
       ["Emergency Flags", emergencyStats?.total_emergency_flags ?? 0],
-      ["Warning Cases", emergencyStats?.warning_cases ?? 0],
-      ["Urgent Cases", emergencyStats?.urgent_cases ?? 0],
-      ["Critical Cases", emergencyStats?.critical_cases ?? 0],
+      ["Active Documents", documentStats?.active_documents ?? 0],
+      ["User / AI Messages", `${chatStats?.total_user_messages ?? 0} / ${chatStats?.total_ai_messages ?? 0}`],
+      ["Urgent / Critical Cases", `${emergencyStats?.urgent_cases ?? 0} / ${emergencyStats?.critical_cases ?? 0}`],
+      ["", ""],
+      ["Date", "Total Users (Growth)"],
+      ...chartGrowth.map(item => [
+        item.date === "No data" ? item.date : formatDate(item.date),
+        item.total_users
+      ])
     ];
     const csv = `data:text/csv;charset=utf-8,${lines.map((line) => line.join(",")).join("\n")}`;
     const link = document.createElement("a");
@@ -450,7 +451,6 @@ export default function AdminAnalyticsPage() {
 
   const exportPDF = () => {
     window.print();
-    toast.success(t("aly.reportExported"));
   };
 
   // ── Date range labels ──
@@ -505,16 +505,16 @@ export default function AdminAnalyticsPage() {
           {t("aly.loading")}
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8 print:block">
           {/* ── Stat Cards (Feature 4: Emergency card stands out) ── */}
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 print:block print:space-y-6">
             {metrics.map((metric) => (
               <AnalyticsMetricCard key={metric.title} {...metric} />
             ))}
           </div>
 
           {/* ── Charts Row ── */}
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_356px]">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_356px] print:block print:space-y-6">
             {/* ── Feature 3: User Growth with Date Range Selector ── */}
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
@@ -599,7 +599,7 @@ export default function AdminAnalyticsPage() {
           </div>
 
           {/* ── Bottom Row ── */}
-          <div className="grid gap-6 xl:grid-cols-[356px_minmax(0,2fr)]">
+          <div className="grid gap-6 xl:grid-cols-[356px_minmax(0,2fr)] print:block print:space-y-6">
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 px-4 py-4 lg:px-6 lg:py-5">
                 <h2 className="font-bold text-slate-950">{t("aly.sysActMix")}</h2>
@@ -675,7 +675,7 @@ export default function AdminAnalyticsPage() {
           </div>
 
           {/* ── Bottom Stats Row ── */}
-          <section className="grid gap-6 md:grid-cols-3">
+          <section className="grid gap-6 md:grid-cols-3 print:block print:space-y-6">
             <div className="rounded-lg border border-slate-200 bg-white p-4 lg:p-5 shadow-sm">
               <FileText className="mb-4 h-5 w-5 text-blue-600" />
               <p className="text-sm font-semibold text-slate-400">{t("aly.knowBase")}</p>

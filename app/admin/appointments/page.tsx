@@ -319,8 +319,8 @@ export default function AdminAppointmentsPage() {
             )}
           </div>
 
-          {/* Right Column: Appointments List or Scanner (Hidden on mobile if generate/scan tab active) */}
-          <div className={`lg:col-span-8 ${(activeTab === 'generate' || activeTab === 'scan') ? 'hidden md:block' : 'block'}`}>
+          {/* Right Column: Appointments List or Scanner (Hidden on mobile if generate tab active) */}
+          <div className={`lg:col-span-8 ${activeTab === 'generate' ? 'hidden md:block' : 'block'}`}>
             {activeTab === 'scan' ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">

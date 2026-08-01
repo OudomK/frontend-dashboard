@@ -163,6 +163,8 @@
   section, .rounded-lg, .shadow-sm, tr {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    display: block !important;
+    overflow: visible !important;
   }
 
   /* Hide the mobile bottom bar when printing */
