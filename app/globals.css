@@ -152,3 +152,21 @@
     scrollbar-width: none;
   }
 }
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide the mobile bottom bar when printing */
+  .fixed.bottom-0.left-0.right-0.z-50.border-t {
+    display: none !important;
+  }
+  
+  /* Ensure charts and background colors render properly in PDFs */
+  .bg-blue-600, .bg-emerald-500, .bg-amber-500, .bg-violet-500, .bg-rose-500, .bg-blue-100 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

@@ -71,7 +71,7 @@ export function MobileBottomNav({ role }: Props) {
       : doctorItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white lg:hidden print:hidden">
       <div className="grid grid-cols-4">
         {items.map((item) => {
           const Icon = item.icon;
