@@ -27,7 +27,8 @@ export function MobileHeader({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
-  const permissions = useAuthStore((state) => state.user?.permissions || []);
+  const userPermissions = useAuthStore((state) => state.user?.permissions);
+  const permissions = userPermissions || [];
 
   // Close sidebar on navigation
   useEffect(() => {

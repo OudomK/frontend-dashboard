@@ -40,7 +40,8 @@ export function DashboardHeader({
   const pathname = usePathname();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const sessionUser = useAuthStore((state) => state.user);
-  const permissions = useAuthStore((state) => state.user?.permissions || []);
+  const userPermissions = useAuthStore((state) => state.user?.permissions);
+  const permissions = userPermissions || [];
   const { t } = useTranslation();
 
   const displayName = sessionUser?.name || (sessionUser?.email

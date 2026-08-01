@@ -19,28 +19,37 @@ export function QRScanner({ onScanSuccess, onScanError }: QRScannerProps) {
     const startScanner = async () => {
       try {
         html5QrCode = new Html5Qrcode("qr-reader");
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            if (isComponentMounted) {
-              html5QrCode.stop().then(() => {
-                onScanSuccess(decodedText);
-              }).catch(console.error);
-            }
-          },
-          (errorMessage) => {
-            if (onScanError) onScanError(errorMessage);
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        const handleSuccess = (decodedText: string) => {
+          if (isComponentMounted) {
+            html5QrCode.stop().then(() => {
+              onScanSuccess(decodedText);
+            }).catch(console.warn);
           }
-        );
+        };
+        
+        const handleError = (errorMessage: string) => {
+          if (onScanError) onScanError(errorMessage);
+        };
+
+        try {
+          // Try back camera first
+          await html5QrCode.start({ facingMode: "environment" }, config, handleSuccess, handleError);
+        } catch (envErr) {
+          // Fallback to front camera (e.g., laptops/desktops)
+          console.warn("Environment camera failed, trying user camera:", envErr);
+          await html5QrCode.start({ facingMode: "user" }, config, handleSuccess, handleError);
+        }
+
         if (isComponentMounted) {
           setIsScanning(true);
           setError("");
         }
       } catch (err: any) {
         if (isComponentMounted) {
-          console.error("Camera start error:", err);
-          setError("Cannot access camera. Please ensure you have granted camera permissions.");
+          console.warn("Camera start error:", err);
+          setError("Cannot access camera. Please ensure you have granted permissions and a camera is available.");
         }
       }
     };

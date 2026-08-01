@@ -137,7 +137,8 @@ function StatCard({ title, value, icon: Icon, tone }: { title: string; value: st
 export function KnowledgeBaseDocuments({ role }: { role: Role }) {
   const isAdmin = role === "admin";
   const { t, language } = useTranslation();
-  const permissions = useAuthStore((state) => state.user?.permissions || []);
+  const userPermissions = useAuthStore((state) => state.user?.permissions);
+  const permissions = userPermissions || [];
   const canCreate = permissions.includes("create_documents");
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
