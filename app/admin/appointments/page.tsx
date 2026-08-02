@@ -404,28 +404,30 @@ export default function AdminAppointmentsPage() {
                             </div>
                           </div>
 
-                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
-                            <span className={`text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm border ${
-                              apt.status === 'SCHEDULED' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                              apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                              'bg-rose-100 text-rose-700 border-rose-200'
-                            }`}>
-                              {apt.status === 'COMPLETED' ? t("appointments.completed") : apt.status === 'CANCELLED' ? t("appointments.cancelled") : apt.status}
-                            </span>
+                          <div className="flex flex-col sm:items-end gap-3 border-t sm:border-t-0 border-slate-100 pt-4 sm:pt-0 mt-3 sm:mt-0 w-full sm:w-auto">
+                            <div className="flex justify-start sm:justify-end w-full">
+                              <span className={`text-[11px] sm:text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm border ${
+                                apt.status === 'SCHEDULED' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                                'bg-rose-100 text-rose-700 border-rose-200'
+                              }`}>
+                                {apt.status === 'COMPLETED' ? t("appointments.completed") : apt.status === 'CANCELLED' ? t("appointments.cancelled") : apt.status}
+                              </span>
+                            </div>
 
                             {apt.status === 'SCHEDULED' && (
-                              <div className="flex items-center gap-2 mt-auto">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-auto w-full sm:w-auto">
                                 <button 
                                   onClick={() => handleUpdateStatus(apt.id, "COMPLETED")}
-                                  className="text-emerald-600 bg-white border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 px-3 py-2 rounded-xl transition-all font-semibold text-sm flex items-center gap-1.5 shadow-sm hover:shadow"
+                                  className="text-emerald-600 bg-white border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 px-3 py-2.5 sm:py-2 rounded-xl transition-all font-semibold text-sm flex items-center justify-center sm:justify-start gap-1.5 shadow-sm hover:shadow flex-1"
                                 >
-                                  <CheckCircle className="w-4 h-4" /> {t("appointments.markCompleted")}
+                                  <CheckCircle className="w-4 h-4 shrink-0" /> <span className="line-clamp-1">{t("appointments.markCompleted")}</span>
                                 </button>
                                 <button 
                                   onClick={() => handleUpdateStatus(apt.id, "CANCELLED")}
-                                  className="text-rose-600 bg-white border border-slate-200 hover:border-rose-200 hover:bg-rose-50 px-3 py-2 rounded-xl transition-all font-semibold text-sm flex items-center gap-1.5 shadow-sm hover:shadow"
+                                  className="text-rose-600 bg-white border border-slate-200 hover:border-rose-200 hover:bg-rose-50 px-3 py-2.5 sm:py-2 rounded-xl transition-all font-semibold text-sm flex items-center justify-center sm:justify-start gap-1.5 shadow-sm hover:shadow flex-1"
                                 >
-                                  <XCircle className="w-4 h-4" /> {t("appointments.cancel")}
+                                  <XCircle className="w-4 h-4 shrink-0" /> <span className="line-clamp-1">{t("appointments.cancel")}</span>
                                 </button>
                               </div>
                             )}
