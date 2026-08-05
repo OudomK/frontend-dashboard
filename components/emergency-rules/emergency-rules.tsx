@@ -122,7 +122,7 @@ function StatusToggle({
 }
 
 export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const isAdmin = role === "admin";
   const [rules, setRules] = useState<EmergencyRule[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -524,37 +524,43 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
       </section>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-2xl rounded-2xl p-4 sm:p-6">
+        <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-2xl rounded-2xl p-4 sm:p-6 shadow-xl border-none">
           <DialogHeader>
-            <DialogTitle>{editingRule ? "Edit Emergency Rule" : "Create Emergency Rule"}</DialogTitle>
-            <DialogDescription>
-              Define trigger keywords and the guidance the AI should show for high-risk symptoms.
+            <DialogTitle className={`text-xl font-bold text-slate-900 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {editingRule ? t("emg.modal.editTitle" as any) : t("emg.modal.createTitle" as any)}
+            </DialogTitle>
+            <DialogDescription className={`text-slate-400 font-medium ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("emg.modal.desc" as any)}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Rule Name</label>
+                <label className={`text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                  {t("emg.modal.ruleName" as any)}
+                </label>
                 <input
                   value={form.name}
                   onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                  className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                  placeholder="Ectopic pregnancy suspected"
+                  className={`h-11 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${language === "km" ? "font-kantumruy-pro" : ""}`}
+                  placeholder={t("emg.modal.ruleNamePlaceholder" as any)}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Category</label>
+                <label className={`text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                  {t("emg.modal.category" as any)}
+                </label>
                 <Select value={form.category_id} onValueChange={(value) => setForm((current) => ({ ...current, category_id: value }))}>
-                  <SelectTrigger className="h-10 rounded-lg border-slate-200">
-                    <SelectValue placeholder="Select category" />
+                  <SelectTrigger className={`h-11 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-500/20 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                    <SelectValue placeholder={t("emg.modal.categoryPlaceholder" as any)} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Uncategorized</SelectItem>
+                    <SelectItem value="none" className={language === "km" ? "font-kantumruy-pro" : ""}>{t("emg.uncategorized" as any)}</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={String(category.id)}>
-                        {typeof category.name === 'string' ? category.name : (category.name as any)?.km}
+                      <SelectItem key={category.id} value={String(category.id)} className={language === "km" ? "font-kantumruy-pro" : ""}>
+                        {typeof category.name === 'string' ? category.name : (category.name as any)?.[language] || (category.name as any)?.en}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -564,10 +570,12 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Severity</label>
+                <label className={`text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                  {t("emg.modal.severity" as any)}
+                </label>
                 <Select value={form.severity_level} onValueChange={(value) => setForm((current) => ({ ...current, severity_level: value as Severity }))}>
-                  <SelectTrigger className="h-10 rounded-lg border-slate-200">
-                    <SelectValue placeholder="Select severity" />
+                  <SelectTrigger className={`h-11 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-500/20 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                    <SelectValue placeholder={t("emg.modal.severityPlaceholder" as any)} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="warning">Warning</SelectItem>
@@ -577,29 +585,36 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
+              <div className="flex h-11 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 mt-[22px]">
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Active Rule</p>
-                  <p className="text-xs text-slate-500">Use for future AI detection</p>
+                  <p className={`text-sm font-semibold text-slate-700 leading-none ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                    {t("emg.modal.activeRule" as any)}
+                  </p>
                 </div>
                 <Switch checked={form.is_active} onCheckedChange={(checked) => setForm((current) => ({ ...current, is_active: checked }))} />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">Trigger Keywords</label>
+              <label className={`text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {t("emg.modal.triggerKeywords" as any)}
+              </label>
               <textarea
                 value={form.keyword_pattern}
                 onChange={(event) => setForm((current) => ({ ...current, keyword_pattern: event.target.value }))}
                 rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                placeholder="severe abdominal pain, shoulder pain, heavy bleeding"
+                className={`w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${language === "km" ? "font-kantumruy-pro" : ""}`}
+                placeholder={t("emg.modal.triggerKeywordsPlaceholder" as any)}
               />
-              <p className="text-xs text-slate-400">Separate keywords with commas, line breaks, or pipes.</p>
+              <p className={`text-xs text-slate-400 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {t("emg.modal.triggerKeywordsDesc" as any)}
+              </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">AI Advice Text</label>
+              <label className={`text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {t("emg.modal.aiAdvice" as any)}
+              </label>
               <Tabs defaultValue="km" className="w-full">
                 <div className="mb-3 flex items-center justify-between">
                   <TabsList className="h-9">
@@ -612,10 +627,10 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                     disabled={isTranslating || !form.advice_text.km.trim()}
                     variant="outline"
                     size="sm"
-                    className="h-8 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:text-amber-700 font-semibold"
+                    className={`h-8 bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:text-amber-700 font-semibold ${language === "km" ? "font-kantumruy-pro" : ""}`}
                   >
                     {isTranslating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
-                    Auto Translate
+                    {t("emg.modal.autoTranslate" as any)}
                   </Button>
                 </div>
                 
@@ -624,7 +639,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                     value={form.advice_text.km}
                     onChange={(event) => setForm((current) => ({ ...current, advice_text: { ...current.advice_text, km: event.target.value } }))}
                     rows={5}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-kantumruy-pro"
                     placeholder="Seek immediate emergency medical care..."
                   />
                 </TabsContent>
@@ -634,7 +649,7 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
                     value={form.advice_text.en}
                     onChange={(event) => setForm((current) => ({ ...current, advice_text: { ...current.advice_text, en: event.target.value } }))}
                     rows={5}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="Seek immediate emergency medical care (English)..."
                   />
                 </TabsContent>
@@ -642,13 +657,13 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
-              Cancel
+          <DialogFooter className="mt-2 border-t border-slate-100 pt-4">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving} className={`rounded-lg border-slate-200 hover:bg-slate-50 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("emg.modal.cancel" as any)}
             </Button>
-            <Button onClick={saveRule} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {editingRule ? "Save Changes" : "Create Rule"}
+            <Button onClick={saveRule} disabled={saving} className={`bg-[#12A8EA] text-white hover:bg-[#0F96DE] rounded-lg font-semibold ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {editingRule ? t("emg.modal.saveBtn" as any) : t("emg.modal.createBtn" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>

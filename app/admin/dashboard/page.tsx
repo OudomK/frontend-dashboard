@@ -40,19 +40,21 @@ function AdminMetricCard({
   note,
   tone,
   icon: Icon,
+  href,
 }: {
   title: string;
   value: string;
   note: string;
   tone: string;
   icon: any;
+  href?: string;
 }) {
   const isNegative = tone === "negative";
   const isNeutral = tone === "neutral";
   const NoteIcon = isNegative ? TrendingDown : isNeutral ? CheckCircle2 : TrendingUp;
 
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-6">
+  const content = (
+    <section className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-6 h-full ${href ? 'hover:shadow-md hover:border-slate-300 transition-all cursor-pointer' : ''}`}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-400">
@@ -91,6 +93,12 @@ function AdminMetricCard({
       </div>
     </section>
   );
+
+  if (href) {
+    return <Link href={href} className="block h-full">{content}</Link>;
+  }
+
+  return content;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -115,19 +123,24 @@ export default function AdminDashboardPage() {
   const [overview, setOverview] = useState<any>(null);
   const [uploads, setUploads] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [overviewRes, docsRes, alertsRes] = await Promise.all([
+      const [overviewRes, docsRes, alertsRes, chartRes] = await Promise.all([
         apiClient.get("/api/v1/dashboard/overview"),
         apiClient.get("/api/documents/"),
-        apiClient.get("/api/v1/emergency-flags/")
+        apiClient.get("/api/v1/emergency-flags/"),
+        apiClient.get("/api/v1/dashboard/chat-usage-chart")
       ]);
 
       setOverview(overviewRes.data);
+      if (chartRes.data && chartRes.data.data) {
+        setChartData(chartRes.data.data);
+      }
 
       const mappedDocs = docsRes.data.slice(0, 4).map((doc: any) => {
         const formattedDate = doc.created_at
@@ -212,6 +225,7 @@ export default function AdminDashboardPage() {
         note: `${t("dashboard.doctors")}: ${overview?.total_doctors || 0} | ${t("dashboard.admins")}: ${overview?.total_admins || 0}`,
         tone: "positive",
         icon: Users,
+        href: "/admin/users"
       },
       {
         title: t("dashboard.aiQueries"),
@@ -219,6 +233,7 @@ export default function AdminDashboardPage() {
         note: `${t("dashboard.sessions")}: ${overview?.total_chat_sessions || 0}`,
         tone: "positive",
         icon: MessageCircle,
+        href: "/admin/chat-logs"
       },
       {
         title: t("dashboard.knowledgeBaseDocs"),
@@ -226,6 +241,7 @@ export default function AdminDashboardPage() {
         note: t("dashboard.ragSourceFiles"),
         tone: "neutral",
         icon: Database,
+        href: "/admin/documents"
       },
       {
         title: t("dashboard.emergencyAlerts"),
@@ -233,6 +249,7 @@ export default function AdminDashboardPage() {
         note: t("dashboard.flagsRequiringAudit"),
         tone: (overview?.total_emergency_flags || 0) > 0 ? "negative" : "neutral",
         icon: AlertTriangle,
+        href: "/admin/emergency-rules"
       },
     ];
   }, [overview, t]);
@@ -272,29 +289,42 @@ export default function AdminDashboardPage() {
 
               <div className="px-6 py-6 lg:px-10">
                 <div className="relative flex h-[200px] items-end justify-between gap-4 border-b border-slate-100 pb-2">
-                  {[
-                    { day: "Mon", value: 240, height: "h-[50%]", color: "bg-blue-600" },
-                    { day: "Tue", value: 310, height: "h-[65%]", color: "bg-blue-600" },
-                    { day: "Wed", value: 280, height: "h-[58%]", color: "bg-blue-600" },
-                    { day: "Thu", value: 420, height: "h-[88%]", color: "bg-blue-600" },
-                    { day: "Fri", value: 380, height: "h-[80%]", color: "bg-blue-600" },
-                    { day: "Sat", value: 190, height: "h-[40%]", color: "bg-blue-500/70" },
-                    { day: "Sun", value: 220, height: "h-[45%]", color: "bg-blue-500/70" },
-                  ].map((item) => (
-                    <div key={item.day} className="group relative flex flex-1 flex-col items-center h-full justify-end select-none">
+                  {(() => {
+                    const dataToUse = chartData.length > 0 ? chartData : [
+                      { day: "Mon", value: 0 },
+                      { day: "Tue", value: 0 },
+                      { day: "Wed", value: 0 },
+                      { day: "Thu", value: 0 },
+                      { day: "Fri", value: 0 },
+                      { day: "Sat", value: 0 },
+                      { day: "Sun", value: 0 },
+                    ];
+                    const maxVal = Math.max(...dataToUse.map(d => d.value), 1); // Avoid division by 0
+                    
+                    return dataToUse.map((item) => {
+                      const percentage = Math.max((item.value / maxVal) * 100, 5); // min height 5% for visibility if 0
+                      const color = item.day === "Sat" || item.day === "Sun" ? "bg-blue-500/70" : "bg-blue-600";
                       
-                      {/* Tooltip on hover */}
-                      <div className="absolute -top-7 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-md transition-all duration-200 z-10 whitespace-nowrap">
-                        {item.value} queries
-                      </div>
+                      return (
+                        <div key={item.day} className="group relative flex flex-1 flex-col items-center h-full justify-end select-none">
+                          
+                          {/* Tooltip on hover */}
+                          <div className="absolute -top-7 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-md transition-all duration-200 z-10 whitespace-nowrap">
+                            {item.value} queries
+                          </div>
 
-                      {/* Bar */}
-                      <div className={`w-full rounded-t-md transition-all duration-300 group-hover:opacity-90 ${item.height} ${item.color}`} />
-                      
-                      {/* Label below grid line */}
-                      <span className="text-[11px] font-bold text-slate-400 mt-2 block shrink-0">{item.day}</span>
-                    </div>
-                  ))}
+                          {/* Bar */}
+                          <div 
+                            className={`w-full rounded-t-md transition-all duration-300 group-hover:opacity-90 ${color}`}
+                            style={{ height: `${percentage}%` }}
+                          />
+                          
+                          {/* Label below grid line */}
+                          <span className="text-[11px] font-bold text-slate-400 mt-2 block shrink-0">{item.day}</span>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             </section>

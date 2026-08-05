@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Activity,
   Calendar,
@@ -15,7 +15,9 @@ import {
   Settings,
   Trash2,
   Key,
-  LogIn
+  LogIn,
+  ChevronDown,
+  FileSpreadsheet,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Badge } from "@/components/ui/badge";
@@ -97,9 +99,90 @@ export default function AdminAuditLogsPage() {
   }, []);
   const [selectedType, setSelectedType] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
+  const [datePreset, setDatePreset] = useState<"all" | "today" | "week" | "month" | "custom">("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const exportCSV = () => {
+    const headers = ["ID", "Timestamp", "User", "Role", "Action", "Type", "Resource", "IP Address", "Status", "Details"];
+    const rows = filteredLogs.map(log => [
+      log.id,
+      log.timestamp,
+      log.user,
+      log.role,
+      log.action,
+      log.type,
+      log.resource,
+      log.ipAddress,
+      log.status,
+      log.details || ""
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+    toast.success("Exported as CSV successfully!");
+  };
+
+  const exportExcel = () => {
+    const headers = ["ID", "Timestamp", "User", "Role", "Action", "Type", "Resource", "IP Address", "Status", "Details"];
+    const rows = filteredLogs.map(log => [
+      log.id,
+      log.timestamp,
+      log.user,
+      log.role,
+      log.action,
+      log.type,
+      log.resource,
+      log.ipAddress,
+      log.status,
+      log.details || ""
+    ]);
+    // Build an HTML table that Excel can open natively
+    const tableHtml = [
+      "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel'>",
+      "<head><meta charset='utf-8'></head><body>",
+      "<table><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>",
+      ...rows.map(row => "<tr>" + row.map(v => `<td>${String(v).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</td>`).join("") + "</tr>"),
+      "</table></body></html>"
+    ].join("");
+    const blob = new Blob([tableHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().slice(0,10)}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+    toast.success("Exported as Excel successfully!");
+  };
 
   // Filter Logic
   const filteredLogs = useMemo(() => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfDay);
+    startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
     return auditLogs.filter((log) => {
       const matchesSearch =
         (log.user || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -109,9 +192,25 @@ export default function AdminAuditLogsPage() {
       const matchesType = selectedType === "All" || log.type === selectedType;
       const matchesStatus = selectedStatus === "All" || log.status === selectedStatus;
 
-      return matchesSearch && matchesType && matchesStatus;
+      // Date filter
+      let matchesDate = true;
+      if (log.timestamp && datePreset !== "all") {
+        const logDate = new Date(log.timestamp);
+        if (datePreset === "today") {
+          matchesDate = logDate >= startOfDay;
+        } else if (datePreset === "week") {
+          matchesDate = logDate >= startOfWeek;
+        } else if (datePreset === "month") {
+          matchesDate = logDate >= startOfMonth;
+        } else if (datePreset === "custom") {
+          if (customFrom) matchesDate = logDate >= new Date(customFrom);
+          if (customTo) matchesDate = matchesDate && logDate <= new Date(customTo + "T23:59:59");
+        }
+      }
+
+      return matchesSearch && matchesType && matchesStatus && matchesDate;
     });
-  }, [searchQuery, selectedType, selectedStatus, auditLogs]);
+  }, [searchQuery, selectedType, selectedStatus, datePreset, customFrom, customTo, auditLogs]);
 
   // Pagination Logic
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,7 +218,7 @@ export default function AdminAuditLogsPage() {
 
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedType, selectedStatus]);
+  }, [searchQuery, selectedType, selectedStatus, datePreset, customFrom, customTo]);
 
   const paginatedLogs = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -136,13 +235,49 @@ export default function AdminAuditLogsPage() {
       title={t("audit.title")}
       subtitle={t("audit.subtitle")}
       actions={
-        <Button
-          variant="outline"
-          className="h-10 rounded-lg border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50"
-        >
-          <Download className="mr-2 h-4 w-4 text-slate-500" />
-          {t("audit.exportLogs")}
-        </Button>
+        <div className="relative" ref={exportMenuRef}>
+          <Button
+            variant="outline"
+            className="h-10 rounded-lg border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50 gap-1.5"
+            onClick={() => setShowExportMenu(prev => !prev)}
+          >
+            <Download className="h-4 w-4 text-slate-500" />
+            {t("audit.exportLogs")}
+            <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${showExportMenu ? "rotate-180" : ""}`} />
+          </Button>
+
+          {showExportMenu && (
+            <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="px-3 py-2 border-b border-slate-100">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Export {filteredLogs.length} records</p>
+              </div>
+              <button
+                onClick={exportCSV}
+                className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-800">Export as CSV</p>
+                  <p className="text-xs text-slate-400">Comma-separated values</p>
+                </div>
+              </button>
+              <button
+                onClick={exportExcel}
+                className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100"
+              >
+                <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-800">Export as Excel</p>
+                  <p className="text-xs text-slate-400">Microsoft Excel (.xls)</p>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       }
     >
       <div className="space-y-6 pb-20 lg:pb-0">
@@ -196,48 +331,140 @@ export default function AdminAuditLogsPage() {
         </div>
 
         {/* ── Filters ── */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white border border-slate-200 rounded-2xl p-4 shadow-sm select-none">
-          <div className="relative flex-1">
-            <Search className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("audit.searchPlaceholder")}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
-            />
+        <div className="space-y-3">
+          {/* Row 1: Search + Type + Status */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="relative flex-1">
+              <Search className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("audit.searchPlaceholder")}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 w-full md:flex md:items-center md:w-auto">
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <Filter className="mr-2 h-3.5 w-3.5 text-slate-400" />
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[90px] font-bold text-slate-700">
+                    <SelectValue placeholder={t("audit.allTypes")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">{t("audit.allTypes")}</SelectItem>
+                    <SelectItem value="LOGIN">{t("audit.typeLogins")}</SelectItem>
+                    <SelectItem value="UPDATE">{t("audit.typeUpdates")}</SelectItem>
+                    <SelectItem value="CREATE">{t("audit.typeCreations")}</SelectItem>
+                    <SelectItem value="DELETE">{t("audit.typeDeletions")}</SelectItem>
+                    <SelectItem value="SECURITY">{t("audit.typeSecurity")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
+                    <SelectValue placeholder={t("audit.allStatuses")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">{t("audit.allStatuses")}</SelectItem>
+                    <SelectItem value="Success">{t("audit.statusSuccess")}</SelectItem>
+                    <SelectItem value="Failed">{t("audit.statusFailed")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 w-full md:flex md:items-center md:w-auto">
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <Filter className="mr-2 h-3.5 w-3.5 text-slate-400" />
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[90px] font-bold text-slate-700">
-                  <SelectValue placeholder={t("audit.allTypes")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">{t("audit.allTypes")}</SelectItem>
-                  <SelectItem value="LOGIN">{t("audit.typeLogins")}</SelectItem>
-                  <SelectItem value="UPDATE">{t("audit.typeUpdates")}</SelectItem>
-                  <SelectItem value="CREATE">{t("audit.typeCreations")}</SelectItem>
-                  <SelectItem value="DELETE">{t("audit.typeDeletions")}</SelectItem>
-                  <SelectItem value="SECURITY">{t("audit.typeSecurity")}</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Row 2: Date Filter Presets */}
+          <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date Range</span>
+              </div>
+              
+              {/* Preset Pills */}
+              <div className="flex flex-wrap gap-2 flex-1">
+                {([
+                  { key: "all", label: "All Time" },
+                  { key: "today", label: "Today" },
+                  { key: "week", label: "This Week" },
+                  { key: "month", label: "This Month" },
+                  { key: "custom", label: "Custom Range" },
+                ] as const).map(preset => (
+                  <button
+                    key={preset.key}
+                    onClick={() => {
+                      setDatePreset(preset.key);
+                      if (preset.key !== "custom") {
+                        setCustomFrom("");
+                        setCustomTo("");
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                      datePreset === preset.key
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                    }`}
+                  >
+                    {preset.key === "today" && "📅 "}
+                    {preset.key === "week" && "📆 "}
+                    {preset.key === "month" && "🗓️ "}
+                    {preset.key === "custom" && "✏️ "}
+                    {preset.label}
+                  </button>
+                ))}
+
+                {/* Active filter badge */}
+                {datePreset !== "all" && (
+                  <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg border border-blue-100">
+                    {filteredLogs.length} results
+                    <button
+                      onClick={() => { setDatePreset("all"); setCustomFrom(""); setCustomTo(""); }}
+                      className="ml-1 hover:text-blue-800 font-black text-sm leading-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+              </div>
             </div>
-            
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="h-8 border-0 bg-transparent px-0 py-0 shadow-none focus:ring-0 w-[100px] font-bold text-slate-700">
-                  <SelectValue placeholder={t("audit.allStatuses")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">{t("audit.allStatuses")}</SelectItem>
-                  <SelectItem value="Success">{t("audit.statusSuccess")}</SelectItem>
-                  <SelectItem value="Failed">{t("audit.statusFailed")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* Custom Date Range Picker */}
+            {datePreset === "custom" && (
+              <div className="flex flex-col sm:flex-row gap-3 mt-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-2 flex-1">
+                  <label className="text-xs font-bold text-slate-500 whitespace-nowrap">From</label>
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    className="flex-1 h-9 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <label className="text-xs font-bold text-slate-500 whitespace-nowrap">To</label>
+                  <input
+                    type="date"
+                    value={customTo}
+                    min={customFrom}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    className="flex-1 h-9 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                  />
+                </div>
+                {(customFrom || customTo) && (
+                  <button
+                    onClick={() => { setCustomFrom(""); setCustomTo(""); }}
+                    className="text-xs font-bold text-rose-500 hover:text-rose-700 px-3 py-2 rounded-lg hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-200"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

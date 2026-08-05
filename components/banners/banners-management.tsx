@@ -1,22 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, CheckCircle2, XCircle, Search, ImageIcon, Type } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, XCircle, Search, ImageIcon, Type, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { AccessDenied } from "@/components/ui/access-denied";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 
 export function BannersManagement() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const router = useRouter();
   
   const [banners, setBanners] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchBanners = async () => {
     try {
@@ -39,14 +47,16 @@ export function BannersManagement() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this banner?")) return;
-    
+    setDeleting(true);
     try {
       await apiClient.delete(`/api/v1/settings/banners/${id}`);
       toast.success("Banner deleted successfully.");
+      setBannerToDelete(null);
       fetchBanners();
     } catch (error) {
       toast.error("Failed to delete banner.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -77,9 +87,9 @@ export function BannersManagement() {
     <div className="space-y-6 pb-24 lg:pb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 lg:text-3xl">Banners Management</h1>
+          <h1 className="text-2xl font-bold text-slate-900 lg:text-3xl">{t("banners.title")}</h1>
           <p className="text-sm text-slate-500 lg:text-base mt-1">
-            Manage the dynamic banners displayed on the web app.
+            {t("banners.subtitle")}
           </p>
         </div>
         
@@ -88,7 +98,7 @@ export function BannersManagement() {
           className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add New Banner
+          {t("banners.addBtn")}
         </Button>
       </div>
 
@@ -97,11 +107,11 @@ export function BannersManagement() {
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
               <tr>
-                <th className="px-6 py-4">Preview / Title</th>
-                <th className="px-6 py-4">Type</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-center">Order</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4">{t("banners.table.preview")}</th>
+                <th className="px-6 py-4">{t("banners.table.type")}</th>
+                <th className="px-6 py-4">{t("banners.table.status")}</th>
+                <th className="px-6 py-4 text-center">{t("banners.table.order")}</th>
+                <th className="px-6 py-4 text-right">{t("banners.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -184,7 +194,7 @@ export function BannersManagement() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                          onClick={() => handleDelete(banner.id)}
+                          onClick={() => setBannerToDelete(banner.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -197,6 +207,44 @@ export function BannersManagement() {
           </table>
         </div>
       </div>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!bannerToDelete} onOpenChange={(open) => !open && setBannerToDelete(null)}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl">
+          <div className="bg-red-50 px-6 py-6 border-b border-red-100 flex flex-col items-center text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4 shadow-sm border border-red-200">
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className={`text-xl font-bold text-red-900 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}>
+              {language === "km" ? "បញ្ជាក់ការលុបបដា" : "Confirm Deletion"}
+            </DialogTitle>
+            <DialogDescription className={`mt-2 text-sm text-red-700 max-w-sm ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}>
+              {language === "km"
+                ? "តើអ្នកពិតជាចង់លុបបដានេះទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
+                : "Do you want to delete this banner? This action cannot be undone."}
+            </DialogDescription>
+          </div>
+          
+          <div className="px-6 py-4 bg-slate-50/50 flex justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setBannerToDelete(null)}
+              disabled={deleting}
+              className={`w-full sm:w-auto !h-11 px-6 rounded-xl border-slate-200 font-semibold text-slate-600 hover:bg-slate-100 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}
+            >
+              {language === "km" ? "បោះបង់" : "Cancel"}
+            </Button>
+            <Button
+              variant="destructive"
+              className={`w-full sm:w-auto !h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-md shadow-red-200 flex items-center justify-center gap-2 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}
+              onClick={() => bannerToDelete && handleDelete(bannerToDelete)}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {language === "km" ? (deleting ? "កំពុងលុប..." : "លុប") : (deleting ? "Deleting..." : "Delete")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

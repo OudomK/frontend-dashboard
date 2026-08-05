@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccessDenied } from "@/components/ui/access-denied";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 interface BannerFormProps {
   bannerId?: number;
@@ -19,6 +20,7 @@ interface BannerFormProps {
 export function BannerForm({ bannerId }: BannerFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
   
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,14 +56,14 @@ export function BannerForm({ bannerId }: BannerFormProps) {
         setIsActive(banner.is_active);
         setDisplayOrder(banner.display_order || 0);
       } else {
-        toast.error("Banner not found");
+        toast.error(t("bf.notFound" as any));
         router.push("/admin/banners");
       }
     } catch (error: any) {
       if (error.response?.status === 403) {
         setIsAccessDenied(true);
       } else {
-        toast.error("Failed to load banner");
+        toast.error(t("bf.loadFailed" as any));
       }
     } finally {
       setIsLoading(false);
@@ -76,20 +78,20 @@ export function BannerForm({ bannerId }: BannerFormProps) {
     formData.append("file", file);
     
     try {
-      const toastId = toast.loading("Uploading image...");
+      const toastId = toast.loading(t("bf.uploadToast" as any));
       const res = await apiClient.post("/api/v1/uploads/image", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       setImageUrl(res.data.file_url);
-      toast.success("Image uploaded successfully", { id: toastId });
+      toast.success(t("bf.uploadSuccess" as any), { id: toastId });
     } catch (error) {
-      toast.error("Failed to upload image");
+      toast.error(t("bf.uploadFailed" as any));
     }
   };
 
   const handleSave = async () => {
     if (type === "image" && !imageUrl) {
-      toast.error("Please upload an image.");
+      toast.error(t("bf.uploadError" as any));
       return;
     }
     
@@ -109,14 +111,14 @@ export function BannerForm({ bannerId }: BannerFormProps) {
     try {
       if (bannerId) {
         await apiClient.put(`/api/v1/settings/banners/${bannerId}`, data);
-        toast.success("Banner updated successfully");
+        toast.success(t("bf.updateSuccess" as any));
       } else {
         await apiClient.post("/api/v1/settings/banners", data);
-        toast.success("Banner created successfully");
+        toast.success(t("bf.saveSuccess" as any));
       }
       router.push("/admin/banners");
     } catch (error) {
-      toast.error("Failed to save banner");
+      toast.error(t("bf.saveFailed" as any));
     } finally {
       setIsSaving(false);
     }
@@ -130,47 +132,47 @@ export function BannerForm({ bannerId }: BannerFormProps) {
   };
 
   if (isAccessDenied) return <div className="mt-8"><AccessDenied /></div>;
-  if (isLoading) return <div className="p-8 text-center text-slate-500">Loading...</div>;
+  if (isLoading) return <div className="p-8 text-center text-slate-500">{t("bf.loading" as any)}</div>;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-24 lg:pb-8">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/banners")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/banners")} className="lg:hidden">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold text-slate-900">
-            {bannerId ? "Edit Banner" : "Create Banner"}
+            {bannerId ? t("bf.editBanner" as any) : t("bf.createBanner" as any)}
           </h1>
         </div>
         
         <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
           <Save className="mr-2 h-4 w-4" />
-          {isSaving ? "Saving..." : "Save Banner"}
+          {isSaving ? t("bf.saving" as any) : t("bf.saveBanner" as any)}
         </Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-            <h2 className="text-lg font-semibold text-slate-900">Banner Details</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t("bf.bannerDetails" as any)}</h2>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Banner Type</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.bannerType" as any)}</label>
               <Select value={type} onValueChange={(v: "image" | "color") => setType(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="image">Image Banner</SelectItem>
-                  <SelectItem value="color">Color Text Banner</SelectItem>
+                  <SelectItem value="image">{t("bf.imageBanner" as any)}</SelectItem>
+                  <SelectItem value="color">{t("bf.colorTextBanner" as any)}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             {type === "image" ? (
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Image Upload</label>
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.imageUpload" as any)}</label>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
                   className="mt-1 flex justify-center rounded-xl border border-dashed border-slate-300 px-6 py-10 cursor-pointer hover:bg-slate-50 transition-colors"
@@ -181,10 +183,10 @@ export function BannerForm({ bannerId }: BannerFormProps) {
                     <div className="text-center">
                       <Upload className="mx-auto h-12 w-12 text-slate-300" />
                       <div className="mt-4 flex text-sm leading-6 text-slate-600 justify-center">
-                        <span className="font-semibold text-blue-600">Click to upload</span>
-                        <p className="pl-1">or drag and drop</p>
+                        <span className="font-semibold text-blue-600">{t("bf.clickToUpload" as any)}</span>
+                        <p className="pl-1">{t("bf.dragAndDrop" as any)}</p>
                       </div>
-                      <p className="text-xs text-slate-500">PNG, JPG, WEBP up to 5MB</p>
+                      <p className="text-xs text-slate-500">{t("bf.fileTypes" as any)}</p>
                     </div>
                   )}
                 </div>
@@ -199,7 +201,7 @@ export function BannerForm({ bannerId }: BannerFormProps) {
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Background Gradient (Tailwind CSS)</label>
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.bgGradient" as any)}</label>
                   <Input 
                     value={bgGradient}
                     onChange={e => setBgGradient(e.target.value)}
@@ -210,29 +212,29 @@ export function BannerForm({ bannerId }: BannerFormProps) {
                 
                 <Tabs defaultValue="en">
                   <TabsList className="mb-4">
-                    <TabsTrigger value="en">English</TabsTrigger>
-                    <TabsTrigger value="km">Khmer</TabsTrigger>
+                    <TabsTrigger value="en">English 🇬🇧</TabsTrigger>
+                    <TabsTrigger value="km">ខ្មែរ 🇰🇭</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="en" className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Title (EN)</label>
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.titleEn" as any)}</label>
                       <Input value={title.en} onChange={e => setTitle({...title, en: e.target.value})} placeholder="e.g. Track Your Wellness" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Subtitle (EN)</label>
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.subtitleEn" as any)}</label>
                       <Input value={subtitle.en} onChange={e => setSubtitle({...subtitle, en: e.target.value})} placeholder="e.g. Your health journey starts here" />
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="km" className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Title (KM)</label>
-                      <Input value={title.km} onChange={e => setTitle({...title, km: e.target.value})} placeholder="e.g. តាមដានសុខភាពរបស់អ្នក" />
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.titleKm" as any)}</label>
+                      <Input value={title.km} onChange={e => setTitle({...title, km: e.target.value})} placeholder="e.g. តាមដានសុខភាពរបស់អ្នក" className="font-kantumruy-pro" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Subtitle (KM)</label>
-                      <Input value={subtitle.km} onChange={e => setSubtitle({...subtitle, km: e.target.value})} placeholder="e.g. ដំណើរការសុខភាពចាប់ផ្តើមពីទីនេះ" />
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.subtitleKm" as any)}</label>
+                      <Input value={subtitle.km} onChange={e => setSubtitle({...subtitle, km: e.target.value})} placeholder="e.g. ដំណើរការសុខភាពចាប់ផ្តើមពីទីនេះ" className="font-kantumruy-pro" />
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -244,35 +246,35 @@ export function BannerForm({ bannerId }: BannerFormProps) {
         
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-            <h2 className="text-lg font-semibold text-slate-900">Settings</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t("bf.settings" as any)}</h2>
             
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <label className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Active Status</label>
-                <p className="text-xs text-slate-500">Show this banner on the site</p>
+                <label className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.activeStatus" as any)}</label>
+                <p className="text-xs text-slate-500">{t("bf.activeStatusDesc" as any)}</p>
               </div>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Display Order</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.displayOrder" as any)}</label>
               <Input 
                 type="number" 
                 value={Number.isNaN(displayOrder) ? "" : displayOrder} 
                 onChange={e => setDisplayOrder(e.target.value ? parseInt(e.target.value) : 0)} 
               />
-              <p className="text-xs text-slate-500">Lower numbers appear first</p>
+              <p className="text-xs text-slate-500">{t("bf.displayOrderHint" as any)}</p>
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Link URL (Optional)</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t("bf.linkUrl" as any)}</label>
               <Input 
                 type="url" 
                 value={linkUrl} 
                 onChange={e => setLinkUrl(e.target.value)} 
                 placeholder="https://..."
               />
-              <p className="text-xs text-slate-500">Where this banner should navigate when clicked</p>
+              <p className="text-xs text-slate-500">{t("bf.linkUrlHint" as any)}</p>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css";
 
@@ -17,6 +18,7 @@ type Props = {
 
 export function StaticPageEditor({ pageId }: Props) {
   const router = useRouter();
+  const { t, language } = useTranslation();
   
   const [titleEn, setTitleEn] = useState("");
   const [titleKm, setTitleKm] = useState("");
@@ -40,7 +42,7 @@ export function StaticPageEditor({ pageId }: Props) {
           setContentKm(data.content.km || "");
           setIsPublished(data.is_published);
         } catch (error) {
-          toast.error("Failed to load page.");
+          toast.error(t("sp.loadFailed" as any));
           router.push("/admin/pages");
         } finally {
           setIsLoading(false);
@@ -52,7 +54,7 @@ export function StaticPageEditor({ pageId }: Props) {
 
   const handleSave = async () => {
     if (!titleEn || !titleKm || !slug) {
-      toast.error("Please fill in all required fields (Titles and Slug).");
+      toast.error(t("sp.fillRequired" as any));
       return;
     }
 
@@ -73,17 +75,17 @@ export function StaticPageEditor({ pageId }: Props) {
     try {
       if (pageId) {
         await apiClient.put(`/api/v1/settings/pages/${pageId}`, payload);
-        toast.success("Page updated successfully.");
+        toast.success(t("sp.updated" as any));
       } else {
         await apiClient.post("/api/v1/settings/pages", payload);
-        toast.success("Page created successfully.");
+        toast.success(t("sp.created" as any));
         router.push("/admin/pages");
       }
     } catch (error: any) {
       if (error.response?.data?.detail === "Slug already exists") {
-        toast.error("This slug is already used by another page.");
+        toast.error(t("sp.slugExists" as any));
       } else {
-        toast.error("Failed to save page.");
+        toast.error(t("sp.saveFailed" as any));
       }
     } finally {
       setIsSaving(false);
@@ -91,7 +93,7 @@ export function StaticPageEditor({ pageId }: Props) {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-500">Loading editor...</div>;
+    return <div className="p-8 text-center text-slate-500">{t("sp.loading" as any)}</div>;
   }
 
   const quillModules = {
@@ -105,6 +107,9 @@ export function StaticPageEditor({ pageId }: Props) {
     ],
   };
 
+  const isKm = language === "km";
+  const fontClass = isKm ? "font-kantumruy-pro" : "font-sans";
+
   return (
     <div className="space-y-6 pb-24 lg:pb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between select-none">
@@ -112,13 +117,13 @@ export function StaticPageEditor({ pageId }: Props) {
           <Button
             variant="ghost"
             onClick={() => router.push("/admin/pages")}
-            className="h-9 w-9 p-0 text-slate-500 hover:text-slate-900 bg-white border border-slate-200"
+            className="h-9 w-9 p-0 text-slate-500 hover:text-slate-900 bg-white border border-slate-200 lg:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 lg:text-3xl">
-              {pageId ? "Edit Page" : "New Page"}
+            <h1 className={`text-2xl font-bold text-slate-900 lg:text-3xl ${fontClass}`}>
+              {pageId ? t("sp.editPage" as any) : t("sp.newPage" as any)}
             </h1>
           </div>
         </div>
@@ -132,17 +137,17 @@ export function StaticPageEditor({ pageId }: Props) {
               onChange={(e) => setIsPublished(e.target.checked)}
               className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="is_published" className="text-sm font-semibold text-slate-700 cursor-pointer">
-              Published
+            <label htmlFor="is_published" className={`text-sm font-semibold text-slate-700 cursor-pointer ${fontClass}`}>
+              {t("sp.published" as any)}
             </label>
           </div>
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-50"
+            className={`h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-50 ${fontClass}`}
           >
             <Save className="mr-2 h-4 w-4" />
-            {isSaving ? "Saving..." : "Save Page"}
+            {isSaving ? t("sp.saving" as any) : t("sp.savePage" as any)}
           </Button>
         </div>
       </div>
@@ -151,13 +156,13 @@ export function StaticPageEditor({ pageId }: Props) {
         {/* Left Column - English */}
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span> English Content
+            <h2 className={`text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 ${fontClass}`}>
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span> {t("sp.englishContent" as any)}
             </h2>
             
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-bold text-slate-700">Title (EN) *</label>
+                <label className={`text-sm font-bold text-slate-700 ${fontClass}`}>{t("sp.titleEn" as any)} *</label>
                 <input
                   type="text"
                   value={titleEn}
@@ -167,7 +172,7 @@ export function StaticPageEditor({ pageId }: Props) {
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-700">Content (EN)</label>
+                <label className={`text-sm font-bold text-slate-700 ${fontClass}`}>{t("sp.contentEn" as any)}</label>
                 <div className="mt-1">
                   <ReactQuill 
                     theme="snow" 
@@ -185,13 +190,13 @@ export function StaticPageEditor({ pageId }: Props) {
         {/* Right Column - Khmer */}
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span> Khmer Content
+            <h2 className={`text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 ${fontClass}`}>
+              <span className="w-2 h-2 rounded-full bg-red-500"></span> {t("sp.khmerContent" as any)}
             </h2>
             
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-bold text-slate-700">Title (KM) *</label>
+                <label className={`text-sm font-bold text-slate-700 ${fontClass}`}>{t("sp.titleKm" as any)} *</label>
                 <input
                   type="text"
                   value={titleKm}
@@ -201,7 +206,7 @@ export function StaticPageEditor({ pageId }: Props) {
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-700">Content (KM)</label>
+                <label className={`text-sm font-bold text-slate-700 ${fontClass}`}>{t("sp.contentKm" as any)}</label>
                 <div className="mt-1 font-kantumruy-pro">
                   <ReactQuill 
                     theme="snow" 
@@ -216,9 +221,9 @@ export function StaticPageEditor({ pageId }: Props) {
           </div>
           
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Page Settings</h2>
+            <h2 className={`text-lg font-bold text-slate-900 mb-4 ${fontClass}`}>{t("sp.pageSettings" as any)}</h2>
             <div>
-              <label className="text-sm font-bold text-slate-700">URL Slug *</label>
+              <label className={`text-sm font-bold text-slate-700 ${fontClass}`}>{t("sp.urlSlug" as any)} *</label>
               <div className="mt-1 flex items-center h-11 rounded-xl border border-slate-200 bg-slate-50 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
                 <span className="px-3 text-slate-400 font-medium">/</span>
                 <input
@@ -229,7 +234,7 @@ export function StaticPageEditor({ pageId }: Props) {
                   className="h-full w-full bg-transparent px-2 text-sm outline-none"
                 />
               </div>
-              <p className="mt-1 text-xs text-slate-500">This will be the URL of the page (e.g. /privacy-policy)</p>
+              <p className={`mt-1 text-xs text-slate-500 ${fontClass}`}>{t("sp.slugHint" as any)}</p>
             </div>
           </div>
         </div>

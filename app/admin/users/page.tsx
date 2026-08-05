@@ -89,7 +89,7 @@ function formatBackendError(error: any): string {
 export default function AdminUserManagementPage() {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [loadingList, setLoadingList] = useState(false);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
@@ -760,51 +760,51 @@ export default function AdminUserManagementPage() {
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md rounded-2xl shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">
-              {editMode ? "Modify User Account" : "Add New User"}
+            <DialogTitle className={`text-xl font-bold text-slate-900 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {editMode ? t("user.modal.editTitle" as any) : t("user.modal.addTitle" as any)}
             </DialogTitle>
-            <DialogDescription className="text-slate-400 font-medium">
-              Update name, email contacts, system role, and access suspension status.
+            <DialogDescription className={`text-slate-400 font-medium ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("user.modal.desc" as any)}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             {/* Full Name */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-700">Full Name *</label>
+              <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.fullName" as any)} *</label>
               <input
                 type="text"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. Sarah Jenkins"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                placeholder={t("user.modal.fullNamePlaceholder" as any)}
+                className={`h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${language === "km" ? "font-kantumruy-pro" : ""}`}
               />
             </div>
 
             {/* Email Address */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-700">Email Address *</label>
+              <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.email" as any)} *</label>
               <input
                 type="email"
                 value={formEmail}
                 onChange={(e) => setFormEmail(e.target.value)}
-                placeholder="e.g. sarah.j@example.com"
+                placeholder={t("user.modal.emailPlaceholder" as any)}
                 className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-700">
-                {editMode ? "New Password (Optional)" : "Initial Password *"}
+              <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {editMode ? t("user.modal.passwordEdit" as any) : t("user.modal.passwordAdd" as any)} *
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
-                  placeholder={editMode ? "Leave blank to keep current password" : "Minimum 8 characters"}
-                  className="h-11 w-full rounded-xl border border-slate-200 pl-4 pr-10 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-[#12A8EA] focus:ring-2 focus:ring-[#12A8EA]/20"
+                  placeholder={editMode ? t("user.modal.passwordPlaceholderEdit" as any) : t("user.modal.passwordPlaceholderAdd" as any)}
+                  className={`h-11 w-full rounded-xl border border-slate-200 pl-4 pr-10 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-[#12A8EA] focus:ring-2 focus:ring-[#12A8EA]/20 ${language === "km" ? "font-kantumruy-pro" : ""}`}
                 />
                 <button
                   type="button"
@@ -819,12 +819,12 @@ export default function AdminUserManagementPage() {
 
             {/* Phone Number (Optional) */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-700">Phone Number (Optional)</label>
+              <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.phone" as any)}</label>
               <input
                 type="text"
                 value={formPhone}
                 onChange={(e) => setFormPhone(e.target.value)}
-                placeholder="e.g. +855 12 345 678"
+                placeholder={t("user.modal.phonePlaceholder" as any)}
                 className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
@@ -832,7 +832,7 @@ export default function AdminUserManagementPage() {
             {/* Role & Status */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">Role *</label>
+                <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.role" as any)} *</label>
                 <Select value={formRole} onValueChange={(val) => setFormRole(val as any)}>
                   <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
                     <SelectValue placeholder="Select Role" />
@@ -846,7 +846,7 @@ export default function AdminUserManagementPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">Status *</label>
+                <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.status" as any)} *</label>
                 <Select value={formStatus} onValueChange={(val) => setFormStatus(val as any)}>
                   <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
                     <SelectValue placeholder="Select Status" />
@@ -864,15 +864,15 @@ export default function AdminUserManagementPage() {
             <Button
               variant="outline"
               onClick={() => setOpenDialog(false)}
-              className="rounded-lg border-slate-200 hover:bg-slate-50"
+              className={`rounded-lg border-slate-200 hover:bg-slate-50 ${language === "km" ? "font-kantumruy-pro" : ""}`}
             >
-              Cancel
+              {t("user.modal.cancel" as any)}
             </Button>
             <Button
               onClick={handleFormSubmit}
-              className="bg-[#12A8EA] text-white hover:bg-[#0F96DE] rounded-lg font-semibold"
+              className={`bg-[#12A8EA] text-white hover:bg-[#0F96DE] rounded-lg font-semibold ${language === "km" ? "font-kantumruy-pro" : ""}`}
             >
-              {editMode ? "Save Changes" : "Create User"}
+              {editMode ? t("user.modal.saveBtn" as any) : t("user.modal.createBtn" as any)}
             </Button>
           </div>
         </DialogContent>

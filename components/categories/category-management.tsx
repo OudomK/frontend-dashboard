@@ -200,6 +200,10 @@ export function CategoryManagement({ role }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Delete confirmation
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Form fields
   const [formName, setFormName] = useState<Record<"km" | "en", string>>({ km: "", en: "" });
   const [formDescription, setFormDescription] = useState<Record<"km" | "en", string>>({ km: "", en: "" });
@@ -340,24 +344,30 @@ export function CategoryManagement({ role }: Props) {
 
   // ── Delete ─────────────────────────────────────────────────────────────────
 
-  const handleDelete = async (cat: Category) => {
+  const handleDelete = (cat: Category) => {
     if (cat.articleCount > 0) {
       const catName = cat.name?.[language as "en"|"km"] || cat.name?.km || cat.name?.en;
       toast.error(`${t("cat.deleteError" as any)} "${catName}" — ${t("cat.hasArticles" as any)} ${cat.articleCount} ${t("cat.articlesReassign" as any)}`);
       return;
     }
-    const catName = cat.name?.[language as "en"|"km"] || cat.name?.km || cat.name?.en;
-    if (!confirm(`${t("cat.deleteConfirmMsg" as any)} "${catName}"? ${t("cat.deleteConfirmDesc" as any)}`)) return;
+    setCategoryToDelete(cat);
+  };
 
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
+    setDeleting(true);
     const toastId = toast.loading("...");
     try {
-      await apiClient.delete(`/api/v1/categories/${cat.id}`);
+      await apiClient.delete(`/api/v1/categories/${categoryToDelete.id}`);
       toast.dismiss(toastId);
       toast.success(t("cat.deleteSuccess" as any));
+      setCategoryToDelete(null);
       fetchCategories();
     } catch (err: any) {
       toast.dismiss(toastId);
       toast.error(formatBackendError(err));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -781,26 +791,30 @@ export function CategoryManagement({ role }: Props) {
 
             {/* Status + Order row */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">{t("cat.formStatusLabel" as any)}</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  {t("cat.formStatusLabel" as any) || "Status"}
+                </label>
                 <Select value={formStatus} onValueChange={(val) => setFormStatus(val as any)}>
-                  <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 bg-slate-50/50 font-medium transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
+                  <SelectTrigger className="!h-11 !w-full rounded-xl border border-slate-200 bg-slate-50/50 !px-4 text-sm text-slate-700 font-medium transition-all hover:bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                    <SelectItem value="ACTIVE" className="font-medium cursor-pointer">Active</SelectItem>
-                    <SelectItem value="DRAFT" className="font-medium cursor-pointer">Draft</SelectItem>
+                    <SelectItem value="ACTIVE" className="font-medium cursor-pointer">✅ Active</SelectItem>
+                    <SelectItem value="DRAFT" className="font-medium cursor-pointer">📝 Draft</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">{t("cat.formOrderLabel" as any)}</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  {t("cat.formOrderLabel" as any) || "Display Order"}
+                </label>
                 <input
                   type="number"
                   min="0"
                   value={formOrder}
                   onChange={(e) => setFormOrder(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                  className="!h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium text-slate-700 outline-none transition-all hover:bg-slate-50 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/20"
                 />
               </div>
             </div>
@@ -839,6 +853,45 @@ export function CategoryManagement({ role }: Props) {
       >
         <Plus className="h-6 w-6" />
       </button>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl">
+          <div className="bg-red-50 px-6 py-6 border-b border-red-100 flex flex-col items-center text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4 shadow-sm border border-red-200">
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className={`text-xl font-bold text-red-900 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}>
+              {language === "km" ? "បញ្ជាក់ការលុបប្រភេទ" : "Confirm Deletion"}
+            </DialogTitle>
+            <DialogDescription className={`mt-2 text-sm text-red-700 max-w-sm ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}>
+              {language === "km"
+                ? `តើអ្នកពិតជាចង់លុបប្រភេទ "${categoryToDelete?.name?.[language as "en"|"km"] || categoryToDelete?.name?.km || categoryToDelete?.name?.en}" ទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។`
+                : `Do you want to delete the category "${categoryToDelete?.name?.[language as "en"|"km"] || categoryToDelete?.name?.en || categoryToDelete?.name?.km}"? This action cannot be undone.`}
+            </DialogDescription>
+          </div>
+          
+          <div className="px-6 py-4 bg-slate-50/50 flex justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setCategoryToDelete(null)}
+              disabled={deleting}
+              className={`w-full sm:w-auto !h-11 px-6 rounded-xl border-slate-200 font-semibold text-slate-600 hover:bg-slate-100 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}
+            >
+              {language === "km" ? "បោះបង់" : "Cancel"}
+            </Button>
+            <Button
+              variant="destructive"
+              className={`w-full sm:w-auto !h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-md shadow-red-200 flex items-center justify-center gap-2 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}
+              onClick={confirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {language === "km" ? (deleting ? "កំពុងលុប..." : "លុប") : (deleting ? "Deleting..." : "Delete")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

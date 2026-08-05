@@ -58,21 +58,28 @@ export function AuthShell({ variant, children }: Props) {
             {/* Logo removed and moved to login form */}
 
             {/* Bottom Text */}
-            {(content.heroTitle || content.heroDescription) && (
-              <div className="max-w-xl space-y-6">
-                {content.heroTitle && (
+            <div className="max-w-xl space-y-6">
+              {variant === "unified" && (
+                <>
                   <h2 className="text-3xl lg:text-5xl font-bold leading-tight">
-                    {variant === "admin" ? (t("login.heroTitle.admin") as React.ReactNode) : content.heroTitle}
+                    {t("auth.unified.heroTitle") as React.ReactNode}
                   </h2>
-                )}
-
-                {content.heroDescription && (
                   <p className="text-lg lg:text-xl text-white/80">
-                    {variant === "admin" ? (t("login.heroDescription.admin") as React.ReactNode) : content.heroDescription}
+                    {t("auth.unified.heroDescription") as React.ReactNode}
                   </p>
-                )}
-              </div>
-            )}
+                </>
+              )}
+              {variant === "admin" && (
+                <>
+                  <h2 className="text-3xl lg:text-5xl font-bold leading-tight">
+                    {t("login.heroTitle.admin") as React.ReactNode}
+                  </h2>
+                  <p className="text-lg lg:text-xl text-white/80">
+                    {t("login.heroDescription.admin") as React.ReactNode}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

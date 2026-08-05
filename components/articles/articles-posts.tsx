@@ -157,6 +157,7 @@ export function ArticlesPosts({ role }: { role: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "az" | "za">("newest");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -428,7 +429,7 @@ export function ArticlesPosts({ role }: { role: string }) {
 
   const filteredArticles = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return articles.filter((a) => {
+    const filtered = articles.filter((a) => {
       const tStr = (a.title.km || "") + " " + (a.title.en || "");
       const eStr = (a.excerpt.km || "") + " " + (a.excerpt.en || "");
       const matchSearch = !q || tStr.toLowerCase().includes(q) || eStr.toLowerCase().includes(q);
@@ -439,9 +440,18 @@ export function ArticlesPosts({ role }: { role: string }) {
         (selectedStatus === "Draft" && a.status === "DRAFT");
       return matchSearch && matchCat && matchStatus;
     });
-  }, [articles, searchQuery, selectedCategory, selectedStatus, t]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, selectedCategory, selectedStatus]);
+    // Apply sort
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "newest") return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === "oldest") return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === "az") return (a.title.en || a.title.km || "").localeCompare(b.title.en || b.title.km || "");
+      if (sortBy === "za") return (b.title.en || b.title.km || "").localeCompare(a.title.en || a.title.km || "");
+      return 0;
+    });
+  }, [articles, searchQuery, selectedCategory, selectedStatus, sortBy, t]);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, selectedCategory, selectedStatus, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredArticles.length / itemsPerPage));
   const paginated = filteredArticles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -540,6 +550,21 @@ export function ArticlesPosts({ role }: { role: string }) {
                   <SelectItem value="all">{t("art.anyStatus")}</SelectItem>
                   <SelectItem value="Published">{t("art.published")}</SelectItem>
                   <SelectItem value="Draft">{t("art.draft")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort */}
+            <div className="w-[155px]">
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="h-10 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">⬇ Newest First</SelectItem>
+                  <SelectItem value="oldest">⬆ Oldest First</SelectItem>
+                  <SelectItem value="az">A → Z (Title)</SelectItem>
+                  <SelectItem value="za">Z → A (Title)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -752,7 +777,7 @@ export function ArticlesPosts({ role }: { role: string }) {
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDelete(article.id)}
+                              onClick={() => setArticleToDelete(article.id)}
                               className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
                               title="Delete"
                             >
@@ -940,14 +965,14 @@ export function ArticlesPosts({ role }: { role: string }) {
             {/* Category + Trimester + Status */}
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">
-                  Category <span className="text-red-500">*</span>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  Category <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formCategoryId ?? ""}
                   onChange={(e) => { setFormCategoryId(e.target.value ? Number(e.target.value) : null); if (errors.category) setErrors({ ...errors, category: false }); }}
-                  className={`h-11 w-full rounded-xl border bg-white px-3 text-sm text-slate-700 outline-none cursor-pointer ${
-                    errors.category ? "border-red-500 focus:border-red-500 ring-2 ring-red-100 bg-red-50" : "border-slate-200 focus:border-blue-400"
+                  className={`h-11 w-full rounded-xl border bg-slate-50/50 px-3 text-sm text-slate-700 outline-none cursor-pointer transition-all hover:bg-slate-50 focus:bg-white focus:ring-4 ${
+                    errors.category ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/50" : "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
                   }`}
                 >
                   <option value="" disabled>Select category</option>
@@ -959,11 +984,13 @@ export function ArticlesPosts({ role }: { role: string }) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">Trimester</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Trimester
+                </label>
                 <select
                   value={formTrimester ?? ""}
                   onChange={(e) => setFormTrimester(e.target.value ? Number(e.target.value) : null)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400 cursor-pointer"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm text-slate-700 outline-none transition-all cursor-pointer hover:bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
                 >
                   <option value="">General (All weeks)</option>
                   <option value="1">1st Trimester</option>
@@ -973,14 +1000,16 @@ export function ArticlesPosts({ role }: { role: string }) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-700">Status</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Status
+                </label>
                 <select
                   value={formStatus}
                   onChange={(e) => setFormStatus(e.target.value as "PUBLISHED" | "DRAFT")}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400 cursor-pointer"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm text-slate-700 outline-none transition-all cursor-pointer hover:bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
                 >
-                  <option value="PUBLISHED">Published</option>
-                  <option value="DRAFT">Draft</option>
+                  <option value="PUBLISHED">✅ Published</option>
+                  <option value="DRAFT">📝 Draft</option>
                 </select>
               </div>
             </div>
@@ -1250,22 +1279,40 @@ export function ArticlesPosts({ role }: { role: string }) {
       </button>
 
       <Dialog open={!!articleToDelete} onOpenChange={(open) => !open && setArticleToDelete(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion - {articles.find(a => a.id === articleToDelete)?.title[language as "en" | "km"] || articles.find(a => a.id === articleToDelete)?.title.en}</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this article? This action cannot be undone.
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl">
+          <div className="bg-red-50 px-6 py-6 border-b border-red-100 flex flex-col items-center text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4 shadow-sm border border-red-200">
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className={`text-xl font-bold text-red-900 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}>
+              {language === "km" ? "បញ្ជាក់ការលុបអត្ថបទ" : "Confirm Deletion"}
+            </DialogTitle>
+            <DialogDescription className={`mt-2 text-sm text-red-700 max-w-sm ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}>
+              {language === "km" 
+                ? "តើអ្នកពិតជាចង់លុបអត្ថបទនេះទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។" 
+                : "Do you want to delete this article? This action cannot be undone."}
             </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-end gap-2 sm:justify-end mt-4">
-            <Button variant="outline" onClick={() => setArticleToDelete(null)} disabled={deleting}>
-              Cancel
+          </div>
+          
+          <div className="px-6 py-4 bg-slate-50/50 flex justify-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setArticleToDelete(null)} 
+              disabled={deleting}
+              className={`w-full sm:w-auto h-11 px-6 rounded-xl border-slate-200 font-semibold text-slate-600 hover:bg-slate-100 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}
+            >
+              {language === "km" ? "បោះបង់" : "Cancel"}
             </Button>
-            <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => articleToDelete && handleDelete(articleToDelete)} disabled={deleting}>
-              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete
+            <Button 
+              variant="destructive" 
+              className={`w-full sm:w-auto h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-md shadow-red-200 flex items-center justify-center gap-2 ${language === "km" ? "font-kantumruy-pro" : "font-sans"}`}
+              onClick={() => articleToDelete && handleDelete(articleToDelete)} 
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {language === "km" ? (deleting ? "កំពុងលុប..." : "លុប") : (deleting ? "Deleting..." : "Delete")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

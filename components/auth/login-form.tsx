@@ -138,11 +138,11 @@ export function LoginForm({ variant }: Props) {
 
       <div className="space-y-3 text-center mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-slate-900 leading-snug">
-          {variant === "unified" ? authContent.unified.title : (variant === "admin" ? t("login.title.admin") : t("login.title.doctor"))}
+          {variant === "unified" ? t("auth.unified.title") as React.ReactNode : (variant === "admin" ? t("login.title.admin") as React.ReactNode : t("login.title.doctor") as React.ReactNode)}
         </h1>
 
         <p className="text-sm lg:text-base text-slate-500 font-medium px-4">
-          {variant === "unified" ? authContent.unified.subtitle : (variant === "admin" ? t("login.subtitle.admin") : t("login.subtitle.doctor"))}
+          {variant === "unified" ? t("auth.unified.subtitle") as React.ReactNode : (variant === "admin" ? t("login.subtitle.admin") as React.ReactNode : t("login.subtitle.doctor") as React.ReactNode)}
         </p>
       </div>
 
@@ -231,7 +231,7 @@ export function LoginForm({ variant }: Props) {
           className="h-12 w-full text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" 
           disabled={loading}
         >
-          {loading ? t("login.authenticating") : (variant === "unified" ? authContent.unified.buttonText : (variant === "admin" ? t("login.button.admin") : t("login.button.doctor")))}
+          {loading ? t("login.authenticating") as React.ReactNode : (variant === "unified" ? t("auth.unified.buttonText") as React.ReactNode : (variant === "admin" ? t("login.button.admin") as React.ReactNode : t("login.button.doctor") as React.ReactNode))}
         </Button>
       </form>
     </div>

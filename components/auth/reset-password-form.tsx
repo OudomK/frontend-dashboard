@@ -9,8 +9,10 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 export function ResetPasswordForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -24,7 +26,7 @@ export function ResetPasswordForm() {
 
   useEffect(() => {
     if (!token) {
-      toast.error("Invalid or missing reset token.");
+      toast.error(t("reset.invalidToken") as string);
     }
   }, [token]);
 
@@ -32,22 +34,22 @@ export function ResetPasswordForm() {
     e.preventDefault();
     
     if (!token) {
-      toast.error("Missing reset token. Please check your email link.");
+      toast.error(t("reset.missingToken") as string);
       return;
     }
     
     if (password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+      toast.error(t("reset.passwordLength") as string);
       return;
     }
     
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match.");
+      toast.error(t("reset.passwordMatch") as string);
       return;
     }
     
     setLoading(true);
-    const loadingToastId = toast.loading("Resetting password...");
+    const loadingToastId = toast.loading(t("reset.toastResetting") as string);
     
     try {
       await apiClient.post("/api/v1/users/reset-password", { 
@@ -55,11 +57,11 @@ export function ResetPasswordForm() {
         new_password: password
       });
       toast.dismiss(loadingToastId);
-      toast.success("Password reset successfully!");
+      toast.success(t("reset.toastSuccess") as string);
       setSuccess(true);
     } catch (error: any) {
       toast.dismiss(loadingToastId);
-      toast.error(error.response?.data?.detail || error.message || "Failed to reset password.");
+      toast.error(error.response?.data?.detail || error.message || (t("reset.toastError") as string));
       setLoading(false);
     }
   };
@@ -69,17 +71,17 @@ export function ResetPasswordForm() {
       <div className="w-full max-w-md space-y-6">
         <div className="space-y-3">
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
-            Password Reset
+            {t("reset.successTitle") as React.ReactNode}
           </h1>
           <p className="text-base text-slate-500 font-medium">
-            Your password has been successfully reset. You can now login with your new password.
+            {t("reset.successDesc") as React.ReactNode}
           </p>
         </div>
         <Button 
           className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
-          onClick={() => router.push("/auth/admin-login")}
+          onClick={() => router.push("/auth/login")}
         >
-          Go to login
+          {t("reset.goToLogin") as React.ReactNode}
         </Button>
       </div>
     );
@@ -90,17 +92,17 @@ export function ResetPasswordForm() {
 
       <div className="space-y-3">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
-          Reset password
+          {t("reset.title") as React.ReactNode}
         </h1>
         <p className="text-base text-slate-500 font-medium">
-          Enter your new password below.
+          {t("reset.subtitle") as React.ReactNode}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-10 space-y-6">
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
-            New Password
+            {t("reset.newPassword") as React.ReactNode}
           </label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -124,7 +126,7 @@ export function ResetPasswordForm() {
         
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
-            Confirm Password
+            {t("reset.confirmPassword") as React.ReactNode}
           </label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -150,7 +152,7 @@ export function ResetPasswordForm() {
           className="h-12 w-full text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" 
           disabled={loading || !token}
         >
-          {loading ? "Resetting..." : "Reset password"}
+          {loading ? (t("reset.resettingBtn") as React.ReactNode) : (t("reset.resetBtn") as React.ReactNode)}
         </Button>
       </form>
     </div>

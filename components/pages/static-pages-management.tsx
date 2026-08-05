@@ -80,9 +80,9 @@ export function StaticPagesManagement() {
     <div className="space-y-6 pb-24 lg:pb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 lg:text-3xl">Static Pages</h1>
+          <h1 className="text-2xl font-bold text-slate-900 lg:text-3xl">{t("pages.title")}</h1>
           <p className="text-sm text-slate-500 lg:text-base mt-1">
-            Manage content for Privacy Policy, Terms of Service, and other static pages.
+            {t("pages.subtitle")}
           </p>
         </div>
         
@@ -91,7 +91,7 @@ export function StaticPagesManagement() {
           className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add New Page
+          {t("pages.addBtn")}
         </Button>
       </div>
 
@@ -113,11 +113,11 @@ export function StaticPagesManagement() {
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
               <tr>
-                <th className="px-6 py-4">Title (EN / KM)</th>
-                <th className="px-6 py-4">Slug</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Updated At</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4">{t("pages.table.title")}</th>
+                <th className="px-6 py-4">{t("pages.table.slug")}</th>
+                <th className="px-6 py-4">{t("pages.table.status")}</th>
+                <th className="px-6 py-4">{t("pages.table.updatedAt")}</th>
+                <th className="px-6 py-4 text-right">{t("pages.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

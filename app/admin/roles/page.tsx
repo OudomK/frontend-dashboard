@@ -12,7 +12,7 @@ import { apiClient } from "@/lib/api-client";
 import Link from "next/link";
 
 export default function RolesPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [roles, setRoles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -94,23 +94,23 @@ export default function RolesPage() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                 <Shield className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Role Management</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">{t("roles.title")}</h1>
             </div>
             <p className="text-slate-500 max-w-2xl text-sm ml-13">
-              Create and manage user roles in the system. To assign specific permissions to these roles, please visit the Permission Management page.
+              {t("roles.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/admin/permissions">
               <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50 transition-all">
-                <ShieldAlert className="mr-2 h-4 w-4 text-blue-500" /> Manage Permissions
+                <ShieldAlert className="mr-2 h-4 w-4 text-blue-500" /> {t("roles.managePermissions")}
               </Button>
             </Link>
             <Button 
               onClick={() => setIsModalOpen(true)} 
               className="bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all active:scale-95 px-6"
             >
-              <Plus className="mr-2 h-4 w-4" /> Add New Role
+              <Plus className="mr-2 h-4 w-4" /> {t("roles.addBtn")}
             </Button>
           </div>
         </div>
@@ -130,9 +130,9 @@ export default function RolesPage() {
               <table className="w-full text-left text-sm border-collapse min-w-[600px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="py-4 px-6 font-semibold text-slate-900 w-[250px]">Role Name</th>
-                    <th className="py-4 px-6 font-semibold text-slate-900">Description</th>
-                    <th className="py-4 px-6 font-semibold text-slate-900 w-[120px] text-center">Actions</th>
+                    <th className="py-4 px-6 font-semibold text-slate-900 w-[250px]">{t("roles.table.name")}</th>
+                    <th className="py-4 px-6 font-semibold text-slate-900">{t("roles.table.description")}</th>
+                    <th className="py-4 px-6 font-semibold text-slate-900 w-[120px] text-center">{t("roles.table.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -182,43 +182,45 @@ export default function RolesPage() {
 
       {/* Create Role Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden rounded-2xl border-none shadow-2xl">
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Create New Role</DialogTitle>
-              <DialogDescription className="text-blue-100 mt-1">
-                Define a new role for your team members.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <form onSubmit={handleCreateRole} className="p-6 space-y-5 bg-white">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">
-                Role Name <span className="text-red-500">*</span>
+        <DialogContent className="sm:max-w-md rounded-2xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className={`text-xl font-bold text-slate-900 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("roles.modal.createTitle" as any)}
+            </DialogTitle>
+            <DialogDescription className={`text-slate-400 font-medium ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("roles.modal.createDesc" as any)}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateRole} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {t("roles.modal.roleName" as any)} *
               </label>
               <Input 
                 required 
                 value={newRole.name}
                 onChange={e => setNewRole({...newRole, name: e.target.value.toUpperCase()})}
-                placeholder="e.g. RECEPTIONIST"
-                className="uppercase border-slate-200 focus-visible:ring-blue-600 font-medium"
+                placeholder={t("roles.modal.roleNamePlaceholder" as any)}
+                className={`h-11 w-full rounded-xl border border-slate-200 px-4 text-sm uppercase transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium ${language === "km" ? "font-kantumruy-pro" : ""}`}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Description</label>
+            <div className="space-y-1.5">
+              <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {t("roles.modal.description" as any)}
+              </label>
               <Input 
                 value={newRole.description}
                 onChange={e => setNewRole({...newRole, description: e.target.value})}
-                placeholder="Brief description of responsibilities..."
-                className="border-slate-200 focus-visible:ring-blue-600"
+                placeholder={t("roles.modal.descPlaceholder" as any)}
+                className={`h-11 w-full rounded-xl border border-slate-200 px-4 text-sm transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${language === "km" ? "font-kantumruy-pro" : ""}`}
               />
             </div>
-            <div className="flex justify-end gap-3 pt-6">
-              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="text-slate-600">
-                Cancel
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-2 select-none">
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className={`rounded-lg border-slate-200 hover:bg-slate-50 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {t("roles.modal.cancel" as any)}
               </Button>
-              <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
-                {isCreating ? "Creating..." : "Create Role"}
+              <Button type="submit" disabled={isCreating} className={`bg-[#12A8EA] hover:bg-[#0F96DE] text-white rounded-lg font-semibold ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                {isCreating ? t("roles.modal.creatingBtn" as any) : t("roles.modal.createBtn" as any)}
               </Button>
             </div>
           </form>

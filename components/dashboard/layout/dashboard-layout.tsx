@@ -3,6 +3,7 @@
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/use-auth-store";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 import { Sidebar } from "../sidebar/sidebar";
 import { DashboardHeader } from "../header/dashboard-header";
@@ -28,6 +29,8 @@ export function DashboardLayout({
 }: Props) {
   const router = useRouter();
   const { initialize, isAuthenticated, isLoading, roleId } = useAuthStore();
+  const { language } = useTranslation();
+  const isKm = language === "km";
 
   useEffect(() => {
     initialize();
@@ -92,7 +95,7 @@ export function DashboardLayout({
                 <div className="mb-4 flex flex-col gap-3 lg:mb-8 lg:flex-row lg:items-end lg:justify-between">
                   <div className="space-y-1.5">
                     {title && (
-                      <h1 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-[28px] font-heading">
+                      <h1 className={`text-2xl font-bold text-slate-900 lg:text-[28px] ${isKm ? "font-kantumruy-pro tracking-normal" : "font-heading tracking-tight"}`}>
                         {title}
                       </h1>
                     )}

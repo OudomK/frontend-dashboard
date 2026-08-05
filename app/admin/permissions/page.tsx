@@ -159,15 +159,15 @@ export default function PermissionsPage() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
                 <ShieldAlert className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Permission Management</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">{t("permissions.title")}</h1>
             </div>
             <p className="text-slate-500 max-w-2xl text-sm ml-13">
-              Configure fine-grained feature and functional permissions for specific roles.
+              {t("permissions.subtitle")}
             </p>
           </div>
           
           <div className="flex flex-col items-start gap-1">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Select Role to Edit</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{t("permissions.selectRole")}</span>
             <Select value={selectedRoleId} onValueChange={(val) => handleSelectRole(val)}>
               <SelectTrigger className="w-[240px] h-11 border-slate-200 bg-slate-50 focus:ring-blue-500 rounded-xl font-semibold">
                 <SelectValue placeholder="Select a role..." />
