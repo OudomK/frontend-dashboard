@@ -200,18 +200,25 @@ export default function AdminUserManagementPage() {
       return;
     }
 
+    if (!formPhone || formPhone.length < 12) {
+      toast.error(language === "km" ? "លេខទូរស័ព្ទត្រូវមានយ៉ាងហោចណាស់ 12 ខ្ទង់" : "Phone number must be at least 12 characters");
+      return;
+    }
+
     if (!editMode && !formPassword) {
       toast.error(t("users.passwordRequired"));
       return;
     }
 
-    if (!editMode && formPassword.length < 8) {
-      toast.error(t("users.passwordMinLen"));
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    
+    if (!editMode && !passwordRegex.test(formPassword)) {
+      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, រួមមានអក្សរ លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include letters, numbers, and symbols.");
       return;
     }
 
-    if (editMode && formPassword && formPassword.length < 8) {
-      toast.error(t("users.passwordNewMinLen"));
+    if (editMode && formPassword && !passwordRegex.test(formPassword)) {
+      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, រួមមានអក្សរ លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include letters, numbers, and symbols.");
       return;
     }
 
@@ -834,7 +841,7 @@ export default function AdminUserManagementPage() {
               <div className="space-y-1.5">
                 <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.role" as any)} *</label>
                 <Select value={formRole} onValueChange={(val) => setFormRole(val as any)}>
-                  <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={`!h-11 w-full rounded-xl border border-slate-200 bg-white !px-4 !py-0 text-sm text-slate-800 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
                     <SelectValue placeholder="Select Role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -848,7 +855,7 @@ export default function AdminUserManagementPage() {
               <div className="space-y-1.5">
                 <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("user.modal.status" as any)} *</label>
                 <Select value={formStatus} onValueChange={(val) => setFormStatus(val as any)}>
-                  <SelectTrigger className="h-11 w-full rounded-xl bg-white focus:ring-2 focus:ring-blue-100">
+                  <SelectTrigger className={`!h-11 w-full rounded-xl border border-slate-200 bg-white !px-4 !py-0 text-sm text-slate-800 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
                     <SelectValue placeholder="Select Status" />
                   </SelectTrigger>
                   <SelectContent>

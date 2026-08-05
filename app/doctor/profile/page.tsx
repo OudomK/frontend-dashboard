@@ -21,6 +21,7 @@ import {
   Upload,
   User,
   X,
+  LogOut,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
@@ -272,7 +273,8 @@ function ChangePasswordModal({ open, onOpenChange }: { open: boolean; onOpenChan
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DoctorProfilePage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { updateAvatar, updateName, logout } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [firstName,     setFirstName]    = useState("");
@@ -291,6 +293,7 @@ export default function DoctorProfilePage() {
   const [avatarUrl,     setAvatarUrl]    = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [fullImageOpen, setFullImageOpen] = useState(false);
 
@@ -550,6 +553,18 @@ export default function DoctorProfilePage() {
             </div>
             <span className="text-xs font-semibold text-slate-400">Just now</span>
           </div>
+
+          {/* Logout Button */}
+          <div className="w-full">
+            <Button
+              variant="outline"
+              onClick={() => setShowLogoutConfirm(true)}
+              className={`w-full h-11 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-semibold shadow-sm transition-all ${language === "km" ? "font-kantumruy-pro" : ""}`}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {t("nav.logout" as any)}
+            </Button>
+          </div>
         </div>
 
         {/* ── Right Column: Forms & Settings ── */}
@@ -717,6 +732,36 @@ export default function DoctorProfilePage() {
               className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
             />
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <DialogContent className="sm:max-w-sm rounded-2xl shadow-xl text-center">
+          <DialogHeader>
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <LogOut className="h-7 w-7" />
+            </div>
+            <DialogTitle className={`text-xl font-bold text-slate-900 text-center ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("nav.logoutConfirmTitle" as any)}
+            </DialogTitle>
+            <DialogDescription className={`text-slate-500 text-sm mt-1 text-center ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("nav.logoutConfirmDesc" as any)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex flex-col sm:flex-row gap-3 sm:justify-center">
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className={`w-full rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all ${language === "km" ? "font-kantumruy-pro" : ""}`}
+            >
+              {t("nav.logoutCancelBtn" as any)}
+            </button>
+            <button
+              onClick={() => { logout(); setShowLogoutConfirm(false); }}
+              className={`w-full rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-all shadow-md shadow-red-200 ${language === "km" ? "font-kantumruy-pro" : ""}`}
+            >
+              {t("nav.logoutConfirmBtn" as any)}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

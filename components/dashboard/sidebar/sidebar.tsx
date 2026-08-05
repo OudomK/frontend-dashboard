@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { HeartPulse, Settings, Stethoscope, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { HeartPulse, Settings, Stethoscope, LogOut, UserCircle } from "lucide-react";
+import { useState } from "react";
 
 import { adminMenu, adminSettingsItem, doctorMenu, MenuItem } from "./sidebar-config";
 import { SidebarAccordion } from "./sidebar-accordion";
@@ -71,7 +72,7 @@ export function Sidebar({ role, isMobile = false }: Props) {
   const pathname = usePathname();
   const { user: sessionUser, logout } = useAuthStore();
   const { isCollapsed } = useSidebarStore();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   
   const doctorName = sessionUser?.email
     ? (typeof window !== "undefined" ? localStorage.getItem("women_health_user_name") : null) || sessionUser.email.split("@")[0]
@@ -101,7 +102,8 @@ export function Sidebar({ role, isMobile = false }: Props) {
   const sidebarBg = "bg-white/80 backdrop-blur-xl border-r border-slate-200/50";
   
   return (
-    <aside className={`${isMobile ? 'flex w-full min-h-[calc(100vh-120px)]' : (isCollapsed ? 'hidden w-[84px] lg:flex sticky top-0 h-screen' : 'hidden w-[280px] lg:flex sticky top-0 h-screen')} ${sidebarBg} flex-col z-20 transition-all duration-300 ease-in-out`}>
+    <>
+      <aside className={`${isMobile ? 'flex w-full min-h-[calc(100vh-120px)]' : (isCollapsed ? 'hidden w-[84px] lg:flex sticky top-0 h-screen' : 'hidden w-[280px] lg:flex sticky top-0 h-screen')} ${sidebarBg} flex-col z-20 transition-all duration-300 ease-in-out`}>
       {/* Logo Area */}
       <div className={`px-6 py-8 flex justify-center ${isCollapsed ? 'px-2' : ''}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
@@ -191,17 +193,18 @@ export function Sidebar({ role, isMobile = false }: Props) {
         <div className="mt-8 mb-4">
           {role === "admin" ? (
             <div className="py-4 pl-1 pr-0 space-y-1.5 border-t border-slate-100">
-              <button
-                onClick={() => logout()}
-                className={`group flex w-full items-center py-3 rounded-[16px] text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all duration-300 ${isCollapsed ? 'pl-2.5 mr-2 justify-center gap-0' : 'pl-3 mr-3 gap-3'}`}
+              {/* Profile Link */}
+              <Link
+                href="/admin/profile"
+                className={`group flex w-full items-center py-3 rounded-[16px] text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 ${isCollapsed ? 'pl-2.5 mr-2 justify-center gap-0' : 'pl-3 mr-3 gap-3'}`}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm border border-slate-200 group-hover:text-red-500 group-hover:border-red-200 transition-all duration-300">
-                  <LogOut className="h-5 w-5" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm border border-slate-200 group-hover:text-blue-500 group-hover:border-blue-200 transition-all duration-300">
+                  <UserCircle className="h-5 w-5" />
                 </div>
                 {!isCollapsed && (
-                  <span className="text-[14px] font-medium font-kantumruy-pro">{t("nav.logout")}</span>
+                  <span className={`text-[14px] font-medium ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("nav.goToProfile" as any)}</span>
                 )}
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="p-4 border-t border-slate-100 pr-3">
@@ -235,18 +238,11 @@ export function Sidebar({ role, isMobile = false }: Props) {
                   </Link>
                 )}
               </div>
-
-              <button
-                onClick={() => logout()}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold tracking-wide text-slate-600 shadow-sm transition-all duration-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="font-kantumruy-pro">{t("nav.logout")}</span>
-              </button>
             </div>
           )}
         </div>
       </div>
     </aside>
+    </>
   );
 }
