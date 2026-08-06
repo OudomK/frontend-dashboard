@@ -210,15 +210,15 @@ export default function AdminUserManagementPage() {
       return;
     }
 
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     
     if (!editMode && !passwordRegex.test(formPassword)) {
-      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, រួមមានអក្សរ លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include letters, numbers, and symbols.");
+      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, មានអក្សរធំ អក្សរតូច លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
       return;
     }
 
     if (editMode && formPassword && !passwordRegex.test(formPassword)) {
-      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, រួមមានអក្សរ លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include letters, numbers, and symbols.");
+      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, មានអក្សរធំ អក្សរតូច លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
       return;
     }
 

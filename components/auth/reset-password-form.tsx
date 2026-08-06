@@ -38,8 +38,9 @@ export function ResetPasswordForm() {
       return;
     }
     
-    if (password.length < 6) {
-      toast.error(t("reset.passwordLength") as string);
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      toast.error("Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
       return;
     }
     

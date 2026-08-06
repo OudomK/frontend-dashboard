@@ -56,6 +56,12 @@ export function LoginForm({ variant }: Props) {
       toast.error("Please enter both email and password credentials.");
       return;
     }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      toast.error("Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
+      return;
+    }
     
     setLoading(true);
     

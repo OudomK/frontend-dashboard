@@ -1,7 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LogOut, Settings } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/ui/dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { adminMenu, adminSettingsItem } from "@/components/dashboard/sidebar/sidebar-config";
 import { navKeyMap } from "@/components/dashboard/sidebar/sidebar";
@@ -10,7 +19,8 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 
 export default function AdminMenuPage() {
   const { logout, user: sessionUser } = useAuthStore();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   const adminName = sessionUser?.email
     ? (typeof window !== "undefined" ? localStorage.getItem("women_health_user_name") : null) || sessionUser.email.split("@")[0]
@@ -92,7 +102,7 @@ export default function AdminMenuPage() {
             </Link>
 
             <button
-              onClick={() => logout()}
+              onClick={() => setShowLogoutConfirm(true)}
               className="flex w-full items-center gap-4 p-4 hover:bg-red-50 transition-colors active:bg-red-100 text-left"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
@@ -108,6 +118,36 @@ export default function AdminMenuPage() {
       <div className="hidden lg:flex flex-col items-center justify-center py-20 text-slate-500">
         <p className="text-lg font-medium">{t("mnu.useSidebar")}</p>
       </div>
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <DialogContent className="sm:max-w-sm rounded-2xl shadow-xl text-center">
+          <DialogHeader>
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <LogOut className="h-7 w-7" />
+            </div>
+            <DialogTitle className={`text-xl font-bold text-slate-900 text-center ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("nav.logoutConfirmTitle" as any)}
+            </DialogTitle>
+            <DialogDescription className={`text-slate-500 text-sm mt-1 text-center ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+              {t("nav.logoutConfirmDesc" as any)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex flex-col sm:flex-row gap-3 sm:justify-center">
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className={`w-full rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all ${language === "km" ? "font-kantumruy-pro" : ""}`}
+            >
+              {t("nav.logoutCancelBtn" as any)}
+            </button>
+            <button
+              onClick={() => { logout(); setShowLogoutConfirm(false); }}
+              className={`w-full rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-all shadow-md shadow-red-200 ${language === "km" ? "font-kantumruy-pro" : ""}`}
+            >
+              {t("nav.logoutConfirmBtn" as any)}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

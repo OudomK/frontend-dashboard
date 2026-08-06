@@ -22,6 +22,8 @@ import {
   User,
   X,
   LogOut,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
@@ -189,6 +191,9 @@ function ChangePasswordModal({ open, onOpenChange }: { open: boolean; onOpenChan
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,8 +202,9 @@ function ChangePasswordModal({ open, onOpenChange }: { open: boolean; onOpenChan
       toast.error("New passwords do not match.");
       return;
     }
-    if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters long.");
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      toast.error("Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
       return;
     }
 
@@ -233,30 +239,60 @@ function ChangePasswordModal({ open, onOpenChange }: { open: boolean; onOpenChan
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <FieldLabel>Current Password</FieldLabel>
-              <TextInput 
-                type="password" 
-                value={currentPassword} 
-                onChange={setCurrentPassword} 
-                placeholder="••••••••" 
-              />
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm font-medium text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <FieldLabel>New Password</FieldLabel>
-              <TextInput 
-                type="password" 
-                value={newPassword} 
-                onChange={setNewPassword} 
-                placeholder="••••••••" 
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm font-medium text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <FieldLabel>Confirm New Password</FieldLabel>
-              <TextInput 
-                type="password" 
-                value={confirmPassword} 
-                onChange={setConfirmPassword} 
-                placeholder="••••••••" 
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-4 pr-10 text-sm font-medium text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           </div>
           <DialogFooter>

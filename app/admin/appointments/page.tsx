@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, User, CheckCircle, XCircle, Plus, 
-  Stethoscope, CalendarDays, ClipboardList, Loader2, Sparkles, QrCode
+  Stethoscope, CalendarDays, ClipboardList, Loader2, Sparkles, QrCode, ChevronDown
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
@@ -230,58 +230,66 @@ export default function AdminAppointmentsPage() {
                   </div>
 
                   <form onSubmit={handleGenerateSlots} className="p-5 space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        <Stethoscope className="w-3.5 h-3.5" />
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">
+                        <Stethoscope className="w-3.5 h-3.5 text-blue-500" />
                         {t("appointments.selectDoctor")}
                       </label>
-                      <select
-                        className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        value={genDoctorId}
-                        onChange={(e) => setGenDoctorId(e.target.value)}
-                        required
-                      >
-                        <option value="">{t("appointments.select")}</option>
-                        {doctors.map(d => (
-                          <option key={d.id} value={d.id}>Dr. {d.user?.full_name || "Unknown"} ({d.specialty})</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <select
+                          className="w-full h-[46px] pl-10 pr-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                          value={genDoctorId}
+                          onChange={(e) => setGenDoctorId(e.target.value)}
+                          required
+                        >
+                          <option value="" disabled hidden>-- {t("appointments.select") || "Select Doctor"} --</option>
+                          {doctors.map(d => (
+                            <option key={d.id} value={d.id}>Dr. {d.user?.full_name || "Unknown"} • {d.specialty}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        <Calendar className="w-3.5 h-3.5" />
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">
+                        <Calendar className="w-3.5 h-3.5 text-blue-500" />
                         {t("appointments.date")}
                       </label>
                       <input
                         type="date"
-                        className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                        className="w-full h-[46px] px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm cursor-pointer"
                         value={genDate}
                         onChange={(e) => setGenDate(e.target.value)}
                         required
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Start Time
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-blue-500" /> Start Time
                         </label>
                         <input
                           type="time"
-                          className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                          className="w-full h-[46px] px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm cursor-pointer"
                           value={genStart}
                           onChange={(e) => setGenStart(e.target.value)}
                           required
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> End Time
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-blue-500" /> End Time
                         </label>
                         <input
                           type="time"
-                          className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                          className="w-full h-[46px] px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm cursor-pointer"
                           value={genEnd}
                           onChange={(e) => setGenEnd(e.target.value)}
                           required
@@ -289,19 +297,25 @@ export default function AdminAppointmentsPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        {t("appointments.interval")}
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">
+                        <Clock className="w-3.5 h-3.5 text-blue-500" />
+                        {t("appointments.interval") || "INTERVAL"}
                       </label>
-                      <select
-                        className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        value={genInterval}
-                        onChange={(e) => setGenInterval(e.target.value)}
-                      >
-                        <option value="15">15 Minutes</option>
-                        <option value="30">30 Minutes</option>
-                        <option value="60">60 Minutes</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          className="w-full h-[46px] pl-4 pr-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                          value={genInterval}
+                          onChange={(e) => setGenInterval(e.target.value)}
+                        >
+                          <option value="15">15 Minutes</option>
+                          <option value="30">30 Minutes</option>
+                          <option value="60">60 Minutes</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                      </div>
                     </div>
 
                     <button
