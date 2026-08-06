@@ -189,58 +189,7 @@ export function Sidebar({ role, isMobile = false }: Props) {
           })}
         </div>
 
-        {/* Footer Area moved inside scrollable div */}
-        <div className="mt-8 mb-4">
-          {role === "admin" ? (
-            <div className="py-4 pl-1 pr-0 space-y-1.5 border-t border-slate-100">
-              {/* Profile Link */}
-              <Link
-                href="/admin/profile"
-                className={`group flex w-full items-center py-3 rounded-[16px] text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 ${isCollapsed ? 'pl-2.5 mr-2 justify-center gap-0' : 'pl-3 mr-3 gap-3'}`}
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm border border-slate-200 group-hover:text-blue-500 group-hover:border-blue-200 transition-all duration-300">
-                  <UserCircle className="h-5 w-5" />
-                </div>
-                {!isCollapsed && (
-                  <span className={`text-[14px] font-medium ${language === "km" ? "font-kantumruy-pro" : ""}`}>{t("nav.goToProfile" as any)}</span>
-                )}
-              </Link>
-            </div>
-          ) : (
-            <div className="p-4 border-t border-slate-100 pr-3">
-              <div className={`flex items-center rounded-2xl transition-colors hover:bg-slate-50 group cursor-pointer border border-transparent hover:border-slate-100 ${isCollapsed ? 'p-1 justify-center' : 'p-2 gap-3'}`}>
-                <div className={`shrink-0 rounded-full bg-slate-100 overflow-hidden ring-2 ring-emerald-500/30 group-hover:ring-emerald-500/60 transition-all ${isCollapsed ? 'h-9 w-9' : 'h-11 w-11'}`}>
-                  <img
-                    src={sessionUser?.avatarUrl || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100"}
-                    alt={doctorName}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
 
-                {!isCollapsed && (
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold text-slate-900 text-[14px] font-poppins">
-                      {doctorName}
-                    </p>
-                    <p className="text-[11px] font-semibold text-emerald-600 tracking-wider uppercase mt-0.5 truncate font-poppins">
-                      {sessionUser?.roleName || "Doctor"}
-                    </p>
-                  </div>
-                )}
-
-
-                {(!permissions || permissions.includes("manage_profile")) && (
-                  <Link
-                    href="/doctor/profile"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </aside>
     </>
