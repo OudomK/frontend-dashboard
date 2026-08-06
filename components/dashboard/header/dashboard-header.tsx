@@ -82,9 +82,7 @@ export function DashboardHeader({
     return `${apiUrl}${url}`;
   };
 
-  const avatarUrl = getFullAvatarUrl(sessionUser?.avatarUrl) || (role === "admin"
-    ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
-    : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100");
+  const avatarUrl = getFullAvatarUrl(sessionUser?.avatarUrl) || null;
 
 
   const adminBreadcrumb =
@@ -229,11 +227,17 @@ export function DashboardHeader({
               className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 hover:bg-slate-50 transition-all cursor-pointer bg-white shadow-sm"
             >
               <div className="h-10 w-10 rounded-full bg-slate-100 overflow-hidden border border-slate-200 shadow-sm shrink-0 ring-2 ring-blue-500/30">
-                <img
-                  src={avatarUrl}
-                  alt={displayName}
-                  className="h-full w-full object-cover"
-                />
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                    {(sessionUser?.name || displayName || "?").charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
 
               <div className="hidden text-left lg:block">
