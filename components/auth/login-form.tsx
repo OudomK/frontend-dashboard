@@ -77,10 +77,11 @@ export function LoginForm({ variant }: Props) {
       });
       
       setTimeout(() => {
-        if (variant === "unified" || variant === "admin") {
-          router.push("/admin/dashboard");
-        } else {
+        const currentRoleId = Number(localStorage.getItem("women_health_role_id"));
+        if (currentRoleId === 2) {
           router.push("/doctor/dashboard");
+        } else {
+          router.push("/admin/dashboard");
         }
       }, 1500);
       

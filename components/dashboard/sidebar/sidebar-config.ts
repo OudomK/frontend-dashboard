@@ -38,6 +38,11 @@ export const doctorMenu: MenuItem[] = [
         permission: "view_dashboard",
         icon: LayoutDashboard,
         href: "/doctor/dashboard",
+      },
+      {
+        label: "My Profile",
+        icon: Users,
+        href: "/doctor/profile",
       }
     ]
   },
@@ -165,25 +170,25 @@ export const adminMenu: MenuItem[] = [
       },
       {
         label: "Categories",
-        permission: "manage_categories",
+        permission: "view_categories",
         icon: FolderTree,
         href: "/admin/categories",
       },
       {
         label: "FAQ Management",
-        permission: "manage_faqs",
+        permission: "view_faqs",
         icon: CircleHelp,
         href: "/admin/faqs",
       },
       {
         label: "Banners Management",
-        permission: "manage_system_settings",
+        permission: "view_banners",
         icon: Megaphone,
         href: "/admin/banners",
       },
       {
         label: "Static Pages",
-        permission: "manage_system_settings",
+        permission: "view_pages",
         icon: BookOpen,
         href: "/admin/pages",
       },
@@ -195,19 +200,19 @@ export const adminMenu: MenuItem[] = [
     items: [
       {
         label: "User Management",
-        permission: "manage_users",
+        permission: "view_users",
         icon: Users,
         href: "/admin/users",
       },
       {
         label: "Role Management",
-        permission: "manage_roles",
+        permission: "view_roles",
         icon: Users,
         href: "/admin/roles",
       },
       {
         label: "Permission Management",
-        permission: "manage_roles",
+        permission: "view_roles",
         icon: ShieldCheck,
         href: "/admin/permissions",
       },
@@ -225,7 +230,7 @@ export const adminMenu: MenuItem[] = [
       },
       {
         label: "Emergency Rules",
-        permission: "manage_emergency_rules",
+        permission: "view_emergency",
         icon: AlertTriangleIcon,
         href: "/admin/emergency-rules",
       },

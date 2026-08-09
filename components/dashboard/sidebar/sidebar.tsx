@@ -60,6 +60,7 @@ export const navKeyMap: Record<string, TranslationKey> = {
   "Audit Logs": "nav.auditLogs",
   "Settings": "nav.settings",
   "Profile": "nav.profile",
+  "My Profile": "nav.myProfile",
 };
 
 

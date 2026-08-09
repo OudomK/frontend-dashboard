@@ -99,7 +99,7 @@ export default function AdminAppointmentsPage() {
   const handleGenerateSlots = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!genDoctorId || !genDate) {
-      toast.error("Please select a doctor and date");
+      toast.error(t("appointments.errSelectDoctorDate"));
       return;
     }
     
@@ -112,12 +112,32 @@ export default function AdminAppointmentsPage() {
         end_time: genEnd,
         interval_minutes: parseInt(genInterval)
       });
-      toast.success(res.data.message);
+      
+      const successMsg = t("appointments.generateSuccess").replace("{count}", res.data.slots_created.toString());
+      toast.success(successMsg, {
+        icon: "✨",
+        style: {
+          background: "#ECFDF5",
+          color: "#065F46",
+          border: "1px solid #34D399"
+        }
+      });
+      
       setGenDate("");
       setActiveTab("list");
       fetchAppointments();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to generate slots");
+      const detail = err.response?.data?.detail;
+      const isSlotExistError = detail === "Time slots already exist for this time period. No new slots were generated.";
+      
+      toast.error(isSlotExistError ? t("appointments.errSlotsExist") : (detail || t("appointments.errGenerateFailed")), {
+        icon: "⚠️",
+        style: {
+          background: "#FEF2F2",
+          color: "#991B1B",
+          border: "1px solid #F87171"
+        }
+      });
     } finally {
       setIsGenerating(false);
     }

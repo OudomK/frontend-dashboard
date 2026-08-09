@@ -24,10 +24,13 @@ import {
   LogOut,
   Eye,
   EyeOff,
+  BookOpen,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/store/use-auth-store";
@@ -42,6 +45,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 // ─── Field label ──────────────────────────────────────────────────────────────
 
@@ -323,6 +330,14 @@ export default function DoctorProfilePage() {
   const [telegram,      setTelegram]     = useState("t.me/auraclinic_support");
   const [emergencyTel,  setEmergencyTel] = useState("+855 23 999 999");
   const [clinicAddress, setClinicAddress] = useState("");
+  
+  // CV Fields
+  const [subSpecialties, setSubSpecialties] = useState("");
+  const [educationBackground, setEducationBackground] = useState("");
+  const [workExperience, setWorkExperience] = useState("");
+  const [languagesSpoken, setLanguagesSpoken] = useState("");
+  const [certifications, setCertifications] = useState("");
+  
   const [twoFA,         setTwoFA]        = useState(true);
   const [saved,         setSaved]        = useState(false);
   const [loading,       setLoading]      = useState(true);
@@ -348,6 +363,12 @@ export default function DoctorProfilePage() {
         setClinicName(p.hospital_name || "");
         setClinicAddress(p.address || "");
         
+        setSubSpecialties(p.sub_specialties || "");
+        setEducationBackground(p.education_background || "");
+        setWorkExperience(p.work_experience || "");
+        setLanguagesSpoken(p.languages_spoken || "");
+        setCertifications(p.certifications || "");
+        
         if (p.avatar_url) {
           const fullUrl = p.avatar_url.startsWith("http")
             ? p.avatar_url
@@ -372,6 +393,11 @@ export default function DoctorProfilePage() {
         medical_note: bio,
         hospital_name: clinicName,
         address: clinicAddress,
+        sub_specialties: subSpecialties,
+        education_background: educationBackground,
+        work_experience: workExperience,
+        languages_spoken: languagesSpoken,
+        certifications: certifications,
       });
       useAuthStore.getState().updateName(`${firstName} ${lastName}`.trim());
       setSaved(true);
@@ -493,7 +519,7 @@ export default function DoctorProfilePage() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition-all active:opacity-90"
         >
           <Save className="h-4 w-4" />
-          Save Changes
+          {t("profile.saveChanges")}
         </button>
       </div>
 
@@ -536,7 +562,7 @@ export default function DoctorProfilePage() {
                 className="w-full h-10 rounded-lg bg-blue-600 px-4 text-xs font-semibold text-white shadow hover:bg-blue-700 transition-colors"
               >
                 <Upload className="mr-1.5 h-4 w-4" />
-                Upload New
+                {t("profile.uploadNew")}
               </Button>
               <Button
                 variant="outline"
@@ -544,14 +570,14 @@ export default function DoctorProfilePage() {
                 disabled={!avatarUrl || uploadingAvatar}
                 className="w-full h-10 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50"
               >
-                Remove Picture
+                {t("profile.removePicture")}
               </Button>
             </div>
 
             {/* Profile Completeness */}
             <div className="w-full mt-6 border-t border-slate-100 pt-6">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Profile Completeness</span>
+                <span className="text-xs font-bold text-slate-700">{t("profile.completeness")}</span>
                 <span className={`text-xs font-bold ${completeness >= 80 ? "text-emerald-600" : "text-amber-600"}`}>
                   {completeness}%
                 </span>
@@ -569,12 +595,12 @@ export default function DoctorProfilePage() {
             {/* Meta details */}
             <div className="w-full mt-6 space-y-3.5 text-xs">
               <div className="flex items-center justify-between font-medium">
-                <span className="text-slate-400">Status</span>
-                <span className="text-emerald-600 font-bold">Active</span>
+                <span className="text-slate-400">{t("profile.status")}</span>
+                <span className="text-emerald-600 font-bold">{t("profile.active")}</span>
               </div>
               <div className="flex items-center justify-between font-medium">
-                <span className="text-slate-400">Account Type</span>
-                <span className="text-slate-700 font-semibold">Doctor</span>
+                <span className="text-slate-400">{t("profile.accountType")}</span>
+                <span className="text-slate-700 font-semibold">{t("profile.doctor")}</span>
               </div>
             </div>
           </div>
@@ -585,7 +611,7 @@ export default function DoctorProfilePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
                 <Clock className="h-4 w-4 text-slate-500" />
               </div>
-              <span className="text-xs font-semibold text-slate-700">Last saved</span>
+              <span className="text-xs font-semibold text-slate-700">{t("profile.lastSaved")}</span>
             </div>
             <span className="text-xs font-semibold text-slate-400">Just now</span>
           </div>
@@ -603,102 +629,156 @@ export default function DoctorProfilePage() {
           </div>
         </div>
 
-        {/* ── Right Column: Forms & Settings ── */}
+        {/* ── Right Column: Form Fields ── */}
         <div className="lg:col-span-2 space-y-6">
-
-          {/* Personal Information */}
-          <SectionCard
-            icon={User}
-            title="Personal Information"
-            subtitle="Shown to users when you publish content."
-            accent="blue"
-          >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <FieldLabel required>First Name</FieldLabel>
-                <TextInput value={firstName} onChange={setFirstName} placeholder="Sarah" />
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+            
+            {/* Section 1: Basic Info */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">{t("profile.personalInfo")}</h3>
+                  <p className="text-xs text-slate-500">Shown to users when you publish content.</p>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <FieldLabel required>Last Name</FieldLabel>
-                <TextInput value={lastName} onChange={setLastName} placeholder="Jenkins" />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Specialization</FieldLabel>
-                <TextInput value={title} onChange={setTitle} placeholder="Gynecologist" />
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Phone Number</FieldLabel>
-                <TextInput value={phone} onChange={setPhone} icon={Phone} placeholder="+855 12 345 678" type="tel" />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel>Email Address</FieldLabel>
-                <TextInput value={email} disabled icon={Mail} />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel>Short Bio</FieldLabel>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={4}
-                  maxLength={300}
-                  placeholder="Tell patients and colleagues about your experience…"
-                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-                <div className="mt-1 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Visible on published articles</span>
-                  <span className={`text-xs font-medium ${bio.length > 280 ? "text-amber-600" : "text-slate-400"}`}>
-                    {bio.length}/300
-                  </span>
+              
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <FieldLabel required>{t("profile.firstName")}</FieldLabel>
+                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel required>{t("profile.lastName")}</FieldLabel>
+                  <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.specialization")}</FieldLabel>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.phoneNumber")}</FieldLabel>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input className="pl-9" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <FieldLabel>{t("profile.email")}</FieldLabel>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input className="pl-9 bg-slate-50 text-slate-500" value={email} disabled />
+                  </div>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <FieldLabel>{t("profile.shortBio")}</FieldLabel>
+                  <Textarea 
+                    className="min-h-[100px] resize-y" 
+                    value={bio} 
+                    onChange={(e) => setBio(e.target.value)} 
+                    placeholder="Brief description about yourself..."
+                  />
                 </div>
               </div>
             </div>
-          </SectionCard>
 
-          {/* Clinic Contact Information */}
-          <SectionCard
-            icon={Building2}
-            title="Clinic Contact Information"
-            subtitle="Used by the AI Assistant to guide patients to your clinic during emergencies."
-            accent="violet"
-          >
-            <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                <Info className="h-3 w-3 text-amber-700" />
+            {/* Section 2: Clinic Contact Information */}
+            <div className="border-t border-slate-100 pt-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">{t("profile.clinicInfo")}</h3>
+                  <p className="text-xs text-slate-500">Used by the AI Assistant to guide patients to your clinic.</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-amber-800">AI Recommendation Notice</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-amber-700">
-                  Keep your Telegram link and Emergency Phone accurate — the AI shares them automatically when it detects high-risk symptoms.
-                </p>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <FieldLabel>{t("profile.clinicName")}</FieldLabel>
+                  <Input value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.telegram")}</FieldLabel>
+                  <Input value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="t.me/yourclinic" />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.emergencyPhone")}</FieldLabel>
+                  <Input value={emergencyTel} onChange={(e) => setEmergencyTel(e.target.value)} />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <FieldLabel>{t("profile.address")}</FieldLabel>
+                  <Input value={clinicAddress} onChange={(e) => setClinicAddress(e.target.value)} />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel>Clinic / Hospital Name</FieldLabel>
-                <TextInput value={clinicName} onChange={setClinicName} icon={Building2} />
+            {/* Section 3: Curriculum Vitae */}
+            <div className="border-t border-slate-100 pt-8 mt-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">{t("profile.cvTitle")}</h3>
+                  <p className="text-xs text-slate-500">Add details to showcase your expertise.</p>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Telegram Contact Link</FieldLabel>
-                <TextInput value={telegram} onChange={setTelegram} placeholder="t.me/yourclinic" />
-                <p className="mt-1 text-[11px] font-medium text-slate-400">For patient reception chat.</p>
-              </div>
-              <div className="space-y-1.5">
-                <FieldLabel>Emergency Phone</FieldLabel>
-                <TextInput value={emergencyTel} onChange={setEmergencyTel} icon={Phone} type="tel" />
-                <p className="mt-1 text-[11px] font-medium text-slate-400">Dedicated urgent-care line.</p>
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel>Clinic Address</FieldLabel>
-                <TextInput value={clinicAddress} onChange={setClinicAddress} icon={MapPin} />
+
+              <div className="grid grid-cols-1 gap-8">
+                {/* Specialty & Expertise */}
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.subSpecialties")}</FieldLabel>
+                  <p className="text-xs text-slate-500 mb-2">e.g., Obstetrics, Gynecology, Reproductive Endocrinology</p>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <ReactQuill theme="snow" value={subSpecialties} onChange={setSubSpecialties} className="h-40 mb-12" />
+                  </div>
+                </div>
+
+                {/* Education Background */}
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.education")}</FieldLabel>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <ReactQuill theme="snow" value={educationBackground} onChange={setEducationBackground} className="h-40 mb-12" />
+                  </div>
+                </div>
+
+                {/* Work Experience */}
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.experience")}</FieldLabel>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <ReactQuill theme="snow" value={workExperience} onChange={setWorkExperience} className="h-40 mb-12" />
+                  </div>
+                </div>
+
+                {/* Languages Spoken */}
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.languages")}</FieldLabel>
+                  <Input 
+                    value={languagesSpoken} 
+                    onChange={(e) => setLanguagesSpoken(e.target.value)} 
+                    placeholder="e.g. Khmer, English, French"
+                  />
+                </div>
+
+                {/* Certifications & References */}
+                <div className="space-y-1.5">
+                  <FieldLabel>{t("profile.certifications")}</FieldLabel>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <ReactQuill theme="snow" value={certifications} onChange={setCertifications} className="h-40 mb-12" />
+                  </div>
+                </div>
               </div>
             </div>
-          </SectionCard>
+          </div>
 
           {/* Security Settings */}
           <SectionCard
             icon={Shield}
-            title="Security Settings"
+            title={t("profile.changePassword")}
             subtitle="Manage your account protection and active sessions."
             accent="blue"
           >

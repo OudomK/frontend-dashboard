@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css";
 import { useAuthStore } from "@/lib/store/use-auth-store";
@@ -16,7 +17,7 @@ import { useAuthStore } from "@/lib/store/use-auth-store";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 export function AboutManagement() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { roleId } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [savingClinic, setSavingClinic] = useState(false);
@@ -25,6 +26,7 @@ export function AboutManagement() {
   const [uploadingImage, setUploadingImage] = useState<number | null>(null);
   const [isTranslatingClinic, setIsTranslatingClinic] = useState(false);
   const [translatingMemberIndex, setTranslatingMemberIndex] = useState<number | null>(null);
+  const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -116,21 +118,25 @@ export function AboutManagement() {
     }
   };
 
-  const removeTeamMember = async (index: number) => {
+  const confirmRemoveTeamMember = async () => {
+    if (deleteConfirmIndex === null) return;
+    const index = deleteConfirmIndex;
     const member = team[index];
     if (member.id) {
       try {
         await apiClient.delete(`/api/v1/about/team/${member.id}`);
-        toast.success(t("abt.memberRemoved"));
+        toast.success(t("abt.memberRemoved" as any) || "Member removed successfully");
       } catch (err) {
         console.error(err);
-        toast.error(t("abt.memberRemoveFailed"));
+        toast.error(t("abt.memberRemoveFailed" as any) || "Failed to remove member");
+        setDeleteConfirmIndex(null);
         return;
       }
     }
     const updated = [...team];
     updated.splice(index, 1);
     setTeam(updated);
+    setDeleteConfirmIndex(null);
   };
 
   const addNewMember = () => {
@@ -353,7 +359,7 @@ export function AboutManagement() {
           {team.map((member, index) => (
             <div key={index} className="relative p-6 bg-white border border-gray-200 rounded-xl shadow-sm group hover:border-rose-200 transition-all duration-300">
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <Button size="icon" variant="destructive" onClick={() => removeTeamMember(index)} className="h-8 w-8 shadow-sm">
+                <Button size="icon" variant="destructive" onClick={() => setDeleteConfirmIndex(index)} className="h-8 w-8 shadow-sm">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -438,6 +444,41 @@ export function AboutManagement() {
         </div>
       </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteConfirmIndex !== null} onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}>
+        <DialogContent className="sm:max-w-[425px] bg-white border-slate-200 rounded-2xl shadow-xl">
+          <DialogHeader className="gap-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-2">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-xl font-bold text-center tracking-tight text-slate-900">
+              {language === "km" ? "បញ្ជាក់ការលុបសមាជិក" : "Confirm Deletion"}
+            </DialogTitle>
+            <DialogDescription className="text-center text-slate-500 text-sm leading-relaxed pt-2">
+              {language === "km" 
+                ? "តើអ្នកពិតជាចង់លុបសមាជិកក្រុមនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
+                : "Are you sure you want to remove this team member? This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-100">
+            <Button
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold"
+              onClick={confirmRemoveTeamMember}
+            >
+              {language === "km" ? "យល់ព្រមលុប (Permanently Delete)" : "Permanently Delete"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold"
+              onClick={() => setDeleteConfirmIndex(null)}
+            >
+              {t("user.modal.cancel" as any) || (language === "km" ? "បោះបង់" : "Cancel")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
