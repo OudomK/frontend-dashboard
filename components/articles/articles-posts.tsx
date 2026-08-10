@@ -221,7 +221,7 @@ export function ArticlesPosts({ role }: { role: string }) {
           category: typeof cat?.name === 'string' ? cat?.name : ((cat?.name as any)?.[language as "en"|"km"] || (cat?.name as any)?.en || (cat?.name as any)?.km || "Uncategorized"),
           category_id: a.category_id ?? undefined,
           trimester: a.trimester ?? undefined,
-          authorName: a.author_id === 1 ? "Admin" : "Dr. Anderson",
+          authorName: a.author?.full_name || (a.author_id === 1 ? "Admin" : "Dr. Anderson"),
           authorId: a.author_id,
           status: (a.status?.toLowerCase() === "published" ? "PUBLISHED" : "DRAFT") as "PUBLISHED" | "DRAFT",
           date: a.published_at
