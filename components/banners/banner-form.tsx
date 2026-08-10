@@ -57,7 +57,7 @@ export function BannerForm({ bannerId }: BannerFormProps) {
         setDisplayOrder(banner.display_order || 0);
       } else {
         toast.error(t("bf.notFound" as any));
-        router.push("/admin/banners");
+        router.push("/dashboard/banners");
       }
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -116,7 +116,7 @@ export function BannerForm({ bannerId }: BannerFormProps) {
         await apiClient.post("/api/v1/settings/banners", data);
         toast.success(t("bf.saveSuccess" as any));
       }
-      router.push("/admin/banners");
+      router.push("/dashboard/banners");
     } catch (error) {
       toast.error(t("bf.saveFailed" as any));
     } finally {
@@ -138,7 +138,7 @@ export function BannerForm({ bannerId }: BannerFormProps) {
     <div className="mx-auto max-w-4xl space-y-6 pb-24 lg:pb-8">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/banners")} className="lg:hidden">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/banners")} className="lg:hidden">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold text-slate-900">

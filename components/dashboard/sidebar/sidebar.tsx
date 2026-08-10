@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { HeartPulse, Settings, Stethoscope, LogOut, UserCircle } from "lucide-react";
 import { useState } from "react";
 
-import { adminMenu, adminSettingsItem, doctorMenu, MenuItem } from "./sidebar-config";
+import { unifiedMenu, MenuItem } from "./sidebar-config";
 import { SidebarAccordion } from "./sidebar-accordion";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import { useSidebarStore } from "@/lib/store/use-sidebar-store";
@@ -65,11 +65,11 @@ export const navKeyMap: Record<string, TranslationKey> = {
 
 
 type Props = {
-  role: "admin" | "doctor";
+  role?: string;
   isMobile?: boolean;
 };
 
-export function Sidebar({ role, isMobile = false }: Props) {
+export function Sidebar({ role = "admin", isMobile = false }: Props) {
   const pathname = usePathname();
   const { user: sessionUser, logout } = useAuthStore();
   const { isCollapsed } = useSidebarStore();
@@ -82,7 +82,7 @@ export function Sidebar({ role, isMobile = false }: Props) {
   const permissions = sessionUser?.permissions || [];
   const isRootAdmin = sessionUser?.roleId === 3;
 
-  const baseMenu = role === "admin" ? adminMenu : doctorMenu;
+  const baseMenu = unifiedMenu;
 
   const groups = baseMenu.map((group) => {
     const filteredItems = group.items?.filter((item) => {

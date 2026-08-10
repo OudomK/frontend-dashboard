@@ -14,7 +14,7 @@ import { MobilePageWrapper } from "../mobile/mobile-page-wrapper";
 
 type Props = {
   children: ReactNode;
-  role: "admin" | "doctor";
+  role?: "admin" | "doctor" | string;
   title?: ReactNode;
   subtitle?: string;
   actions?: ReactNode;
@@ -22,7 +22,7 @@ type Props = {
 
 export function DashboardLayout({
   children,
-  role,
+  role = "admin",
   title,
   subtitle,
   actions,

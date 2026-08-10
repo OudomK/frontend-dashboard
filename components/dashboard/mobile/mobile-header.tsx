@@ -17,12 +17,12 @@ import { formatDistanceToNow } from "date-fns";
 
 type Props = {
   title: string;
-  role: "admin" | "doctor";
+  role?: string;
 };
 
 export function MobileHeader({
   title,
-  role,
+  role = "admin",
 }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();

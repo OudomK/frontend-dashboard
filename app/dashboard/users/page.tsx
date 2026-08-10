@@ -210,14 +210,25 @@ export default function AdminUserManagementPage() {
       return;
     }
 
-    if (!editMode && formPassword.length < 8) {
-      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់" : "Password must be at least 8 characters");
-      return;
-    }
+    const targetRoleId = parseInt(formRole, 10);
+    const selectedRoleObj = availableRoles.find(r => r.id === targetRoleId);
+    const isUserRole = selectedRoleObj?.name?.toLowerCase() === "user";
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
 
-    if (editMode && formPassword && formPassword.length < 8) {
-      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់" : "Password must be at least 8 characters");
-      return;
+    if (formPassword) {
+      if (isUserRole && formPassword.length < 8) {
+        toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់" : "Password must be at least 8 characters");
+        return;
+      }
+      
+      if (!isUserRole && !strongPasswordRegex.test(formPassword)) {
+        toast.error(
+          language === "km" 
+            ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់ មានអក្សរធំ តូច លេខ និងសញ្ញាពិសេស" 
+            : "Password must be at least 8 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        );
+        return;
+      }
     }
 
     const toastId = toast.loading(editMode ? t("users.savingModifications") : t("users.provisioningAccount"));

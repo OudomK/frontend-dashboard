@@ -237,14 +237,14 @@ export default function DoctorDashboardPage() {
       actions={
         <>
           <Button variant="secondary" className="h-9 rounded-md bg-slate-100 px-4 text-slate-900" asChild>
-            <Link href="/doctor/articles">
+            <Link href="/dashboard/articles">
               <PenLine className="mr-2 h-4 w-4" />
               {t("doctor.writeArticleBtn")}
             </Link>
           </Button>
 
           <Button className="h-9 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700" asChild>
-            <Link href="/doctor/documents">
+            <Link href="/dashboard/documents">
               <UploadCloud className="mr-2 h-4 w-4" />
               {t("doctor.manageDocsBtn")}
             </Link>
@@ -266,7 +266,7 @@ export default function DoctorDashboardPage() {
                 {t("doctor.recentUploadsTitle")}
               </h2>
               <Button variant="link" className="h-auto px-0 font-semibold text-blue-600" asChild>
-                <Link href="/doctor/documents">{t("doctor.viewAllBtn")}</Link>
+                <Link href="/dashboard/documents">{t("doctor.viewAllBtn")}</Link>
               </Button>
             </div>
 
@@ -405,7 +405,7 @@ export default function DoctorDashboardPage() {
 
             <div className="border-t border-slate-200 px-5 py-4 text-center">
               <Button variant="link" className="h-auto px-0 font-semibold text-blue-600" asChild>
-                <Link href="/doctor/reviews">{t("doctor.viewPendingReviewsBtn")}</Link>
+                <Link href="/dashboard/reviews">{t("doctor.viewPendingReviewsBtn")}</Link>
               </Button>
             </div>
           </section>

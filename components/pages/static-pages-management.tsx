@@ -87,7 +87,7 @@ export function StaticPagesManagement() {
         </div>
         
         <Button
-          onClick={() => router.push('/admin/pages/new')}
+          onClick={() => router.push('/dashboard/pages/new')}
           className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -170,7 +170,7 @@ export function StaticPagesManagement() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                          onClick={() => router.push(`/admin/pages/${page.id}`)}
+                          onClick={() => router.push(`/dashboard/pages/${page.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>

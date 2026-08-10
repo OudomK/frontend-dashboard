@@ -94,7 +94,7 @@ export function BannersManagement() {
         </div>
         
         <Button
-          onClick={() => router.push('/admin/banners/new')}
+          onClick={() => router.push('/dashboard/banners/new')}
           className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow hover:bg-blue-700"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -186,7 +186,7 @@ export function BannersManagement() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                          onClick={() => router.push(`/admin/banners/${banner.id}`)}
+                          onClick={() => router.push(`/dashboard/banners/${banner.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>

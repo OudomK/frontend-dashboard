@@ -31,11 +31,11 @@ import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Props = {
-  role: "admin" | "doctor";
+  role?: string;
 };
 
 export function DashboardHeader({
-  role,
+  role = "admin",
 }: Props) {
   const pathname = usePathname();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -86,23 +86,23 @@ export function DashboardHeader({
 
 
   const adminBreadcrumb =
-    pathname === "/admin/analytics"
+    pathname === "/dashboard/analytics"
       ? [t("chat.adminPanel"), t("nav.analytics")]
-      : pathname.startsWith("/admin/banners")
+      : pathname.startsWith("/dashboard/banners")
         ? [t("chat.adminPanel"), t("nav.banners")]
-      : pathname === "/admin/documents"
+      : pathname === "/dashboard/documents"
         ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.documents")]
-      : pathname === "/admin/faqs"
+      : pathname === "/dashboard/faqs"
         ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.faqs")]
-      : pathname === "/admin/articles"
+      : pathname === "/dashboard/articles"
         ? [t("chat.adminPanel"), t("menu.groupAiKnowledge"), t("nav.articles")]
-      : pathname === "/admin/users"
+      : pathname === "/dashboard/users"
         ? [t("chat.adminPanel"), t("nav.users") || "User Management"]
-        : pathname === "/admin/settings"
+        : pathname === "/dashboard/settings"
           ? [t("chat.adminPanel"), t("nav.settings")]
-          : pathname === "/admin/profile" || pathname === "/doctor/profile"
+          : pathname === "/dashboard/profile" || pathname === "/dashboard/profile"
             ? [t("chat.adminPanel"), t("nav.profile")]
-            : pathname === "/admin/appointments"
+            : pathname === "/dashboard/appointments"
               ? [t("chat.adminPanel"), t("nav.appointments")]
               : [t("chat.adminPanel"), t("nav.dashboard")];
 
@@ -223,8 +223,8 @@ export function DashboardHeader({
           )}
 
           <Link
-            href={`/${role}/profile`}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 hover:bg-slate-50 transition-all cursor-pointer bg-white shadow-sm"
+            href={`/dashboard/profile`}
+            className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 hover:bg-slate-50 transition-all cursor-pointer bg-white shadow-sm"
             >
               <div className="h-10 w-10 rounded-full bg-slate-100 overflow-hidden border border-slate-200 shadow-sm shrink-0 ring-2 ring-blue-500/30">
                 {avatarUrl ? (

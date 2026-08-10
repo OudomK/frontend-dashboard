@@ -41,6 +41,7 @@ import "react-quill-new/dist/quill.snow.css";
 import { apiClient } from "@/lib/api-client";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -147,6 +148,14 @@ function StatusBadge({ status }: { status: "PUBLISHED" | "DRAFT" }) {
 
 export function ArticlesPosts({ role }: { role: string }) {
   const { t, language } = useTranslation();
+  const { user, roleId } = useAuthStore();
+  
+  const isAdmin = roleId === 3;
+  const permissions = user?.permissions || [];
+  const canCreate = isAdmin || permissions.includes("create_articles");
+  const canEdit = isAdmin || permissions.includes("edit_articles");
+  const canDelete = isAdmin || permissions.includes("delete_articles");
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -475,13 +484,15 @@ export function ArticlesPosts({ role }: { role: string }) {
       title={t("art.title")}
       subtitle={t("art.subtitle")}
       actions={
-        <Button
-          onClick={() => { resetForm(); setOpenCreateDialog(true); }}
-          className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          {t("art.newArticle")}
-        </Button>
+        canCreate && (
+          <Button
+            onClick={() => { resetForm(); setOpenCreateDialog(true); }}
+            className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            {t("art.newArticle")}
+          </Button>
+        )
       }
     >
       <div className="space-y-5 pb-24 lg:pb-6">
@@ -604,12 +615,14 @@ export function ArticlesPosts({ role }: { role: string }) {
             <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
               {t("art.noArticlesDesc")}
             </p>
-            <Button
-              onClick={() => { resetForm(); setOpenCreateDialog(true); }}
-              className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
-            >
-              <Plus className="h-4 w-4" /> {t("art.createFirstArticle")}
-            </Button>
+            {canCreate && (
+              <Button
+                onClick={() => { resetForm(); setOpenCreateDialog(true); }}
+                className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
+              >
+                <Plus className="h-4 w-4" /> {t("art.createFirstArticle")}
+              </Button>
+            )}
           </div>
         ) : viewMode === "grid" ? (
           /* ── Grid View ── */
@@ -667,18 +680,22 @@ export function ArticlesPosts({ role }: { role: string }) {
                       >
                         <Eye className="h-3.5 w-3.5" /> {t("art.preview")}
                       </button>
-                      <button
-                        onClick={() => handleEditClick(article)}
-                        className="flex-1 flex items-center justify-center gap-1 h-8 rounded-lg border border-blue-100 text-blue-600 hover:bg-blue-50 text-xs font-semibold transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" /> {t("art.edit")}
-                      </button>
-                      <button
-                        onClick={() => setArticleToDelete(article.id)}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleEditClick(article)}
+                          className="flex-1 flex items-center justify-center gap-1 h-8 rounded-lg border border-blue-100 text-blue-600 hover:bg-blue-50 text-xs font-semibold transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> {t("art.edit")}
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => setArticleToDelete(article.id)}
+                          className="h-8 w-8 flex items-center justify-center rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -769,20 +786,24 @@ export function ArticlesPosts({ role }: { role: string }) {
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </button>
-                            <button
-                              onClick={() => handleEditClick(article)}
-                              className="p-1.5 rounded-lg border border-blue-100 bg-white text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors shadow-sm"
-                              title="Edit"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setArticleToDelete(article.id)}
-                              className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {canEdit && (
+                              <button
+                                onClick={() => handleEditClick(article)}
+                                className="p-1.5 rounded-lg border border-blue-100 bg-white text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors shadow-sm"
+                                title="Edit"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                onClick={() => setArticleToDelete(article.id)}
+                                className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -830,12 +851,16 @@ export function ArticlesPosts({ role }: { role: string }) {
                         <button onClick={() => handlePreviewClick(article)} className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 transition-colors">
                           <Eye className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => handleEditClick(article)} className="p-1.5 rounded-lg border border-blue-100 bg-white text-blue-500 hover:bg-blue-50 transition-colors">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => setArticleToDelete(article.id)} className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 transition-colors">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {canEdit && (
+                          <button onClick={() => handleEditClick(article)} className="p-1.5 rounded-lg border border-blue-100 bg-white text-blue-500 hover:bg-blue-50 transition-colors">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button onClick={() => setArticleToDelete(article.id)} className="p-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:bg-red-50 transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

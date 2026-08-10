@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 import { FaqDialog } from "./faq-dialog";
 import { DeleteFaqDialog } from "./delete-faq-dialog";
 import { useTranslation } from "@/lib/hooks/use-translation";
@@ -104,7 +105,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewingFaq, setPreviewingFaq] = useState<Faq | null>(null);
 
-  const canManage = role === "admin" || role === "doctor";
+  const { user, roleId } = useAuthStore(); const isAdmin = roleId === 3; const perms = user?.permissions || []; const canCreate = isAdmin || perms.includes("create_faqs"); const canEdit = isAdmin || perms.includes("edit_faqs"); const canDelete = isAdmin || perms.includes("delete_faqs"); const canManage = canCreate || canEdit || canDelete;
 
   const fetchFaqs = async () => {
     setLoading(true);
@@ -141,19 +142,19 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   };
 
   function handleAdd() {
-    if (!canManage) return;
+    if (!canCreate) return;
     setEditingFaq(null);
     setDialogOpen(true);
   }
 
   function handleEdit(faq: Faq) {
-    if (!canManage) return;
+    if (!canEdit) return;
     setEditingFaq(faq);
     setDialogOpen(true);
   }
 
   function handleDeleteClick(faq: Faq) {
-    if (!canManage) return;
+    if (!canDelete) return;
     setDeletingFaq(faq);
     setDeleteDialogOpen(true);
   }
@@ -305,7 +306,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                         <p className="mb-6 max-w-sm text-sm leading-relaxed text-slate-500">
                           {t("faqs.noFaqsDesc")}
                         </p>
-                        {canManage && (
+                        {canCreate && (
                           <Button
                             onClick={handleAdd}
                             className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
@@ -339,6 +340,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={faq.is_active}
+                            disabled={!canEdit}
                             onCheckedChange={(checked) => handleToggleActive(faq.id, !checked)}
                             aria-label={faq.is_active ? "Deactivate FAQ" : "Activate FAQ"}
                           />
@@ -357,20 +359,24 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                           >
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button
-                            onClick={() => handleEdit(faq)}
-                            aria-label={`Edit FAQ`}
-                            className="text-slate-400 transition hover:text-blue-600"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(faq)}
-                            aria-label={`Delete FAQ`}
-                            className="text-slate-400 transition hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleEdit(faq)}
+                              aria-label={`Edit FAQ`}
+                              className="text-slate-400 transition hover:text-blue-600"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteClick(faq)}
+                              aria-label={`Delete FAQ`}
+                              className="text-slate-400 transition hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -407,6 +413,7 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={faq.is_active}
+                            disabled={!canEdit}
                             onCheckedChange={(checked) => handleToggleActive(faq.id, !checked)}
                           />
                           <span className={`text-sm font-medium ${faq.is_active ? "text-slate-900" : "text-slate-400"}`}>
@@ -423,18 +430,22 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => handleEdit(faq)}
-                        className="text-slate-400 hover:text-blue-600"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(faq)}
-                        className="text-slate-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleEdit(faq)}
+                          className="text-slate-400 hover:text-blue-600"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDeleteClick(faq)}
+                          className="text-slate-400 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

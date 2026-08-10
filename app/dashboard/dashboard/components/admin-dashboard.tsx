@@ -225,7 +225,7 @@ export default function AdminDashboardPage() {
         note: `${t("dashboard.doctors")}: ${overview?.total_doctors || 0} | ${t("dashboard.admins")}: ${overview?.total_admins || 0}`,
         tone: "positive",
         icon: Users,
-        href: "/admin/users"
+        href: "/dashboard/users"
       },
       {
         title: t("dashboard.aiQueries"),
@@ -233,7 +233,7 @@ export default function AdminDashboardPage() {
         note: `${t("dashboard.sessions")}: ${overview?.total_chat_sessions || 0}`,
         tone: "positive",
         icon: MessageCircle,
-        href: "/admin/chat-logs"
+        href: "/dashboard/chat-logs"
       },
       {
         title: t("dashboard.knowledgeBaseDocs"),
@@ -241,7 +241,7 @@ export default function AdminDashboardPage() {
         note: t("dashboard.ragSourceFiles"),
         tone: "neutral",
         icon: Database,
-        href: "/admin/documents"
+        href: "/dashboard/documents"
       },
       {
         title: t("dashboard.emergencyAlerts"),
@@ -249,7 +249,7 @@ export default function AdminDashboardPage() {
         note: t("dashboard.flagsRequiringAudit"),
         tone: (overview?.total_emergency_flags || 0) > 0 ? "negative" : "neutral",
         icon: AlertTriangle,
-        href: "/admin/emergency-rules"
+        href: "/dashboard/emergency-rules"
       },
     ];
   }, [overview, t]);
@@ -280,7 +280,7 @@ export default function AdminDashboardPage() {
                 <h2 className="font-bold text-slate-950">
                   {t("dashboard.aiChatUsage")}
                 </h2>
-                <Link href="/admin/analytics">
+                <Link href="/dashboard/analytics">
                   <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
                     {t("dashboard.viewFullReport")}
                   </Button>
@@ -334,7 +334,7 @@ export default function AdminDashboardPage() {
                 <h2 className="font-bold text-slate-950">
                   {t("dashboard.recentUploads")}
                 </h2>
-                <Link href="/admin/documents">
+                <Link href="/dashboard/documents">
                   <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
                     {t("dashboard.manageDocuments")}
                   </Button>
@@ -428,7 +428,7 @@ export default function AdminDashboardPage() {
               <h2 className="font-bold text-slate-950">
                 {t("dashboard.recentEmergencyAlerts")}
               </h2>
-              <Link href="/admin/emergency-rules">
+              <Link href="/dashboard/emergency-rules">
                 <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
                   {t("dashboard.viewAll")}
                 </Button>

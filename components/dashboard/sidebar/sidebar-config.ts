@@ -19,6 +19,7 @@ import {
   PenTool,
   ShieldCheck,
   Brain,
+  MessageCircle,
 } from "lucide-react";
 
 export type MenuItem = {
@@ -29,7 +30,7 @@ export type MenuItem = {
   items?: MenuItem[];
 };
 
-export const doctorMenu: MenuItem[] = [
+export const unifiedMenu: MenuItem[] = [
   {
     label: "Overview",
     items: [
@@ -37,83 +38,19 @@ export const doctorMenu: MenuItem[] = [
         label: "Dashboard",
         permission: "view_dashboard",
         icon: LayoutDashboard,
-        href: "/doctor/dashboard",
-      },
-      {
-        label: "My Profile",
-        icon: Users,
-        href: "/doctor/profile",
-      }
-    ]
-  },
-  {
-    label: "Medical Content",
-    icon: BookOpen,
-    items: [
-      {
-        label: "Articles & Posts",
-        icon: Newspaper,
-        href: "/doctor/articles",
-      },
-      {
-        label: "Categories",
-        permission: "manage_categories",
-        icon: FolderTree,
-        href: "/doctor/categories",
-      },
-      {
-        label: "Manage FAQs",
-        icon: MessageSquare,
-        href: "/doctor/faqs",
-      },
-    ]
-  },
-  {
-    label: "Brain AI",
-    icon: Brain,
-    items: [
-      {
-        label: "Knowledge Base",
-        icon: BookOpen,
-        href: "/doctor/documents",
-      },
-    ]
-  },
-  {
-    label: "Alerts & Monitoring",
-    icon: FileWarning,
-    items: [
-      {
-        label: "Review AI Answers",
-        icon: FileWarning,
-        href: "/doctor/reviews",
-      },
-      {
-        label: "Emergency Rules",
-        permission: "manage_emergency_rules",
-        icon: AlertTriangle,
-        href: "/doctor/emergency-rules",
-      },
-    ]
-  }
-];
-
-export const adminMenu: MenuItem[] = [
-  {
-    label: "Overview",
-    items: [
-      {
-        label: "Dashboard",
-        permission: "view_dashboard",
-        icon: LayoutDashboard,
-        href: "/admin/dashboard",
+        href: "/dashboard/dashboard",
       },
       {
         label: "System Analytics",
         permission: "view_analytics",
         icon: Activity,
-        href: "/admin/analytics",
+        href: "/dashboard/analytics",
       },
+      {
+        label: "My Profile",
+        icon: Users,
+        href: "/dashboard/profile",
+      }
     ]
   },
   {
@@ -124,19 +61,19 @@ export const adminMenu: MenuItem[] = [
         label: "Appointments",
         permission: "view_appointments",
         icon: Calendar,
-        href: "/admin/appointments",
+        href: "/dashboard/appointments",
       },
       {
         label: "Push Notifications",
         permission: "manage_notifications",
         icon: Megaphone,
-        href: "/admin/notifications",
+        href: "/dashboard/notifications",
       },
       {
         label: "System Audit Logs",
         permission: "view_audit_logs",
         icon: ShieldAlert,
-        href: "/admin/audit-logs",
+        href: "/dashboard/audit-logs",
       },
     ]
   },
@@ -148,14 +85,20 @@ export const adminMenu: MenuItem[] = [
         label: "Knowledge Base Docs",
         permission: "view_documents",
         icon: BookOpen,
-        href: "/admin/documents",
+        href: "/dashboard/documents",
       },
       {
         label: "AI Chat Logs",
         permission: "view_chat_logs",
         icon: MessageSquare,
-        href: "/admin/chat-logs",
+        href: "/dashboard/chat-logs",
       },
+      // {
+      //   label: "Review AI Answers",
+      //   permission: "review_ai_answers",
+      //   icon: FileWarning,
+      //   href: "/dashboard/reviews",
+      // },
     ]
   },
   {
@@ -166,32 +109,32 @@ export const adminMenu: MenuItem[] = [
         label: "Health Articles",
         permission: "view_articles",
         icon: Newspaper,
-        href: "/admin/articles",
+        href: "/dashboard/articles",
       },
       {
         label: "Categories",
-        permission: "view_categories",
+        permission: "manage_categories",
         icon: FolderTree,
-        href: "/admin/categories",
+        href: "/dashboard/categories",
       },
       {
         label: "FAQ Management",
         permission: "view_faqs",
         icon: CircleHelp,
-        href: "/admin/faqs",
+        href: "/dashboard/faqs",
       },
       {
         label: "Banners Management",
         permission: "view_banners",
         icon: Megaphone,
-        href: "/admin/banners",
+        href: "/dashboard/banners",
       },
-      {
-        label: "Static Pages",
-        permission: "view_pages",
-        icon: BookOpen,
-        href: "/admin/pages",
-      },
+      // {
+      //   label: "Static Pages",
+      //   permission: "view_pages",
+      //   icon: BookOpen,
+      //   href: "/dashboard/pages",
+      // },
     ]
   },
   {
@@ -202,19 +145,19 @@ export const adminMenu: MenuItem[] = [
         label: "User Management",
         permission: "view_users",
         icon: Users,
-        href: "/admin/users",
+        href: "/dashboard/users",
       },
       {
         label: "Role Management",
         permission: "view_roles",
         icon: Users,
-        href: "/admin/roles",
+        href: "/dashboard/roles",
       },
       {
         label: "Permission Management",
         permission: "view_roles",
         icon: ShieldCheck,
-        href: "/admin/permissions",
+        href: "/dashboard/permissions",
       },
     ]
   },
@@ -226,27 +169,20 @@ export const adminMenu: MenuItem[] = [
         label: "General Settings",
         permission: "manage_system_settings",
         icon: Settings,
-        href: "/admin/settings",
+        href: "/dashboard/settings",
       },
       {
         label: "Emergency Rules",
-        permission: "view_emergency",
+        permission: "manage_emergency_rules",
         icon: AlertTriangleIcon,
-        href: "/admin/emergency-rules",
+        href: "/dashboard/emergency-rules",
       },
       {
         label: "About Us",
         permission: "manage_about_us",
         icon: Info,
-        href: "/admin/about",
+        href: "/dashboard/about",
       },
     ]
   }
 ];
-
-export const adminSettingsItem = {
-  label: "System Settings",
-  permission: "manage_system_settings",
-  icon: Settings,
-  href: "/admin/settings",
-};

@@ -77,12 +77,7 @@ export function LoginForm({ variant }: Props) {
       });
       
       setTimeout(() => {
-        const currentRoleId = Number(localStorage.getItem("women_health_role_id"));
-        if (currentRoleId === 2) {
-          router.push("/doctor/dashboard");
-        } else {
-          router.push("/admin/dashboard");
-        }
+        router.push("/dashboard/dashboard");
       }, 1500);
       
     } catch (error: any) {

@@ -101,7 +101,7 @@ export default function RolesPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/admin/permissions">
+            <Link href="/dashboard/permissions">
               <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50 transition-all">
                 <ShieldAlert className="mr-2 h-4 w-4 text-blue-500" /> {t("roles.managePermissions")}
               </Button>

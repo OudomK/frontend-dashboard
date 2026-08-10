@@ -13,62 +13,34 @@ import {
 } from "lucide-react";
 
 type Props = {
-  role: "admin" | "doctor";
+  role?: string;
 };
 
 export function MobileBottomNav({ role }: Props) {
   const pathname = usePathname();
 
-  const adminItems = [
+  const items = [
     {
       label: "Home",
-      href: "/admin/dashboard",
+      href: "/dashboard/dashboard",
       icon: LayoutDashboard,
     },
     {
       label: "Analytics",
-      href: "/admin/analytics",
+      href: "/dashboard/analytics",
       icon: ShieldAlert,
     },
     {
       label: "Docs",
-      href: "/admin/documents",
+      href: "/dashboard/documents",
       icon: BookOpen,
     },
     {
       label: "Menu",
-      href: "/admin/menu",
+      href: "/dashboard/menu",
       icon: Menu,
     },
   ];
-
-  const doctorItems = [
-    {
-      label: "Home",
-      href: "/doctor/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      label: "Knowledge",
-      href: "/doctor/documents",
-      icon: BookOpen,
-    },
-    {
-      label: "Reviews",
-      href: "/doctor/reviews",
-      icon: FileWarning,
-    },
-    {
-      label: "Menu",
-      href: "/doctor/menu",
-      icon: Menu,
-    },
-  ];
-
-  const items =
-    role === "admin"
-      ? adminItems
-      : doctorItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white lg:hidden print:hidden">

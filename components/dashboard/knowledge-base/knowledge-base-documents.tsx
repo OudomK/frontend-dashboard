@@ -17,7 +17,7 @@ import {
   Trash2,
   UploadCloud,
 } from "lucide-react";
-import { UploadDocumentDialog } from "@/app/doctor/documents/upload-document-dialog";
+import { UploadDocumentDialog } from "@/app/dashboard/documents/upload-document-dialog";
 import { ViewDocumentDialog } from "./view-document-dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { ExportDropdown } from "@/components/shared/export-dropdown";

@@ -43,7 +43,7 @@ export function StaticPageEditor({ pageId }: Props) {
           setIsPublished(data.is_published);
         } catch (error) {
           toast.error(t("sp.loadFailed" as any));
-          router.push("/admin/pages");
+          router.push("/dashboard/pages");
         } finally {
           setIsLoading(false);
         }
@@ -79,7 +79,7 @@ export function StaticPageEditor({ pageId }: Props) {
       } else {
         await apiClient.post("/api/v1/settings/pages", payload);
         toast.success(t("sp.created" as any));
-        router.push("/admin/pages");
+        router.push("/dashboard/pages");
       }
     } catch (error: any) {
       if (error.response?.data?.detail === "Slug already exists") {
@@ -116,7 +116,7 @@ export function StaticPageEditor({ pageId }: Props) {
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            onClick={() => router.push("/admin/pages")}
+            onClick={() => router.push("/dashboard/pages")}
             className="h-9 w-9 p-0 text-slate-500 hover:text-slate-900 bg-white border border-slate-200 lg:hidden"
           >
             <ArrowLeft className="h-4 w-4" />

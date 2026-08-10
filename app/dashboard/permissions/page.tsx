@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Shield, Info, AlertCircle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
@@ -24,6 +25,7 @@ import {
 
 export default function PermissionsPage() {
   const { t } = useTranslation();
+  const { user, roleId } = useAuthStore();
   const [roles, setRoles] = useState<any[]>([]);
   const [permissions, setPermissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -148,6 +150,7 @@ export default function PermissionsPage() {
 
   const selectedRoleName = roles.find(r => r.id === Number(selectedRoleId))?.name || "";
   const isAdminRole = selectedRoleName.toLowerCase() === "admin";
+  const canEdit = roleId === 3 || (user?.permissions || []).includes("edit_roles");
 
   return (
     <DashboardLayout role="admin">
@@ -226,7 +229,7 @@ export default function PermissionsPage() {
                           <div className="w-1.5 h-4 bg-rose-500 rounded-full"></div>
                           <h3 className="font-bold text-slate-800 text-sm">{moduleName}</h3>
                         </div>
-                        {!isAdminRole && (
+                        {!isAdminRole && canEdit && (
                           <button 
                             onClick={() => toggleModuleForRole(modulePermIds)}
                             className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
@@ -263,11 +266,11 @@ export default function PermissionsPage() {
                               </div>
                               <Switch 
                                 checked={isSelected}
-                                onCheckedChange={() => !isAdminRole && togglePermission(perm.id)}
-                                disabled={isAdminRole}
+                                onCheckedChange={() => !isAdminRole && canEdit && togglePermission(perm.id)}
+                                disabled={isAdminRole || !canEdit}
                                 className={`
                                   data-[state=checked]:bg-rose-600
-                                  ${isAdminRole ? 'opacity-40 cursor-not-allowed' : ''}
+                                  ${(isAdminRole || !canEdit) ? 'opacity-40 cursor-not-allowed' : ''}
                                 `}
                               />
                             </div>
@@ -284,7 +287,7 @@ export default function PermissionsPage() {
       </div>
 
       {/* Floating Action Bar for Unsaved Changes */}
-      {hasChanges && (
+      {hasChanges && canEdit && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
           <div className="bg-slate-900 text-white px-6 py-4 rounded-full shadow-2xl border border-slate-700 flex items-center gap-6">
             <div className="flex items-center gap-3">
