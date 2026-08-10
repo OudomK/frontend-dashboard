@@ -200,8 +200,8 @@ export default function AdminUserManagementPage() {
       return;
     }
 
-    if (!formPhone || formPhone.length < 12) {
-      toast.error(language === "km" ? "លេខទូរស័ព្ទត្រូវមានយ៉ាងហោចណាស់ 12 ខ្ទង់" : "Phone number must be at least 12 characters");
+    if (formPhone && (formPhone.length < 9 || formPhone.length > 12)) {
+      toast.error(language === "km" ? "លេខទូរស័ព្ទត្រូវមានចាប់ពី 9 ដល់ 12 ខ្ទង់" : "Phone number must be between 9 and 12 digits");
       return;
     }
 
@@ -210,15 +210,13 @@ export default function AdminUserManagementPage() {
       return;
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    
-    if (!editMode && !passwordRegex.test(formPassword)) {
-      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, មានអក្សរធំ អក្សរតូច លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
+    if (!editMode && formPassword.length < 8) {
+      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់" : "Password must be at least 8 characters");
       return;
     }
 
-    if (editMode && formPassword && !passwordRegex.test(formPassword)) {
-      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់, មានអក្សរធំ អក្សរតូច លេខ និងសញ្ញាពិសេស។" : "Password must be at least 8 characters, include upper & lower case, numbers, and symbols.");
+    if (editMode && formPassword && formPassword.length < 8) {
+      toast.error(language === "km" ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់" : "Password must be at least 8 characters");
       return;
     }
 
