@@ -113,7 +113,7 @@ export const unifiedMenu: MenuItem[] = [
       },
       {
         label: "Categories",
-        permission: "manage_categories",
+        permission: "view_categories",
         icon: FolderTree,
         href: "/dashboard/categories",
       },
