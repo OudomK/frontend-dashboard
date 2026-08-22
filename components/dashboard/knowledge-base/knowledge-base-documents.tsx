@@ -134,11 +134,11 @@ function StatCard({ title, value, icon: Icon, tone }: { title: string; value: st
   );
 }
 
-export function KnowledgeBaseDocuments({ role }: { role: Role }) {
-  const isAdmin = role === "admin";
+export function KnowledgeBaseDocuments() {
   const { t, language } = useTranslation();
   const userPermissions = useAuthStore((state) => state.user?.permissions);
   const permissions = userPermissions || [];
+  const canManage = permissions.includes("create_documents") || permissions.includes("delete_documents");
   const canCreate = permissions.includes("create_documents");
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
@@ -370,12 +370,12 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
 
   return (
     <DashboardLayout
-      role={role}
-      title={isAdmin ? t("docs.titleAdmin") : t("docs.titleDoctor")}
-      subtitle={isAdmin ? t("docs.subtitleAdmin") : t("docs.subtitleDoctor")}
+      
+      title={canManage ? t("docs.titleAdmin") : t("docs.titleDoctor")}
+      subtitle={canManage ? t("docs.subtitleAdmin") : t("docs.subtitleDoctor")}
       actions={
         <div className="flex items-center gap-3">
-          {isAdmin && (
+          {canManage && (
             <>
               <ExportDropdown onExportCsv={handleExportCSV} label={t("docs.export" as any) || "Export"} />
               {/* Last synced timestamp */}
@@ -453,7 +453,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
         </div>
       )}
       <div className="space-y-8">
-        {isAdmin && (
+        {canManage && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             {computedStats.map((stat: any) => (
               <StatCard key={stat.title} {...stat} />
@@ -462,7 +462,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
         )}
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"> 
-          {isAdmin ? (
+          {canManage ? (
             <div className="flex flex-col gap-3 border-b border-slate-200 p-4 md:flex-row md:items-center lg:px-6 lg:py-5">
               <div className="relative w-full lg:max-w-xs">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -537,12 +537,12 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs font-semibold text-slate-400">
-                  <th className="px-6 py-4">{isAdmin ? t("docs.tableDocName") : t("docs.tableDocDetails")}</th>
-                  {isAdmin && <th className="px-5 py-4">{t("docs.tableSize")}</th>}
+                  <th className="px-6 py-4">{canManage ? t("docs.tableDocName") : t("docs.tableDocDetails")}</th>
+                  {canManage && <th className="px-5 py-4">{t("docs.tableSize")}</th>}
                   <th className="px-5 py-4">{t("docs.tableUploadedBy")}</th>
                   <th className="px-5 py-4">{t("docs.tableDate")}</th>
-                  <th className="px-5 py-4">{isAdmin ? t("docs.tableAiStatus") : t("docs.tableCategory")}</th>
-                  {!isAdmin && <th className="px-5 py-4">{t("docs.tableAiStatus")}</th>}
+                  <th className="px-5 py-4">{canManage ? t("docs.tableAiStatus") : t("docs.tableCategory")}</th>
+                  {!canManage && <th className="px-5 py-4">{t("docs.tableAiStatus")}</th>}
                   <th className="px-5 py-4">{t("docs.tableActive")}</th>
                   <th className="px-6 py-4 text-right">{t("docs.tableActions")}</th>
                 </tr>
@@ -550,7 +550,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
               <tbody>
                 {filteredDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 5} className="py-12 text-center text-slate-400">
+                    <td colSpan={canManage ? 7 : 5} className="py-12 text-center text-slate-400">
                       <p className="font-semibold">{t("docs.noDocs")}</p>
                     </td>
                   </tr>
@@ -569,11 +569,11 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                             </div>
                           </div>
                         </td>
-                        {isAdmin && <td className="px-5 py-4 text-slate-400">{document.size}</td>}
+                        {canManage && <td className="px-5 py-4 text-slate-400">{document.size}</td>}
                         <td className="px-5 py-4 text-slate-950">{document.author}</td>
                         <td className="px-5 py-4 text-slate-400">{document.date}</td>
                         <td className="px-5 py-4">
-                          {isAdmin ? (
+                          {canManage ? (
                             <StatusBadge status={document.status} t={t} />
                           ) : (
                             <span className="text-slate-700">
@@ -581,7 +581,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                             </span>
                           )}
                         </td>
-                        {!isAdmin && (
+                        {!canManage && (
                           <td className="px-5 py-4">
                             <StatusBadge status={document.status} t={t} />
                           </td>
@@ -620,7 +620,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                               <Eye className="h-4 w-4" />
                             </button>
                             {/* Doctor-only: re-process and delete */}
-                            {!isAdmin && (document.status === "uploaded" || document.status === "failed") && (
+                            {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                               <button
                                 onClick={async () => {
                                   const toastId = toast.loading("Processing document chunks and embeddings...");
@@ -640,7 +640,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                                 <RefreshCcw className="h-4 w-4" />
                               </button>
                             )}
-                            {!isAdmin && (
+                            {!canManage && (
                               <button
                                 onClick={() => {
                                   setDeleteDocId(document.id);
@@ -735,7 +735,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                           </button>
 
                           {/* Doctor-only actions */}
-                          {!isAdmin && (document.status === "uploaded" || document.status === "failed") && (
+                          {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                             <button
                               onClick={async () => {
                                 const toastId = toast.loading("Processing document chunks and embeddings...");
@@ -756,7 +756,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
                             </button>
                           )}
 
-                          {!isAdmin && (
+                          {!canManage && (
                             <button
                               onClick={() => {
                                 setDeleteDocId(document.id);
@@ -775,7 +775,7 @@ export function KnowledgeBaseDocuments({ role }: { role: Role }) {
               )}
             </div>
 
-          {isAdmin && (
+          {canManage && (
             <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
               <p className="text-sm text-slate-400">{t("docs.showing" as any)} 1 {t("docs.to" as any)} {filteredDocs.length} {t("docs.of" as any)} {filteredDocs.length} {t("docs.documents" as any)}</p>
               <div className="flex gap-2">

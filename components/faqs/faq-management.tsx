@@ -105,7 +105,12 @@ export function FAQManagement({ role, addOpen, onAddOpenChange }: Props) {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewingFaq, setPreviewingFaq] = useState<Faq | null>(null);
 
-  const { user, roleId } = useAuthStore(); const isAdmin = roleId === 3; const perms = user?.permissions || []; const canCreate = isAdmin || perms.includes("create_faqs"); const canEdit = isAdmin || perms.includes("edit_faqs"); const canDelete = isAdmin || perms.includes("delete_faqs"); const canManage = canCreate || canEdit || canDelete;
+  const { user } = useAuthStore();
+  const perms = user?.permissions || [];
+  const canCreate = perms.includes("create_faqs");
+  const canEdit = perms.includes("edit_faqs");
+  const canDelete = perms.includes("delete_faqs");
+  const canManage = canCreate || canEdit || canDelete;
 
   const fetchFaqs = async () => {
     setLoading(true);

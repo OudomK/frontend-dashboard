@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { unifiedMenu, MenuItem } from "./sidebar-config";
 import { SidebarAccordion } from "./sidebar-accordion";
-import { useAuthStore } from "@/lib/store/use-auth-store";
+import { ROLES, useAuthStore } from "@/lib/store/use-auth-store";
 import { useSidebarStore } from "@/lib/store/use-sidebar-store";
 import { useTranslation, TranslationKey } from "@/lib/hooks/use-translation";
 
@@ -38,6 +38,10 @@ export const navKeyMap: Record<string, TranslationKey> = {
   "Review AI Answers": "nav.chatLogs",
   "Articles & Posts": "nav.articles",
   "Manage FAQs": "nav.faqs",
+  "Doctor Portal": "nav.doctorPortal",
+  "My Schedule": "nav.mySchedule",
+  "My Availability": "nav.myAvailability",
+  "General Settings": "nav.settings",
   
   // Group Translations
   "Overview": "nav.overview",
@@ -71,7 +75,7 @@ type Props = {
 
 export function Sidebar({ role = "admin", isMobile = false }: Props) {
   const pathname = usePathname();
-  const { user: sessionUser, logout } = useAuthStore();
+  const { user: sessionUser, logout, roleId } = useAuthStore();
   const { isCollapsed } = useSidebarStore();
   const { t, language } = useTranslation();
   
@@ -80,15 +84,26 @@ export function Sidebar({ role = "admin", isMobile = false }: Props) {
     : "Dr. Sarah Jenkins";
 
   const permissions = sessionUser?.permissions || [];
-  const isRootAdmin = sessionUser?.roleId === 3;
+  const isRootAdmin = roleId === ROLES.ADMIN;
 
   const baseMenu = unifiedMenu;
 
   const groups = baseMenu.map((group) => {
     const filteredItems = group.items?.filter((item) => {
-      if (isRootAdmin) return true; // Root admin sees all
-      if (!item.permission) return true; // Items without specific permission requirement
-      return permissions.includes(item.permission);
+      // 1. Permission Check
+      if (item.permission) {
+        return permissions.includes(item.permission);
+      }
+      
+      // 2. Legacy/Root Safety Check (if any roleOnly tags remain)
+      if (item.roleOnly) {
+        if (item.roleOnly === "ADMIN" && isRootAdmin) return true;
+        if (item.roleOnly === "DOCTOR" && roleId === ROLES.DOCTOR) return true;
+        return false;
+      }
+      
+      // 3. Unprotected route
+      return true;
     }) || [];
 
     return {

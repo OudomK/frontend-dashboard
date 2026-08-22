@@ -10,7 +10,7 @@ import { CheckCircle2, AlertCircle } from "lucide-react";
 
 import { AuthVariant } from "./auth-types";
 import { authContent } from "./auth-config";
-import { useAuthStore } from "@/lib/store/use-auth-store";
+import { useAuthStore, ROLES } from "@/lib/store/use-auth-store";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,12 @@ export function LoginForm({ variant }: Props) {
       });
       
       setTimeout(() => {
-        router.push("/dashboard/dashboard");
+        const { roleId } = useAuthStore.getState();
+        if (roleId === ROLES.DOCTOR) {
+          router.push("/dashboard/my-schedule");
+        } else { // ADMIN or DOCTOR_MANAGER
+          router.push("/dashboard/dashboard");
+        }
       }, 1500);
       
     } catch (error: any) {

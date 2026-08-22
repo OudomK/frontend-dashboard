@@ -343,7 +343,7 @@ export function AboutManagement() {
         )}
       </div>
 
-      {roleId === 3 && (
+      {true && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <div className="flex items-center gap-3">

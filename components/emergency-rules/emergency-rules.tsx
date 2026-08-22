@@ -29,6 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient } from "@/lib/api-client";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useAuthStore } from "@/lib/store/use-auth-store";
 
 type Role = "doctor" | "admin";
 type Severity = "warning" | "urgent" | "critical";
@@ -121,9 +122,11 @@ function StatusToggle({
   );
 }
 
-export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
+export function EmergencyRules() {
   const { t, language } = useTranslation();
-  const isAdmin = role === "admin";
+  const userPermissions = useAuthStore((state) => state.user?.permissions);
+  const permissions = userPermissions || [];
+  const canManage = permissions.includes("view_emergency");
   const [rules, setRules] = useState<EmergencyRule[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -317,13 +320,13 @@ export function EmergencyRules({ role = "doctor" }: { role?: Role }) {
 
   return (
     <DashboardLayout
-      role={role}
+      
       title={
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
             {t("emg.title")}
           </h1>
-          {isAdmin && (
+          {canManage && (
             <Badge className="bg-rose-100 text-rose-600 border border-rose-200 hover:bg-rose-100 uppercase tracking-wider font-bold text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1.5 hidden sm:flex">
               <ShieldAlert className="w-3 h-3" />
               Admin Area

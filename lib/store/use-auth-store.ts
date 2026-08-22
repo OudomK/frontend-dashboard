@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import { apiClient } from "../api-client";
 
+export const ROLES = {
+  USER: 1,
+  DOCTOR: 2,
+  ADMIN: 3,
+  DOCTOR_MANAGER: 4,
+};
+
 interface UserInfo {
   email: string;
   roleId: number;
@@ -9,6 +16,10 @@ interface UserInfo {
   name?: string;
   permissions?: string[];
 }
+
+export const isDoctor = (roleId: number | null | undefined) => roleId === ROLES.DOCTOR;
+export const isDoctorManager = (roleId: number | null | undefined) => roleId === ROLES.DOCTOR_MANAGER;
+export const isAdmin = (roleId: number | null | undefined) => roleId === ROLES.ADMIN;
 
 interface AuthState {
   token: string | null;
@@ -22,6 +33,7 @@ interface AuthState {
   initialize: () => void;
   updateAvatar: (url: string) => void;
   updateName: (name: string) => void;
+  refreshUser: () => Promise<void>;
 }
 
 // Helper to decode JWT payload without external libraries
@@ -81,17 +93,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         const { access_token, refresh_token, role_id } = response.data;
 
-        // Verify role mapping compatibility
-        if (expectedRole === "admin" && (role_id === 1 || role_id === 2)) {
-          throw new Error("Unauthorized: This account does not have admin permissions.");
-        }
-        if (expectedRole === "doctor" && role_id !== 2) {
-          throw new Error("Unauthorized: This account does not have doctor permissions.");
-        }
-        if (expectedRole === "unified" && role_id === 1) {
-          throw new Error("Unauthorized: Patients cannot access the dashboard.");
-        }
-
+        // Login proceeds. We will verify dashboard access permissions after fetching profile.
         // Save tokens in local storage
         localStorage.setItem("women_health_access_token", access_token);
         localStorage.setItem("women_health_refresh_token", refresh_token);
@@ -129,7 +131,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
             }
             localStorage.setItem("women_health_avatar_url", avatarUrl);
           }
+          
+          if (!permissions.includes("view_dashboard")) {
+            // Revert localStorage
+            localStorage.removeItem("women_health_access_token");
+            localStorage.removeItem("women_health_refresh_token");
+            localStorage.removeItem("women_health_role_id");
+            localStorage.removeItem("women_health_user_email");
+            throw new Error("Unauthorized: You do not have permission to access the dashboard.");
+          }
         } catch (profileError) {
+          if (profileError instanceof Error) {
+            throw profileError; // Re-throw the unauthorized error
+          }
           console.warn("Could not fetch user profile details", profileError);
         }
 
@@ -269,6 +283,49 @@ export const useAuthStore = create<AuthState>((set, get) => {
             name: name,
           },
         });
+      }
+    },
+
+    refreshUser: async () => {
+      const currentToken = get().token || localStorage.getItem("women_health_access_token");
+      if (!currentToken) return;
+
+      try {
+        const profileResponse = await apiClient.get("/api/v1/users/me", {
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+          },
+        });
+
+        const permissions = profileResponse.data.permissions || [];
+        if (permissions.length > 0) {
+          localStorage.setItem("women_health_user_permissions", JSON.stringify(permissions));
+        }
+
+        let avatarUrl = profileResponse.data.avatar_url;
+        if (avatarUrl && !avatarUrl.startsWith('http')) {
+          avatarUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${avatarUrl}`;
+          localStorage.setItem("women_health_avatar_url", avatarUrl);
+        }
+
+        const roleName = profileResponse.data.role_name;
+        if (roleName) {
+          localStorage.setItem("women_health_role_name", roleName);
+        }
+
+        const currentUser = get().user;
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              permissions,
+              avatarUrl: avatarUrl || currentUser.avatarUrl,
+              roleName: roleName || currentUser.roleName,
+            },
+          });
+        }
+      } catch (error) {
+        console.warn("Failed to refresh user profile data", error);
       }
     },
   };

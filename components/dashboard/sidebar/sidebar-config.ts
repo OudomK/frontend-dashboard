@@ -20,11 +20,15 @@ import {
   ShieldCheck,
   Brain,
   MessageCircle,
+  Stethoscope,
+  Clock,
+  FileText,
 } from "lucide-react";
 
 export type MenuItem = {
   label: string;
   permission?: string;
+  roleOnly?: string;
   icon?: any;
   href?: string;
   items?: MenuItem[];
@@ -60,8 +64,20 @@ export const unifiedMenu: MenuItem[] = [
       {
         label: "Appointments",
         permission: "view_appointments",
-        icon: Calendar,
+        icon: FileText,
         href: "/dashboard/appointments",
+      },
+      {
+        label: "My Schedule",
+        permission: "manage_own_schedule",
+        icon: Calendar,
+        href: "/dashboard/my-schedule",
+      },
+      {
+        label: "My Availability",
+        permission: "manage_own_availability",
+        icon: Clock,
+        href: "/dashboard/my-availability",
       },
       {
         label: "Push Notifications",
@@ -103,7 +119,7 @@ export const unifiedMenu: MenuItem[] = [
   },
   {
     label: "Content Management",
-    icon: PenTool,
+    icon: FileText,
     items: [
       {
         label: "Health Articles",

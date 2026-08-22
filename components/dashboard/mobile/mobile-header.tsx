@@ -2,7 +2,7 @@
 
 import { Bell } from "lucide-react";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import {
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Props = {
   title: string;
@@ -26,7 +27,9 @@ export function MobileHeader({
 }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { t } = useTranslation();
   const userPermissions = useAuthStore((state) => state.user?.permissions);
   const permissions = userPermissions || [];
 
@@ -70,26 +73,64 @@ export function MobileHeader({
                 <p className="text-xs text-slate-500 mt-1">You have no new notifications.</p>
               </div>
             ) : (
-              notifications.map((notification) => (
-                <DropdownMenuItem 
-                  key={notification.id}
-                  onClick={() => {
-                    if (!notification.is_read) {
-                      markAsRead(notification.id);
-                    }
-                  }}
-                  className={`flex flex-col items-start gap-1 p-4 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-0 focus:bg-slate-50 transition-colors ${notification.is_read ? 'opacity-60' : ''}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${notification.is_read ? 'bg-slate-300' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`}></span>
-                    <p className="text-[13px] font-bold text-slate-900 tracking-wide">{notification.title}</p>
-                  </div>
-                  <p className="text-xs text-slate-500 ml-4 font-medium leading-relaxed">{notification.body}</p>
-                  <p className="text-[10px] text-slate-400 ml-4 mt-1.5 font-semibold uppercase tracking-wider">
-                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                  </p>
-                </DropdownMenuItem>
-              ))
+              notifications.map((notification) => {
+                let titleText = notification.title;
+                let bodyText = notification.body;
+                
+                try {
+                  if (notification.title.startsWith("{")) {
+                    const parsed = JSON.parse(notification.title);
+                    titleText = t(parsed.key, parsed.args);
+                  } else {
+                    titleText = t(notification.title);
+                  }
+                } catch (e) {
+                  titleText = t(notification.title);
+                }
+
+                try {
+                  if (notification.body.startsWith("{")) {
+                    const parsed = JSON.parse(notification.body);
+                    bodyText = t(parsed.key, parsed.args);
+                  } else {
+                    bodyText = t(notification.body);
+                  }
+                } catch (e) {
+                  bodyText = t(notification.body);
+                }
+
+                return (
+                  <DropdownMenuItem 
+                    key={notification.id}
+                    onClick={() => {
+                      if (!notification.is_read) {
+                        markAsRead(notification.id);
+                      }
+                      
+                      // Handle routing based on precise prefix matching
+                      if (notification.type) {
+                        if (
+                            notification.type.startsWith("APPOINTMENT_BOOKED_DOCTOR") ||
+                            notification.type.startsWith("APPOINTMENT_REMINDER_24H_DOC_") ||
+                            notification.type.startsWith("APPOINTMENT_REMINDER_1H_DOC_") ||
+                            notification.type.startsWith("APPOINTMENT_CANCELLED_DOCTOR")) {
+                          router.push("/dashboard/my-schedule");
+                        }
+                      }
+                    }}
+                    className={`flex flex-col items-start gap-1 p-4 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-0 focus:bg-slate-50 transition-colors ${notification.is_read ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${notification.is_read ? 'bg-slate-300' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`}></span>
+                      <p className="text-[13px] font-bold text-slate-900 tracking-wide">{titleText}</p>
+                    </div>
+                    <p className="text-xs text-slate-500 ml-4 font-medium leading-relaxed">{bodyText}</p>
+                    <p className="text-[10px] text-slate-400 ml-4 mt-1.5 font-semibold uppercase tracking-wider">
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    </p>
+                  </DropdownMenuItem>
+                );
+              })
             )}
           </div>
           {notifications.length > 0 && (

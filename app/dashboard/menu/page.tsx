@@ -24,12 +24,10 @@ export default function UnifiedMenuPage() {
   
   const userName = sessionUser?.name || sessionUser?.email?.split("@")[0] || "User";
   const permissions = sessionUser?.permissions || [];
-  const isRootAdmin = sessionUser?.roleId === 3;
 
   // Filter unifiedMenu based on permissions just like the sidebar does
   const groups = unifiedMenu.map((group) => {
     const filteredItems = group.items?.filter((item) => {
-      if (isRootAdmin) return true; // Root admin sees all
       if (!item.permission) return true; // Items without specific permission requirement
       return permissions.includes(item.permission);
     }) || [];

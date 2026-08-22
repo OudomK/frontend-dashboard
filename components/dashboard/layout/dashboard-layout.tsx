@@ -1,12 +1,13 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/lib/store/use-auth-store";
+import { usePathname, useRouter } from "next/navigation";
+import { ROLES, useAuthStore } from "@/lib/store/use-auth-store";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
 import { Sidebar } from "../sidebar/sidebar";
 import { DashboardHeader } from "../header/dashboard-header";
+import { unifiedMenu } from "../sidebar/sidebar-config";
 
 import { MobileBottomNav } from "../mobile/mobile-bottom-nav";
 import { MobileHeader } from "../mobile/mobile-header";
@@ -28,7 +29,8 @@ export function DashboardLayout({
   actions,
 }: Props) {
   const router = useRouter();
-  const { initialize, isAuthenticated, isLoading, roleId } = useAuthStore();
+  const pathname = usePathname();
+  const { initialize, isAuthenticated, isLoading, roleId, user, refreshUser } = useAuthStore();
   const { language } = useTranslation();
   const isKm = language === "km";
 
@@ -37,17 +39,46 @@ export function DashboardLayout({
   }, [initialize]);
 
   useEffect(() => {
+    if (isAuthenticated) {
+      refreshUser();
+    }
+  }, [isAuthenticated, refreshUser]);
+
+  useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
         router.replace("/auth/login");
       } else {
         // Enforce strict role matching (only block basic users/patients)
-        if (roleId === 1) {
+        if (roleId === ROLES.USER) {
           router.replace("/auth/login");
+        } else {
+          // Route-based Authorization
+          let isAllowed = false;
+
+          for (const group of unifiedMenu) {
+            for (const item of group.items || []) {
+              if (item.href === pathname) {
+                const requiredPermission = item.permission;
+                if (requiredPermission) {
+                  const permissions = user?.permissions || [];
+                  if (permissions.includes(requiredPermission)) {
+                    isAllowed = true;
+                  }
+                } else {
+                  isAllowed = true;
+                }
+              }
+            }
+          }
+
+          if (!isAllowed) {
+            router.replace("/dashboard/dashboard");
+          }
         }
       }
     }
-  }, [isLoading, isAuthenticated, roleId, role, router]);
+  }, [isLoading, isAuthenticated, roleId, role, router, pathname]);
 
   if (isLoading || !isAuthenticated) {
     return (

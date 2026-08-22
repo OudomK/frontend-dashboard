@@ -12,10 +12,9 @@ import { useAuthStore } from "@/lib/store/use-auth-store";
 export default function AdminFaqPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { t } = useTranslation();
-  const { user, roleId } = useAuthStore();
+  const { user } = useAuthStore();
   
-  const isAdmin = roleId === 3;
-  const canCreate = isAdmin || (user?.permissions || []).includes("create_faqs");
+  const canCreate = (user?.permissions || []).includes("create_faqs");
 
   return (
     <DashboardLayout

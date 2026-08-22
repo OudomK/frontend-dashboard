@@ -38,11 +38,10 @@ interface Appointment {
 }
 
 export default function AdminAppointmentsPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { user } = useAuthStore();
   const permissions = user?.permissions || [];
-  const isRootAdmin = user?.roleId === 3;
-  const canCreate = isRootAdmin || permissions.includes("create_appointments");
+  const canCreate = permissions.includes("create_appointments");
   
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -89,10 +88,10 @@ export default function AdminAppointmentsPage() {
   const handleUpdateStatus = async (id: number, status: string) => {
     try {
       await apiClient.patch(`/api/v1/admin/appointments/${id}/status`, { status });
-      toast.success(`Appointment marked as ${status}`);
+      toast.success(t("appointments.successStatusUpdate").replace("{status}", t(`status.${status.toLowerCase()}` as any) || status));
       fetchAppointments();
     } catch (err) {
-      toast.error("Failed to update status");
+      toast.error(t("appointments.errStatusUpdate"));
     }
   };
 
@@ -148,7 +147,7 @@ export default function AdminAppointmentsPage() {
       // decodedText could be "APT-123" or just "123"
       const idMatch = decodedText.match(/\d+/);
       if (!idMatch) {
-        toast.error("Invalid QR Code format");
+        toast.error(t("appointments.errInvalidQr"));
         return;
       }
       
@@ -157,7 +156,7 @@ export default function AdminAppointmentsPage() {
       // Go back to list tab to see the updated status
       setActiveTab("list");
     } catch (err) {
-      toast.error("Failed to process QR code");
+      toast.error(t("appointments.errProcessQr"));
     }
   };
 
@@ -189,20 +188,20 @@ export default function AdminAppointmentsPage() {
                 onClick={() => setActiveTab("list")}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "list" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"}`}
               >
-                <ClipboardList className="w-4 h-4" /> List
+                <ClipboardList className="w-4 h-4" /> {t("appointments.tabList")}
               </button>
               <button
                 onClick={() => setActiveTab("scan")}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "scan" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"}`}
               >
-                <QrCode className="w-4 h-4" /> Scan QR
+                <QrCode className="w-4 h-4" /> {t("appointments.tabScan")}
               </button>
               {canCreate && (
                 <button
                   onClick={() => setActiveTab("generate")}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "generate" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"}`}
                 >
-                  <Plus className="w-4 h-4" /> Generate
+                  <Plus className="w-4 h-4" /> {t("appointments.tabGenerate")}
                 </button>
               )}
             </div>
@@ -213,20 +212,20 @@ export default function AdminAppointmentsPage() {
                 onClick={() => setActiveTab("list")}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "list" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"}`}
               >
-                <ClipboardList className="w-3.5 h-3.5" /> List
+                <ClipboardList className="w-3.5 h-3.5" /> {t("appointments.tabList")}
               </button>
               <button
                 onClick={() => setActiveTab("scan")}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "scan" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"}`}
               >
-                <QrCode className="w-3.5 h-3.5" /> Scan QR
+                <QrCode className="w-3.5 h-3.5" /> {t("appointments.tabScan")}
               </button>
               {canCreate && (
                 <button
                   onClick={() => setActiveTab("generate")}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "generate" ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-50"}`}
                 >
-                  <Plus className="w-3.5 h-3.5" /> Generate
+                  <Plus className="w-3.5 h-3.5" /> {t("appointments.tabGenerate")}
                 </button>
               )}
             </div>
@@ -369,8 +368,8 @@ export default function AdminAppointmentsPage() {
                       <QrCode className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-base font-bold text-slate-900">Scan Patient QR Code</h2>
-                      <p className="text-xs text-slate-500 mt-0.5">Point camera at patient's QR code to mark appointment</p>
+                      <h2 className="text-base font-bold text-slate-900">{t("appointments.scanQrTitle")}</h2>
+                      <p className="text-xs text-slate-500 mt-0.5">{t("appointments.scanQrDesc")}</p>
                     </div>
                   </div>
                   <div className="p-6 flex flex-col items-center justify-center bg-slate-50 min-h-[360px]">
@@ -421,14 +420,16 @@ export default function AdminAppointmentsPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                   <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
-                                    {apt.user?.full_name || "Unknown User"}
+                                    {apt.user?.full_name || t("appointments.unknownUser")}
                                   </h3>
                                   <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${
                                     apt.status === "SCHEDULED" ? "bg-amber-50 text-amber-700 border-amber-200" :
                                     apt.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                                     "bg-rose-50 text-rose-700 border-rose-200"
                                   }`}>
-                                    {apt.status === "COMPLETED" ? t("appointments.completed") : apt.status === "CANCELLED" ? t("appointments.cancelled") : apt.status}
+                                    {apt.status === "COMPLETED" ? t("status.completed") : 
+                                     apt.status === "CANCELLED" ? t("status.cancelled") : 
+                                     apt.status === "SCHEDULED" ? t("status.scheduled") : apt.status}
                                   </span>
                                 </div>
 
@@ -439,7 +440,9 @@ export default function AdminAppointmentsPage() {
                                   </span>
                                   <span className="text-xs text-indigo-700 font-semibold bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100 flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
-                                    {apt.slot?.start_time ? format(new Date(apt.slot.start_time), "MMM dd, yyyy • hh:mm a") : "Unknown time"}
+                                    {apt.slot?.start_time ? new Intl.DateTimeFormat(language === "km" ? "km-KH" : "en-US", {
+                                      month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true
+                                    }).format(new Date(apt.slot.start_time)) : t("mySchedule.unknownTime")}
                                   </span>
                                 </div>
 
@@ -454,7 +457,7 @@ export default function AdminAppointmentsPage() {
 
                                 {apt.chat_session_id && (
                                   <button className="mt-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg border border-purple-200 transition-colors flex items-center gap-1.5">
-                                    <Sparkles className="w-3 h-3" /> View AI Chat History
+                                    <Sparkles className="w-3 h-3" /> {t("appointments.viewAiChat")}
                                   </button>
                                 )}
 

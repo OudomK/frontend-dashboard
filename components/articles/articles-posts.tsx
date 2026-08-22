@@ -148,13 +148,12 @@ function StatusBadge({ status }: { status: "PUBLISHED" | "DRAFT" }) {
 
 export function ArticlesPosts({ role }: { role: string }) {
   const { t, language } = useTranslation();
-  const { user, roleId } = useAuthStore();
+  const { user } = useAuthStore();
   
-  const isAdmin = roleId === 3;
   const permissions = user?.permissions || [];
-  const canCreate = isAdmin || permissions.includes("create_articles");
-  const canEdit = isAdmin || permissions.includes("edit_articles");
-  const canDelete = isAdmin || permissions.includes("delete_articles");
+  const canCreate = permissions.includes("create_articles");
+  const canEdit = permissions.includes("edit_articles");
+  const canDelete = permissions.includes("delete_articles");
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
