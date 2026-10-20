@@ -9,6 +9,42 @@ import { AccessDenied } from "@/components/ui/access-denied";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/hooks/use-translation";
 
+export function validateSettingsUrl(urlInput: string): { valid: boolean; error?: string; sanitized: string } {
+  const trimmed = (urlInput || "").trim();
+  if (!trimmed) {
+    return { valid: true, sanitized: "" };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return {
+      valid: false,
+      error: "Please enter a valid external URL starting with http:// or https://",
+      sanitized: trimmed,
+    };
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return {
+      valid: false,
+      error: "Please enter a valid external URL starting with http:// or https://",
+      sanitized: trimmed,
+    };
+  }
+
+  if (!parsed.hostname || parsed.username || parsed.password) {
+    return {
+      valid: false,
+      error: "Please enter a valid external web address without credentials.",
+      sanitized: trimmed,
+    };
+  }
+
+  return { valid: true, sanitized: trimmed };
+}
+
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
   // Page Form States
@@ -91,12 +127,18 @@ export default function AdminSettingsPage() {
 
   // Action: Save and display confirmation toast
   const handleSaveChanges = async () => {
+    const urlValidation = validateSettingsUrl(telegramLink);
+    if (!urlValidation.valid) {
+      toast.error(urlValidation.error || "Please enter a valid external URL starting with http:// or https://");
+      return;
+    }
+
     const toastId = toast.loading("Saving changes...");
     try {
       const payload = {
         clinic_name: clinicName,
         emergency_phone: emergencyPhone,
-        telegram_link: telegramLink,
+        telegram_link: urlValidation.sanitized,
         enable_auto_detection: enableAutoDetection,
         keywords: keywords,
         emergency_message: emergencyMessage,
@@ -198,18 +240,13 @@ export default function AdminSettingsPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700">{t("set.telegramLink")}</label>
-                  <div className="flex rounded-xl border border-slate-200 overflow-hidden bg-slate-50 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                    <span className="flex items-center bg-slate-50 px-3 text-xs font-bold text-slate-400 border-r border-slate-200 select-none">
-                      t.me/
-                    </span>
-                    <input
-                      type="text"
-                      value={telegramLink}
-                      onChange={(e) => setTelegramLink(e.target.value)}
-                      placeholder="telegram_handle"
-                      className="h-11 flex-1 bg-white px-4 text-sm font-medium text-slate-800 outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={telegramLink}
+                    onChange={(e) => setTelegramLink(e.target.value)}
+                    placeholder="e.g. https://www.facebook.com/... or https://t.me/..."
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
                 </div>
               </div>
             </div>

@@ -52,23 +52,57 @@ type EmergencyRule = {
   created_at: string;
 };
 
-type RuleForm = {
+export type RuleForm = {
   name: string;
   category_id: string;
   keyword_pattern: string;
   severity_level: Severity;
   advice_text: Record<"km" | "en", string>;
   is_active: boolean;
+  clinic_contact_id: number | null;
 };
 
-const EMPTY_FORM: RuleForm = {
+export const EMPTY_FORM: RuleForm = {
   name: "",
   category_id: "none",
   keyword_pattern: "",
   severity_level: "urgent",
   advice_text: { km: "", en: "" },
   is_active: true,
+  clinic_contact_id: null,
 };
+
+export function initRuleForm(rule?: EmergencyRule | null): RuleForm {
+  if (!rule) {
+    return { ...EMPTY_FORM };
+  }
+  return {
+    name: rule.name,
+    category_id: rule.category_id ? String(rule.category_id) : "none",
+    keyword_pattern: rule.keyword_pattern,
+    severity_level: rule.severity_level,
+    advice_text: {
+      km: rule.advice_text?.km || "",
+      en: rule.advice_text?.en || "",
+    },
+    is_active: rule.is_active,
+    clinic_contact_id: rule.clinic_contact_id ?? null,
+  };
+}
+
+export function buildRulePayload(form: RuleForm) {
+  return {
+    name: form.name.trim(),
+    category_id: form.category_id === "none" ? null : Number(form.category_id),
+    keyword_pattern: form.keyword_pattern.trim(),
+    severity_level: form.severity_level,
+    advice_text: {
+      km: form.advice_text.km.trim(),
+      en: form.advice_text.en.trim(),
+    },
+    clinic_contact_id: form.clinic_contact_id,
+  };
+}
 
 const severityStyles: Record<Severity, string> = {
   warning: "bg-amber-50 text-amber-700 border-amber-200",
@@ -129,6 +163,7 @@ export function EmergencyRules() {
   const canManage = permissions.includes("view_emergency");
   const [rules, setRules] = useState<EmergencyRule[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [clinicContacts, setClinicContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -151,12 +186,14 @@ export function EmergencyRules() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [rulesRes, categoriesRes] = await Promise.all([
+      const [rulesRes, categoriesRes, clinicsRes] = await Promise.all([
         apiClient.get("/api/v1/emergency-rules/"),
         apiClient.get("/api/v1/categories/"),
+        apiClient.get("/api/v1/settings/clinic-contacts").catch(() => ({ data: [] })),
       ]);
       setRules((rulesRes.data || []) as EmergencyRule[]);
       setCategories((categoriesRes.data || []) as Category[]);
+      setClinicContacts((clinicsRes.data || []) as any[]);
     } catch (error: unknown) {
       toast.error(formatBackendError(error));
     } finally {
@@ -198,23 +235,13 @@ export function EmergencyRules() {
 
   const openCreate = () => {
     setEditingRule(null);
-    setForm(EMPTY_FORM);
+    setForm(initRuleForm(null));
     setDialogOpen(true);
   };
 
   const openEdit = (rule: EmergencyRule) => {
     setEditingRule(rule);
-    setForm({
-      name: rule.name,
-      category_id: rule.category_id ? String(rule.category_id) : "none",
-      keyword_pattern: rule.keyword_pattern,
-      severity_level: rule.severity_level,
-      advice_text: {
-        km: rule.advice_text?.km || "",
-        en: rule.advice_text?.en || "",
-      },
-      is_active: rule.is_active,
-    });
+    setForm(initRuleForm(rule));
     setDialogOpen(true);
   };
 
@@ -224,17 +251,7 @@ export function EmergencyRules() {
       return;
     }
 
-    const payload = {
-      name: form.name.trim(),
-      category_id: form.category_id === "none" ? null : Number(form.category_id),
-      keyword_pattern: form.keyword_pattern.trim(),
-      severity_level: form.severity_level,
-      advice_text: {
-        km: form.advice_text.km.trim(),
-        en: form.advice_text.en.trim(),
-      },
-      clinic_contact_id: null,
-    };
+    const payload = buildRulePayload(form);
 
     setSaving(true);
     const toastId = toast.loading(editingRule ? "Updating emergency rule..." : "Creating emergency rule...");
@@ -596,6 +613,35 @@ export function EmergencyRules() {
                 </div>
                 <Switch checked={form.is_active} onCheckedChange={(checked) => setForm((current) => ({ ...current, is_active: checked }))} />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className={`text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                Clinic Contact
+              </label>
+              <Select
+                value={form.clinic_contact_id ? String(form.clinic_contact_id) : "none"}
+                onValueChange={(value) => setForm((current) => ({ ...current, clinic_contact_id: value === "none" ? null : Number(value) }))}
+              >
+                <SelectTrigger className={`h-11 rounded-lg border-slate-200 focus:ring-2 focus:ring-blue-500/20 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                  <SelectValue placeholder="Select Clinic Contact" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className={language === "km" ? "font-kantumruy-pro" : ""}>
+                    None (No clinic assigned)
+                  </SelectItem>
+                  {clinicContacts.map((clinic) => {
+                    const name = typeof clinic.clinic_name === 'string'
+                      ? clinic.clinic_name
+                      : ((clinic.clinic_name as any)?.[language] || (clinic.clinic_name as any)?.en || (clinic.clinic_name as any)?.km || `Clinic #${clinic.id}`);
+                    return (
+                      <SelectItem key={clinic.id} value={String(clinic.id)} className={language === "km" ? "font-kantumruy-pro" : ""}>
+                        {name} (ID: {clinic.id})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

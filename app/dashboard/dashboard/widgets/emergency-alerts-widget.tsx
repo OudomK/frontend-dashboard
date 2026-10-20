@@ -60,7 +60,7 @@ export function EmergencyAlertsWidget() {
         <h2 className="font-bold text-slate-950">
           {t("dashboard.recentEmergencyAlerts") || t("doctor.actionNeededTitle")}
         </h2>
-        <Link href="/dashboard/emergency-rules">
+        <Link href="/dashboard/emergency-cases">
           <Button variant="link" className="h-auto px-0 font-semibold text-blue-600">
             {t("dashboard.viewAll")}
           </Button>

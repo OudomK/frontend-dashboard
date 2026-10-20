@@ -120,16 +120,20 @@ export default function AdminUserManagementPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+  const [availableSpecialties, setAvailableSpecialties] = useState<any[]>([]);
+  const [formSpecialtyId, setFormSpecialtyId] = useState<string>("");
 
   const fetchUsers = async () => {
     setLoadingList(true);
     try {
-      const [rolesRes, usersRes] = await Promise.all([
+      const [rolesRes, usersRes, specRes] = await Promise.all([
         apiClient.get("/api/v1/admin/rbac/roles"),
-        apiClient.get("/api/v1/admin/users")
+        apiClient.get("/api/v1/admin/users"),
+        apiClient.get("/api/v1/admin/specializations")
       ]);
       const rolesData = rolesRes.data;
       setAvailableRoles(rolesData);
+      setAvailableSpecialties(specRes.data);
 
       const mapped: UserAccount[] = usersRes.data.map((u: any) => {
         const roleObj = rolesData.find((r: any) => r.id === u.role_id);
@@ -175,6 +179,7 @@ export default function AdminUserManagementPage() {
     setFormStatus("Active");
     setFormPassword("");
     setFormPhone("");
+    setFormSpecialtyId("");
     setShowPassword(false);
     setEditMode(false);
     setSelectedUser(null);
@@ -231,6 +236,11 @@ export default function AdminUserManagementPage() {
       }
     }
 
+    if (!editMode && targetRoleId === 2 && !formSpecialtyId) {
+      toast.error(language === "km" ? "សូមជ្រើសរើសឯកទេសវេជ្ជសាស្ត្រ" : "Medical Specialty is required for Doctors");
+      return;
+    }
+
     const toastId = toast.loading(editMode ? t("users.savingModifications") : t("users.provisioningAccount"));
 
     try {
@@ -245,7 +255,6 @@ export default function AdminUserManagementPage() {
         });
 
         // Patch role assignment separately if updated
-        const targetRoleId = parseInt(formRole, 10);
         const currentRoleId = selectedUser.roleId;
         if (targetRoleId !== currentRoleId) {
           await apiClient.patch(`/api/v1/admin/users/${selectedUser.id}/assign-role`, {
@@ -257,24 +266,14 @@ export default function AdminUserManagementPage() {
         toast.success(t("users.userUpdated"));
       } else {
         // Create new user
-        const targetRoleId = parseInt(formRole, 10);
-        if (targetRoleId === 2) {
-          await apiClient.post("/api/v1/admin/create-doctor", {
-            email: formEmail,
-            full_name: formName,
-            password: formPassword,
-            phone: formPhone || null,
-            role_id: 2,
-          });
-        } else {
-          await apiClient.post("/api/v1/admin/users", {
-            email: formEmail,
-            full_name: formName,
-            password: formPassword,
-            phone: formPhone || null,
-            role_id: targetRoleId,
-          });
-        }
+        await apiClient.post("/api/v1/admin/users", {
+          email: formEmail,
+          full_name: formName,
+          password: formPassword,
+          phone: formPhone || null,
+          role_id: targetRoleId,
+          ...(targetRoleId === 2 && formSpecialtyId ? { specialty_id: parseInt(formSpecialtyId, 10) } : {})
+        });
         toast.dismiss(toastId);
         toast.success(t("users.userCreated"));
       }
@@ -893,6 +892,23 @@ export default function AdminUserManagementPage() {
                 </Select>
               </div>
             </div>
+
+            {/* Medical Specialty (For Doctors Only) */}
+            {!editMode && parseInt(formRole, 10) === 2 && (
+              <div className="space-y-1.5 mt-4">
+                <label className={`block text-sm font-semibold text-slate-700 ${language === "km" ? "font-kantumruy-pro" : ""}`}>Medical Specialty *</label>
+                <Select value={formSpecialtyId} onValueChange={(val) => setFormSpecialtyId(val)}>
+                  <SelectTrigger className={`!h-11 w-full rounded-xl border border-slate-200 bg-white !px-4 !py-0 text-sm text-slate-800 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${language === "km" ? "font-kantumruy-pro" : ""}`}>
+                    <SelectValue placeholder="Select Specialty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSpecialties.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name} ({s.code})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2 select-none">

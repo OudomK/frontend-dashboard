@@ -80,6 +80,12 @@ export const unifiedMenu: MenuItem[] = [
         href: "/dashboard/my-availability",
       },
       {
+        label: "Active Emergency Cases",
+        permission: "view_emergency",
+        icon: ShieldAlert,
+        href: "/dashboard/emergency-cases",
+      },
+      {
         label: "Push Notifications",
         permission: "manage_notifications",
         icon: Megaphone,

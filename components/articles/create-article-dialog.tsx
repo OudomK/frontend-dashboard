@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, API_URL } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Category, Article } from "./articles-posts";
@@ -93,7 +93,7 @@ export function CreateArticleDialog({
         setUploadingImage(true);
         const formData = new FormData();
         formData.append("file", image);
-        const uploadRes = await fetch("http://localhost:8000/api/v1/uploads/image", {
+        const uploadRes = await fetch(`${API_URL}/api/v1/uploads/image`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,

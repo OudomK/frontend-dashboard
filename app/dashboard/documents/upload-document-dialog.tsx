@@ -226,6 +226,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
               >
                 <option value="km">Khmer (km)</option>
                 <option value="en">English (en)</option>
+                <option value="both">Both (Khmer + English)</option>
               </select>
             </div>
           </div>

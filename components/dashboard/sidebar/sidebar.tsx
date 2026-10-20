@@ -41,6 +41,7 @@ export const navKeyMap: Record<string, TranslationKey> = {
   "Doctor Portal": "nav.doctorPortal",
   "My Schedule": "nav.mySchedule",
   "My Availability": "nav.myAvailability",
+  "Active Emergency Cases": "nav.emergencyCases",
   "General Settings": "nav.settings",
   
   // Group Translations

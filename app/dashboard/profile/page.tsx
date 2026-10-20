@@ -32,6 +32,12 @@ export default function AdminProfilePage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [subSpecialties, setSubSpecialties] = useState("");
+  const [educationBackground, setEducationBackground] = useState("");
+  const [workExperience, setWorkExperience] = useState("");
+  const [languagesSpoken, setLanguagesSpoken] = useState("");
+  const [certifications, setCertifications] = useState("");
 
   // Avatar state
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -72,6 +78,12 @@ export default function AdminProfilePage() {
       setEmail(data.email || "");
       setPhone(data.phone || "");
       setBio(data.medical_note || "");
+      setSpecialty(data.specialization || "");
+      setSubSpecialties(data.sub_specialties || "");
+      setEducationBackground(data.education_background || "");
+      setWorkExperience(data.work_experience || "");
+      setLanguagesSpoken(data.languages_spoken || "");
+      setCertifications(data.certifications || "");
       
       const avatarFullUrl = data.avatar_url 
         ? (data.avatar_url.startsWith('http') ? data.avatar_url : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${data.avatar_url}`) 
@@ -183,6 +195,13 @@ export default function AdminProfilePage() {
         full_name: newFullName,
         phone: phone,
         medical_note: bio,
+        ...(role === "Doctor" ? {
+          sub_specialties: subSpecialties,
+          education_background: educationBackground,
+          work_experience: workExperience,
+          languages_spoken: languagesSpoken,
+          certifications: certifications
+        } : {})
       });
       updateName(newFullName);
       toast.success(t("prof.profileUpdated"));
@@ -437,6 +456,90 @@ export default function AdminProfilePage() {
                 </Button>
               </div>
             </div>
+
+            {role === "Doctor" && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+                <div className="border-b border-slate-50 pb-3">
+                  <h3 className="text-base font-bold text-slate-900">Professional Profile / Doctor CV</h3>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Medical Specialty</label>
+                  <input
+                    type="text"
+                    value={specialty || "Not Assigned"}
+                    disabled
+                    className="h-11 w-full rounded-xl border border-slate-100 bg-slate-50 px-4 text-sm font-medium text-slate-500 outline-none cursor-not-allowed"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Specialty is assigned by Admin. Please contact support to change.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Sub-specialties / Expertise</label>
+                  <textarea
+                    value={subSpecialties}
+                    onChange={(e) => setSubSpecialties(e.target.value)}
+                    placeholder="e.g. Fetal Medicine, Minimally Invasive Surgery"
+                    rows={2}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Education Background</label>
+                  <textarea
+                    value={educationBackground}
+                    onChange={(e) => setEducationBackground(e.target.value)}
+                    placeholder="e.g. MD from University of Health Sciences, Residency at Calmette Hospital"
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Work Experience</label>
+                  <textarea
+                    value={workExperience}
+                    onChange={(e) => setWorkExperience(e.target.value)}
+                    placeholder="e.g. 10 years at Calmette Hospital as Senior Obstetrician"
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Languages Spoken</label>
+                  <input
+                    type="text"
+                    value={languagesSpoken}
+                    onChange={(e) => setLanguagesSpoken(e.target.value)}
+                    placeholder="e.g. Khmer, English, French"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Certifications</label>
+                  <textarea
+                    value={certifications}
+                    onChange={(e) => setCertifications(e.target.value)}
+                    placeholder="e.g. Board Certified in Obstetrics, Advanced Fetal Ultrasound Certification"
+                    rows={2}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium leading-relaxed text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 border-t border-slate-50 pt-4 select-none">
+                  <Button
+                    onClick={handleSaveEdits}
+                    disabled={submitting}
+                    className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow transition-all hover:bg-blue-700"
+                  >
+                    {submitting ? t("prof.saving") : t("prof.save")}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Card B: Security Settings */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
