@@ -179,13 +179,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     logout: async () => {
-      const currentRefreshToken = get().refreshToken || localStorage.getItem("women_health_refresh_token");
+      // localStorage holds the latest (rotated) refresh token; the store copy may be stale
+      const currentRefreshToken = localStorage.getItem("women_health_refresh_token") || get().refreshToken;
       const currentRoleId = get().roleId;
-      
+
       try {
         if (currentRefreshToken) {
-          // Send logout to backend with refresh token
-          await apiClient.post(`/api/v1/users/logout?refresh_token=${currentRefreshToken}`);
+          // Send logout to backend with refresh token in the JSON body (never the URL)
+          await apiClient.post("/api/v1/users/logout", { refresh_token: currentRefreshToken });
         }
       } catch (error) {
         console.error("Backend logout error", error);

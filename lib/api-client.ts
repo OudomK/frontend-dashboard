@@ -25,6 +25,56 @@ apiClient.interceptors.request.use(
   }
 );
 
+const ACCESS_KEY = "women_health_access_token";
+const REFRESH_KEY = "women_health_refresh_token";
+const REFRESH_LOCK_NAME = "women-health-token-refresh";
+
+// Refresh tokens rotate on every refresh and travel in the JSON body (never
+// the URL). Tabs share localStorage, so refreshes are serialized across tabs
+// with the Web Locks API: a tab that waited for the lock reuses the tokens
+// another tab just stored instead of presenting the already-rotated refresh
+// token, which the server treats as reuse. Without Web Locks, the server
+// answers such a concurrent refresh with 409 and this tab re-reads storage.
+async function refreshAccessTokenAcrossTabs(): Promise<string> {
+  const staleRefreshToken = localStorage.getItem(REFRESH_KEY);
+
+  const run = async (): Promise<string> => {
+    const currentRefreshToken = localStorage.getItem(REFRESH_KEY);
+    if (!currentRefreshToken) {
+      throw new Error("No refresh token");
+    }
+
+    // Another tab rotated the session while this tab waited for the lock
+    const storedAccessToken = localStorage.getItem(ACCESS_KEY);
+    if (currentRefreshToken !== staleRefreshToken && storedAccessToken) {
+      return storedAccessToken;
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/api/v1/users/refresh`, {
+        refresh_token: currentRefreshToken,
+      });
+      const { access_token, refresh_token } = response.data;
+      localStorage.setItem(ACCESS_KEY, access_token);
+      localStorage.setItem(REFRESH_KEY, refresh_token);
+      return access_token;
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const rotatedRefreshToken = localStorage.getItem(REFRESH_KEY);
+        const rotatedAccessToken = localStorage.getItem(ACCESS_KEY);
+        if (rotatedRefreshToken && rotatedRefreshToken !== currentRefreshToken && rotatedAccessToken) {
+          return rotatedAccessToken;
+        }
+      }
+      throw err;
+    }
+  };
+
+  const locks = typeof navigator !== "undefined" ? (navigator as any).locks : undefined;
+  return locks?.request ? locks.request(REFRESH_LOCK_NAME, run) : run();
+}
+
 // Response interceptor to handle session refresh and token expiry
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -68,7 +118,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = typeof window !== "undefined" ? localStorage.getItem("women_health_refresh_token") : null;
+      const refreshToken = typeof window !== "undefined" ? localStorage.getItem(REFRESH_KEY) : null;
 
       if (!refreshToken) {
         isRefreshing = false;
@@ -77,20 +127,7 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        // Call refresh endpoint with refresh_token as query parameter
-        const response = await axios.post(
-          `${API_URL}/api/v1/users/refresh`,
-          null,
-          {
-            params: { refresh_token: refreshToken },
-          }
-        );
-
-        const newAccessToken = response.data.access_token;
-        
-        if (typeof window !== "undefined") {
-          localStorage.setItem("women_health_access_token", newAccessToken);
-        }
+        const newAccessToken = await refreshAccessTokenAcrossTabs();
 
         // Retry failed queue requests
         processQueue(null, newAccessToken);

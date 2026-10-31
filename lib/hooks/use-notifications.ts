@@ -20,7 +20,10 @@ export function useNotifications() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await apiClient.get<Notification[]>("/api/v1/notifications/");
+      // Background poll: authenticated, but must not keep an idle session alive
+      const response = await apiClient.get<Notification[]>("/api/v1/notifications/", {
+        headers: { "X-Session-Activity": "passive" },
+      });
       setNotifications(response.data);
     } catch (err: any) {
       console.error("Failed to fetch notifications:", err);
