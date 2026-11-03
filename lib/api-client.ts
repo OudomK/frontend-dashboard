@@ -9,11 +9,52 @@ export const apiClient = axios.create({
   },
 });
 
+const ACCESS_KEY = "women_health_access_token";
+const REFRESH_KEY = "women_health_refresh_token";
+const REFRESH_LOCK_NAME = "women-health-token-refresh";
+
+// "Remember me" support: a remembered login keeps its tokens in localStorage
+// (survives browser restarts, the pre-existing default); an unremembered one
+// keeps them in sessionStorage (cleared when the tab/browser closes). Every
+// reader checks both so either mode works transparently; every writer keeps
+// using whichever storage is already active for a given login (so a
+// mid-session token rotation doesn't silently "promote" a session-only login
+// into a persisted one, or vice versa).
+function getActiveTokenStore(): Storage {
+  if (typeof window === "undefined") return localStorage;
+  return sessionStorage.getItem(REFRESH_KEY) !== null ? sessionStorage : localStorage;
+}
+
+export function getToken(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
+// remember=true/false picks the store for a fresh login; omitting it (token
+// rotation) keeps using whichever store is already active.
+export function setTokenPair(accessToken: string, refreshToken: string, remember?: boolean) {
+  if (typeof window === "undefined") return;
+  const store = remember === undefined ? getActiveTokenStore() : remember ? localStorage : sessionStorage;
+  const other = store === localStorage ? sessionStorage : localStorage;
+  other.removeItem(ACCESS_KEY);
+  other.removeItem(REFRESH_KEY);
+  store.setItem(ACCESS_KEY, accessToken);
+  store.setItem(REFRESH_KEY, refreshToken);
+}
+
+export function clearTokenPair() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+  sessionStorage.removeItem(ACCESS_KEY);
+  sessionStorage.removeItem(REFRESH_KEY);
+}
+
 // Request interceptor to attach JWT token
 apiClient.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("women_health_access_token");
+      const token = getToken(ACCESS_KEY);
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -25,10 +66,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-const ACCESS_KEY = "women_health_access_token";
-const REFRESH_KEY = "women_health_refresh_token";
-const REFRESH_LOCK_NAME = "women-health-token-refresh";
-
 // Refresh tokens rotate on every refresh and travel in the JSON body (never
 // the URL). Tabs share localStorage, so refreshes are serialized across tabs
 // with the Web Locks API: a tab that waited for the lock reuses the tokens
@@ -36,16 +73,16 @@ const REFRESH_LOCK_NAME = "women-health-token-refresh";
 // token, which the server treats as reuse. Without Web Locks, the server
 // answers such a concurrent refresh with 409 and this tab re-reads storage.
 async function refreshAccessTokenAcrossTabs(): Promise<string> {
-  const staleRefreshToken = localStorage.getItem(REFRESH_KEY);
+  const staleRefreshToken = getToken(REFRESH_KEY);
 
   const run = async (): Promise<string> => {
-    const currentRefreshToken = localStorage.getItem(REFRESH_KEY);
+    const currentRefreshToken = getToken(REFRESH_KEY);
     if (!currentRefreshToken) {
       throw new Error("No refresh token");
     }
 
     // Another tab rotated the session while this tab waited for the lock
-    const storedAccessToken = localStorage.getItem(ACCESS_KEY);
+    const storedAccessToken = getToken(ACCESS_KEY);
     if (currentRefreshToken !== staleRefreshToken && storedAccessToken) {
       return storedAccessToken;
     }
@@ -55,14 +92,13 @@ async function refreshAccessTokenAcrossTabs(): Promise<string> {
         refresh_token: currentRefreshToken,
       });
       const { access_token, refresh_token } = response.data;
-      localStorage.setItem(ACCESS_KEY, access_token);
-      localStorage.setItem(REFRESH_KEY, refresh_token);
+      setTokenPair(access_token, refresh_token);
       return access_token;
     } catch (err: any) {
       if (err?.response?.status === 409) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        const rotatedRefreshToken = localStorage.getItem(REFRESH_KEY);
-        const rotatedAccessToken = localStorage.getItem(ACCESS_KEY);
+        const rotatedRefreshToken = getToken(REFRESH_KEY);
+        const rotatedAccessToken = getToken(ACCESS_KEY);
         if (rotatedRefreshToken && rotatedRefreshToken !== currentRefreshToken && rotatedAccessToken) {
           return rotatedAccessToken;
         }
@@ -118,7 +154,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = typeof window !== "undefined" ? localStorage.getItem(REFRESH_KEY) : null;
+      const refreshToken = getToken(REFRESH_KEY);
 
       if (!refreshToken) {
         isRefreshing = false;
@@ -150,8 +186,7 @@ apiClient.interceptors.response.use(
 
 function handleSessionExpired() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("women_health_access_token");
-    localStorage.removeItem("women_health_refresh_token");
+    clearTokenPair();
     localStorage.removeItem("women_health_role_id");
     localStorage.removeItem("women_health_user_email");
     localStorage.removeItem("women_health_user_name");

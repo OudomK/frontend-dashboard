@@ -37,6 +37,7 @@ export function LoginForm({ variant }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -66,8 +67,7 @@ export function LoginForm({ variant }: Props) {
     setLoading(true);
     
     try {
-      const finalEmail = email.includes("@") ? email.trim() : `${email.trim()}@gmail.com`;
-      await login(finalEmail, password, variant);
+      await login(email.trim(), password, variant, remember);
       
       setModalState({
         isOpen: true,
@@ -166,17 +166,13 @@ export function LoginForm({ variant }: Props) {
             </div>
 
             <input
-              type="text"
+              type="email"
               placeholder={t("login.emailPlaceholder") as string}
               className="flex-1 h-full w-full bg-transparent border-none focus:outline-none px-3 text-sm text-slate-900 placeholder:text-slate-400"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            
-            <div className="px-4 text-slate-500 font-medium text-sm flex items-center justify-center bg-slate-100 h-full border-l border-slate-200">
-              @gmail.com
-            </div>
           </div>
         </div>
 
@@ -215,7 +211,11 @@ export function LoginForm({ variant }: Props) {
         {/* Remember */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Checkbox id="remember" />
+            <Checkbox
+              id="remember"
+              checked={remember}
+              onCheckedChange={(checked) => setRemember(checked === true)}
+            />
 
             <label
               htmlFor="remember"

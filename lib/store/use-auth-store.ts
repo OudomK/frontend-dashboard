@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import { apiClient } from "../api-client";
+import { apiClient, getToken, setTokenPair, clearTokenPair } from "../api-client";
+
+const ACCESS_KEY = "women_health_access_token";
+const REFRESH_KEY = "women_health_refresh_token";
 
 export const ROLES = {
   USER: 1,
@@ -28,7 +31,7 @@ interface AuthState {
   user: UserInfo | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, expectedRole: "admin" | "doctor" | "unified") => Promise<void>;
+  login: (email: string, password: string, expectedRole: "admin" | "doctor" | "unified", remember?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   initialize: () => void;
   updateAvatar: (url: string) => void;
@@ -77,7 +80,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     isAuthenticated: false,
     isLoading: true,
 
-    login: async (email, password, expectedRole) => {
+    login: async (email, password, expectedRole, remember = true) => {
       set({ isLoading: true });
       try {
         // Construct standard OAuth2 / Form url-encoded request body
@@ -94,9 +97,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const { access_token, refresh_token, role_id } = response.data;
 
         // Login proceeds. We will verify dashboard access permissions after fetching profile.
-        // Save tokens in local storage
-        localStorage.setItem("women_health_access_token", access_token);
-        localStorage.setItem("women_health_refresh_token", refresh_token);
+        // Remembered logins persist in localStorage (survives browser restarts);
+        // unremembered ones live only in sessionStorage (cleared on tab/browser close).
+        setTokenPair(access_token, refresh_token, remember);
         localStorage.setItem("women_health_role_id", String(role_id));
         localStorage.setItem("women_health_user_email", email);
 
@@ -133,9 +136,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
           }
           
           if (!permissions.includes("view_dashboard")) {
-            // Revert localStorage
-            localStorage.removeItem("women_health_access_token");
-            localStorage.removeItem("women_health_refresh_token");
+            // Revert storage
+            clearTokenPair();
             localStorage.removeItem("women_health_role_id");
             localStorage.removeItem("women_health_user_email");
             throw new Error("Unauthorized: You do not have permission to access the dashboard.");
@@ -179,8 +181,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     logout: async () => {
-      // localStorage holds the latest (rotated) refresh token; the store copy may be stale
-      const currentRefreshToken = localStorage.getItem("women_health_refresh_token") || get().refreshToken;
+      // Storage holds the latest (rotated) refresh token; the store copy may be stale
+      const currentRefreshToken = getToken(REFRESH_KEY) || get().refreshToken;
       const currentRoleId = get().roleId;
 
       try {
@@ -191,9 +193,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
       } catch (error) {
         console.error("Backend logout error", error);
       } finally {
-        // Clear tokens from local storage
-        localStorage.removeItem("women_health_access_token");
-        localStorage.removeItem("women_health_refresh_token");
+        // Clear tokens from storage
+        clearTokenPair();
         localStorage.removeItem("women_health_role_id");
         localStorage.removeItem("women_health_user_email");
         localStorage.removeItem("women_health_user_name");
@@ -222,8 +223,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     initialize: () => {
       if (typeof window === "undefined") return;
 
-      const token = localStorage.getItem("women_health_access_token");
-      const refreshToken = localStorage.getItem("women_health_refresh_token");
+      const token = getToken(ACCESS_KEY);
+      const refreshToken = getToken(REFRESH_KEY);
       const roleIdStr = localStorage.getItem("women_health_role_id");
       const email = localStorage.getItem("women_health_user_email");
       const avatarUrl = localStorage.getItem("women_health_avatar_url") || undefined;
@@ -288,7 +289,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     refreshUser: async () => {
-      const currentToken = get().token || localStorage.getItem("women_health_access_token");
+      const currentToken = get().token || getToken(ACCESS_KEY);
       if (!currentToken) return;
 
       try {
