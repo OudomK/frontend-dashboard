@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { UploadDocumentDialog } from "@/app/dashboard/documents/upload-document-dialog";
 import { ViewDocumentDialog } from "./view-document-dialog";
+import { EditDocumentDialog } from "./edit-document-dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { ExportDropdown } from "@/components/shared/export-dropdown";
 import { AccessDenied } from "@/components/ui/access-denied";
@@ -26,13 +27,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -67,8 +66,6 @@ function formatBackendError(error: any): string {
   }
   return error.response?.data?.message || error.message || "An error occurred";
 }
-
-type Role = "admin" | "doctor";
 
 export interface DocAccount {
   id: number;
@@ -142,7 +139,7 @@ export function KnowledgeBaseDocuments() {
   const canCreate = permissions.includes("create_documents");
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
-  const [loadingList, setLoadingList] = useState(false);
+  const [, setLoadingList] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "All">("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
@@ -150,6 +147,7 @@ export function KnowledgeBaseDocuments() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [viewDocId, setViewDocId] = useState<number | null>(null);
   const [viewDocName, setViewDocName] = useState<string>("");
+  const [editDocId, setEditDocId] = useState<number | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<number | null>(null);
   const [deleteDocName, setDeleteDocName] = useState<string>("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -619,6 +617,15 @@ export function KnowledgeBaseDocuments() {
                             >
                               <Eye className="h-4 w-4" />
                             </button>
+                            {canCreate && (
+                              <button
+                                aria-label={`Edit ${document.name}`}
+                                className="transition hover:text-blue-600"
+                                onClick={() => setEditDocId(document.id)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                            )}
                             {/* Doctor-only: re-process and delete */}
                             {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                               <button
@@ -734,6 +741,16 @@ export function KnowledgeBaseDocuments() {
                             <Eye className="h-4 w-4" />
                           </button>
 
+                          {canCreate && (
+                            <button
+                              aria-label={`Edit ${document.name}`}
+                              className="rounded-lg p-2 hover:bg-slate-100 text-slate-400"
+                              onClick={() => setEditDocId(document.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+
                           {/* Doctor-only actions */}
                           {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                             <button
@@ -796,6 +813,13 @@ export function KnowledgeBaseDocuments() {
         documentName={viewDocName}
         open={viewDocId !== null}
         onOpenChange={(open) => !open && setViewDocId(null)}
+      />
+
+      <EditDocumentDialog
+        documentId={editDocId}
+        open={editDocId !== null}
+        onOpenChange={(open) => !open && setEditDocId(null)}
+        onUpdateSuccess={fetchDocuments}
       />
 
       <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && setDeleteDocId(null)}>

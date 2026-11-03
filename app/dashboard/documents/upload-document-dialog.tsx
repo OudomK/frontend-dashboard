@@ -30,6 +30,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [language, setLanguage] = useState("km"); // Default Khmer language
   const [isUploading, setIsUploading] = useState(false);
   const { language: currentAppLanguage } = useTranslation();
@@ -91,6 +92,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
       formData.append("title", title);
       formData.append("category_id", categoryId);
       formData.append("description", description);
+      formData.append("source_url", sourceUrl);
       formData.append("language", language);
 
       const res = await apiClient.post("/api/documents/upload", formData, {
@@ -108,6 +110,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
       setFile(null);
       setTitle("");
       setDescription("");
+      setSourceUrl("");
       setLanguage("km");
 
       // Trigger refresh callback
@@ -261,6 +264,21 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
               placeholder="Briefly describe the contents of this document..."
               className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+          </div>
+
+          {/* Source URL */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-slate-700">Source URL</label>
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="e.g. https://www.who.int/... or https://www.nhs.uk/..."
+              className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            <p className="text-xs text-slate-400">
+              The real external source (WHO, NHS, etc.) this document is based on. Shown as a clickable link under AI chat answers that cite it.
+            </p>
           </div>
 
           {/* Footer */}
