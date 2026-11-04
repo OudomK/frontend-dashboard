@@ -18,6 +18,7 @@ export function ViewDocumentDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [chunks, setChunks] = useState<any[]>([]);
+  const [versions, setVersions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -27,6 +28,7 @@ export function ViewDocumentDialog({
       setLoading(true);
       setError("");
       setSearch("");
+      setVersions([]);
       apiClient
         .get(`/api/documents/${documentId}/chunks`)
         .then((res) => {
@@ -38,8 +40,14 @@ export function ViewDocumentDialog({
         .finally(() => {
           setLoading(false);
         });
+      // Version history (best-effort; a single-version doc just shows one row)
+      apiClient
+        .get(`/api/documents/${documentId}/versions`)
+        .then((res) => setVersions(res.data || []))
+        .catch(() => setVersions([]));
     } else {
       setChunks([]);
+      setVersions([]);
     }
   }, [open, documentId]);
 
@@ -56,6 +64,43 @@ export function ViewDocumentDialog({
             {documentName}
           </DialogTitle>
         </DialogHeader>
+
+        {versions.length > 1 && (
+          <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Version history
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {versions.map((v) => (
+                <li key={v.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-2 text-slate-700">
+                    <span className="font-semibold">v{v.version_no}</span>
+                    <span className="truncate max-w-[280px] text-slate-500">{v.title}</span>
+                    {v.id === documentId && (
+                      <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                        viewing
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {v.is_active ? (
+                      <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-400">
+                        Superseded
+                      </span>
+                    )}
+                    <span className="text-xs text-slate-400">
+                      {v.created_at ? new Date(v.created_at).toLocaleDateString() : ""}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="relative mt-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

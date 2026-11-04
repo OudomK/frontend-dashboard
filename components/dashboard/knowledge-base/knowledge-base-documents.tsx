@@ -9,6 +9,7 @@ import {
   File,
   FileSpreadsheet,
   FileText,
+  FilePlus2,
   Filter,
   Loader2,
   Pencil,
@@ -20,6 +21,7 @@ import {
 import { UploadDocumentDialog } from "@/app/dashboard/documents/upload-document-dialog";
 import { ViewDocumentDialog } from "./view-document-dialog";
 import { EditDocumentDialog } from "./edit-document-dialog";
+import { UploadNewVersionDialog } from "./upload-new-version-dialog";
 import { DashboardLayout } from "@/components/dashboard/layout/dashboard-layout";
 import { ExportDropdown } from "@/components/shared/export-dropdown";
 import { AccessDenied } from "@/components/ui/access-denied";
@@ -148,6 +150,7 @@ export function KnowledgeBaseDocuments() {
   const [viewDocId, setViewDocId] = useState<number | null>(null);
   const [viewDocName, setViewDocName] = useState<string>("");
   const [editDocId, setEditDocId] = useState<number | null>(null);
+  const [newVersionDoc, setNewVersionDoc] = useState<{ id: number; name: string } | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<number | null>(null);
   const [deleteDocName, setDeleteDocName] = useState<string>("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -626,6 +629,16 @@ export function KnowledgeBaseDocuments() {
                                 <Pencil className="h-4 w-4" />
                               </button>
                             )}
+                            {canCreate && (
+                              <button
+                                aria-label={`Upload new version of ${document.name}`}
+                                title="Upload new version"
+                                className="transition hover:text-blue-600"
+                                onClick={() => setNewVersionDoc({ id: document.id, name: document.name })}
+                              >
+                                <FilePlus2 className="h-4 w-4" />
+                              </button>
+                            )}
                             {/* Doctor-only: re-process and delete */}
                             {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                               <button
@@ -751,6 +764,16 @@ export function KnowledgeBaseDocuments() {
                             </button>
                           )}
 
+                          {canCreate && (
+                            <button
+                              aria-label={`Upload new version of ${document.name}`}
+                              className="rounded-lg p-2 hover:bg-slate-100 text-slate-400"
+                              onClick={() => setNewVersionDoc({ id: document.id, name: document.name })}
+                            >
+                              <FilePlus2 className="h-4 w-4" />
+                            </button>
+                          )}
+
                           {/* Doctor-only actions */}
                           {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                             <button
@@ -820,6 +843,14 @@ export function KnowledgeBaseDocuments() {
         open={editDocId !== null}
         onOpenChange={(open) => !open && setEditDocId(null)}
         onUpdateSuccess={fetchDocuments}
+      />
+
+      <UploadNewVersionDialog
+        documentId={newVersionDoc?.id ?? null}
+        documentName={newVersionDoc?.name ?? ""}
+        open={newVersionDoc !== null}
+        onOpenChange={(open) => !open && setNewVersionDoc(null)}
+        onVersionUploaded={fetchDocuments}
       />
 
       <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && setDeleteDocId(null)}>
