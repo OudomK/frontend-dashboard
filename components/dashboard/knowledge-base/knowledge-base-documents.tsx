@@ -124,6 +124,7 @@ export function KnowledgeBaseDocuments() {
   const permissions = userPermissions || [];
   const canManage = permissions.includes("create_documents") || permissions.includes("delete_documents");
   const canCreate = permissions.includes("create_documents");
+  const canDelete = permissions.includes("delete_documents");
 
   const [documents, setDocuments] = useState<DocAccount[]>([]);
   const [, setLoadingList] = useState(false);
@@ -202,20 +203,24 @@ export function KnowledgeBaseDocuments() {
   };
 
   const handleDelete = async () => {
-    if (!deleteDocId) return;
+    const docId = deleteDocId;
+    // Same per-document in-flight guard as process / toggle / new version.
+    if (!docId || busyDocsRef.current.has(docId)) return;
+    setDocBusy(docId, true);
     setIsDeleting(true);
     const toastId = toast.loading("Deleting document...");
     try {
-      await apiClient.delete(`/api/documents/${deleteDocId}`);
+      await apiClient.delete(`/api/documents/${docId}`);
       toast.dismiss(toastId);
       toast.success("Document deleted successfully!");
-      fetchDocuments();
-      setDeleteDocId(null);
     } catch (error: any) {
       toast.dismiss(toastId);
-      toast.error(formatBackendError(error));
+      toast.error(documentErrorMessage(error, t));
     } finally {
+      setDocBusy(docId, false);
       setIsDeleting(false);
+      setDeleteDocId(null);
+      fetchDocuments();
     }
   };
 
@@ -699,14 +704,16 @@ export function KnowledgeBaseDocuments() {
                                 )}
                               </button>
                             )}
-                            {!canManage && (
+                            {/* Delete: needs delete_documents; never offered on the active version (the backend refuses it too) */}
+                            {canDelete && !document.active && (
                               <button
                                 onClick={() => {
                                   setDeleteDocId(document.id);
                                   setDeleteDocName(document.name);
                                 }}
+                                disabled={busyDocIds.has(document.id)}
                                 aria-label={`Delete ${document.name}`}
-                                className="transition hover:text-red-600"
+                                className="transition hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -825,13 +832,15 @@ export function KnowledgeBaseDocuments() {
                             </button>
                           )}
 
-                          {!canManage && (
+                          {canDelete && !document.active && (
                             <button
                               onClick={() => {
                                 setDeleteDocId(document.id);
                                 setDeleteDocName(document.name);
                               }}
-                              className="rounded-lg p-2 hover:bg-slate-100 text-red-500"
+                              disabled={busyDocIds.has(document.id)}
+                              aria-label={`Delete ${document.name}`}
+                              className="rounded-lg p-2 hover:bg-slate-100 text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -883,13 +892,14 @@ export function KnowledgeBaseDocuments() {
         onBusyChange={setDocBusy}
       />
 
-      <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && setDeleteDocId(null)}>
+      <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && !isDeleting && setDeleteDocId(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("docs.deleteTitle" as any)}</DialogTitle>
             <DialogDescription>
               {t("docs.deleteConfirm" as any)} <span className="font-semibold text-slate-900">{deleteDocName}</span>?
             </DialogDescription>
+            <p className="mt-2 text-sm text-red-600">{t("docs.deleteWarning")}</p>
           </DialogHeader>
           <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
             <Button
@@ -904,6 +914,7 @@ export function KnowledgeBaseDocuments() {
               onClick={handleDelete}
               disabled={isDeleting}
             >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("docs.delete" as any)}
             </Button>
           </DialogFooter>

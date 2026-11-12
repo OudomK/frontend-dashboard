@@ -38,6 +38,14 @@ export function isUncertainOutcome(error: unknown): boolean {
   return !response || response.status === 504;
 }
 
+// Backend 400 details that have a translated message.
+const DETAIL_KEYS: Record<string, string> = {
+  "Document not processed yet": "docs.errNotProcessed",
+  "Cannot delete the active version. Activate another version first, or deactivate this one.": "docs.errDeleteActive",
+  "Document is being processed.": "docs.errBeingProcessed",
+  "Cannot delete the original version while newer versions exist. Delete the newer versions first.": "docs.errDeleteRoot",
+};
+
 export function documentErrorMessage(error: unknown, t: Translate): string {
   if (isUncertainOutcome(error)) {
     return t("docs.errMayStillRun");
@@ -46,8 +54,9 @@ export function documentErrorMessage(error: unknown, t: Translate): string {
   if (response.status === 429) {
     return t("docs.errQuota");
   }
-  if (response.status === 400 && response.data?.detail === "Document not processed yet") {
-    return t("docs.errNotProcessed");
+  const detail = response.data?.detail;
+  if (response.status === 400 && typeof detail === "string" && DETAIL_KEYS[detail]) {
+    return t(DETAIL_KEYS[detail]);
   }
   return formatBackendError(error);
 }
