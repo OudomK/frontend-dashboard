@@ -684,8 +684,8 @@ export function KnowledgeBaseDocuments() {
                                 <FilePlus2 className="h-4 w-4" />
                               </button>
                             )}
-                            {/* Doctor-only: re-process and delete */}
-                            {!canManage && (document.status === "uploaded" || document.status === "failed") && (
+                            {/* Process: same permission /process requires (create_documents) */}
+                            {canCreate && (document.status === "uploaded" || document.status === "failed") && (
                               <button
                                 onClick={() => handleProcess(document)}
                                 disabled={busyDocIds.has(document.id)}
@@ -809,8 +809,8 @@ export function KnowledgeBaseDocuments() {
                             </button>
                           )}
 
-                          {/* Doctor-only actions */}
-                          {!canManage && (document.status === "uploaded" || document.status === "failed") && (
+                          {/* Process: same permission /process requires (create_documents) */}
+                          {canCreate && (document.status === "uploaded" || document.status === "failed") && (
                             <button
                               onClick={() => handleProcess(document)}
                               disabled={busyDocIds.has(document.id)}
