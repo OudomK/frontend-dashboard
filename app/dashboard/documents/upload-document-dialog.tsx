@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState, useEffect, useRef } from "react";
-import { UploadCloud, FileText, X } from "lucide-react";
+import { UploadCloud, FileText, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,16 @@ import {
 } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api-client";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { documentErrorMessage } from "@/lib/document-errors";
 
 type Props = {
   trigger: ReactNode;
   onUploadSuccess?: () => void;
+  // Reports the newly uploaded document as busy while its /process runs.
+  onBusyChange?: (documentId: number, busy: boolean) => void;
 };
 
-export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
+export function UploadDocumentDialog({ trigger, onUploadSuccess, onBusyChange }: Props) {
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
 
@@ -33,7 +36,10 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
   const [sourceUrl, setSourceUrl] = useState("");
   const [language, setLanguage] = useState("km"); // Default Khmer language
   const [isUploading, setIsUploading] = useState(false);
-  const { language: currentAppLanguage } = useTranslation();
+  const { language: currentAppLanguage, t } = useTranslation();
+  // Synchronous guard against a double-click sending two /upload requests
+  // (two documents) before React re-renders the disabled button.
+  const inFlightRef = useRef(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,6 +89,8 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
       return;
     }
 
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setIsUploading(true);
     const toastId = toast.loading("Uploading document file...");
 
@@ -118,31 +126,31 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
         onUploadSuccess();
       }
 
+      // The form is closed and free again; only the new document is busy
+      // while its processing runs.
+      inFlightRef.current = false;
+      setIsUploading(false);
+
       // Automatically trigger chunk processing and embeddings generation
+      onBusyChange?.(newDoc.id, true);
       const processToastId = toast.loading("Extracting pages & generating Gemini vector embeddings...");
       try {
         await apiClient.post(`/api/documents/${newDoc.id}/process`);
         toast.dismiss(processToastId);
         toast.success("Gemini RAG vector indexing completed successfully!");
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
       } catch (procErr: any) {
         toast.dismiss(processToastId);
-        const detail = procErr.response?.data?.detail;
-        const procErrMsg = Array.isArray(detail)
-          ? detail.map((d: any) => `${d.loc ? d.loc[d.loc.length - 1] : "field"}: ${d.msg}`).join(", ")
-          : procErr.response?.data?.message || procErr.message || "Failed to process text";
-        toast.error(`Upload succeeded but processing failed: ${procErrMsg}`);
+        toast.error(`Upload succeeded but processing failed: ${documentErrorMessage(procErr, t)}`);
+      } finally {
+        onBusyChange?.(newDoc.id, false);
+        onUploadSuccess?.();
       }
     } catch (error: any) {
       toast.dismiss(toastId);
-      const detail = error.response?.data?.detail;
-      const errMsg = Array.isArray(detail)
-        ? detail.map((d: any) => `${d.loc ? d.loc[d.loc.length - 1] : "field"}: ${d.msg}`).join(", ")
-        : error.response?.data?.message || error.message || "Upload transaction failed";
-      toast.error(errMsg);
+      toast.error(documentErrorMessage(error, t));
+      onUploadSuccess?.();
     } finally {
+      inFlightRef.current = false;
       setIsUploading(false);
     }
   };
@@ -302,6 +310,7 @@ export function UploadDocumentDialog({ trigger, onUploadSuccess }: Props) {
               onClick={handleUploadSubmit}
               className="bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-semibold"
             >
+              {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isUploading ? "Uploading..." : "Upload Document"}
             </Button>
           </div>

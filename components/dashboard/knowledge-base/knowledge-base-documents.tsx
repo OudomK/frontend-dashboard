@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -52,22 +52,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { useAuthStore } from "@/lib/store/use-auth-store";
-
-
-
-function formatBackendError(error: any): string {
-  const detail = error.response?.data?.detail;
-  if (Array.isArray(detail)) {
-    return detail.map((d: any) => {
-      const field = d.loc && d.loc.length > 0 ? d.loc[d.loc.length - 1] : "field";
-      return `${field}: ${d.msg}`;
-    }).join(", ");
-  }
-  if (typeof detail === "string") {
-    return detail;
-  }
-  return error.response?.data?.message || error.message || "An error occurred";
-}
+import { documentErrorMessage, formatBackendError } from "@/lib/document-errors";
 
 export interface DocAccount {
   id: number;
@@ -177,8 +162,23 @@ export function KnowledgeBaseDocuments() {
     return t("docs.agoDays" as any).replace("{n}", String(days));
   }, [t]);
 
+  // Per-document in-flight guard. The ref is updated synchronously, so a rapid
+  // double-click can't slip a second request in before React re-renders the
+  // disabled button; the state copy only drives the UI.
+  const busyDocsRef = useRef<Set<number>>(new Set());
+  const [busyDocIds, setBusyDocIds] = useState<ReadonlySet<number>>(new Set());
+  const syncInFlightRef = useRef(false);
+
+  const setDocBusy = useCallback((docId: number, busy: boolean) => {
+    if (busy) busyDocsRef.current.add(docId);
+    else busyDocsRef.current.delete(docId);
+    setBusyDocIds(new Set(busyDocsRef.current));
+  }, []);
+
   const handleSync = async () => {
     setShowSyncConfirm(false);
+    if (syncInFlightRef.current) return;
+    syncInFlightRef.current = true;
     setIsSyncing(true);
     const toastId = toast.loading(t("docs.syncing" as any));
     try {
@@ -191,12 +191,13 @@ export function KnowledgeBaseDocuments() {
       const now = new Date().toISOString();
       localStorage.setItem("docs_last_synced", now);
       setLastSyncedAt(now);
-      fetchDocuments();
     } catch (error: any) {
       toast.dismiss(toastId);
-      toast.error(formatBackendError(error));
+      toast.error(documentErrorMessage(error, t));
     } finally {
+      syncInFlightRef.current = false;
       setIsSyncing(false);
+      fetchDocuments();
     }
   };
 
@@ -292,6 +293,48 @@ export function KnowledgeBaseDocuments() {
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
+
+  // Runs one processing-related request for a document. While it is in
+  // flight, every processing action on that document (process, new version,
+  // active toggle) is disabled; other documents stay usable. The list is
+  // refreshed afterwards whether the request succeeded or failed.
+  const runDocAction = async (
+    docId: number,
+    loadingMsg: string,
+    successMsg: string,
+    request: () => Promise<unknown>,
+  ) => {
+    if (busyDocsRef.current.has(docId)) return;
+    setDocBusy(docId, true);
+    const toastId = toast.loading(loadingMsg);
+    try {
+      await request();
+      toast.dismiss(toastId);
+      toast.success(successMsg);
+    } catch (error: any) {
+      toast.dismiss(toastId);
+      toast.error(documentErrorMessage(error, t));
+    } finally {
+      setDocBusy(docId, false);
+      fetchDocuments();
+    }
+  };
+
+  const handleProcess = (doc: DocAccount) =>
+    runDocAction(
+      doc.id,
+      "Processing document chunks and embeddings...",
+      "Document chunked and embedded successfully!",
+      () => apiClient.post(`/api/documents/${doc.id}/process`),
+    );
+
+  const handleToggleActive = (doc: DocAccount, checked: boolean) =>
+    runDocAction(
+      doc.id,
+      `${checked ? "Activating" : "Deactivating"} document...`,
+      `Document ${checked ? "activated" : "deactivated"} successfully!`,
+      () => apiClient.patch(`/api/documents/${doc.id}/${checked ? "activate" : "deactivate"}`),
+    );
 
   const filteredDocs = useMemo(() => {
     const filtered = documents.filter((doc) => {
@@ -399,7 +442,9 @@ export function KnowledgeBaseDocuments() {
                       variant="outline"
                       className="h-10 rounded-md px-4"
                       disabled={isSyncing}
-                      onClick={() => setShowSyncConfirm(true)}
+                      onClick={() => {
+                        if (!syncInFlightRef.current) setShowSyncConfirm(true);
+                      }}
                     >
                       {isSyncing ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -419,6 +464,7 @@ export function KnowledgeBaseDocuments() {
           {/* Upload button: visible if user has create_documents permission */}
           {canCreate && (
             <UploadDocumentDialog
+              onBusyChange={setDocBusy}
               onUploadSuccess={fetchDocuments}
               trigger={
                 <Button className="bg-blue-600 text-white h-10">
@@ -443,6 +489,7 @@ export function KnowledgeBaseDocuments() {
       {canCreate && (
         <div className="mb-4 flex gap-2 lg:hidden">
           <UploadDocumentDialog
+            onBusyChange={setDocBusy}
             onUploadSuccess={fetchDocuments}
             trigger={
               <Button className="flex-1 bg-blue-600 text-white hover:bg-blue-700">
@@ -588,25 +635,22 @@ export function KnowledgeBaseDocuments() {
                           </td>
                         )}
                         <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
                           <Switch
                             checked={document.active}
-                            onCheckedChange={async (checked) => {
-                              const action = checked ? "activate" : "deactivate";
-                              const toastId = toast.loading(`${checked ? "Activating" : "Deactivating"} document...`);
-                              try {
-                                await apiClient.patch(`/api/documents/${document.id}/${action}`);
-                                toast.dismiss(toastId);
-                                toast.success(`Document ${checked ? "activated" : "deactivated"} successfully!`);
-                                fetchDocuments();
-                              } catch (error: any) {
-                                toast.dismiss(toastId);
-                                toast.error(formatBackendError(error));
-                              }
-                            }}
+                            disabled={busyDocIds.has(document.id)}
+                            onCheckedChange={(checked) => handleToggleActive(document, checked)}
                             size="default"
                             className="data-checked:bg-emerald-600 data-unchecked:bg-slate-100"
                             aria-label={`Toggle ${document.name}`}
                           />
+                          {busyDocIds.has(document.id) && (
+                            <Loader2
+                              className="h-4 w-4 animate-spin text-slate-400"
+                              aria-label={t("docs.processInProgress" as any)}
+                            />
+                          )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-3 text-slate-400">
@@ -633,7 +677,8 @@ export function KnowledgeBaseDocuments() {
                               <button
                                 aria-label={`Upload new version of ${document.name}`}
                                 title="Upload new version"
-                                className="transition hover:text-blue-600"
+                                className="transition hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={busyDocIds.has(document.id)}
                                 onClick={() => setNewVersionDoc({ id: document.id, name: document.name })}
                               >
                                 <FilePlus2 className="h-4 w-4" />
@@ -642,22 +687,16 @@ export function KnowledgeBaseDocuments() {
                             {/* Doctor-only: re-process and delete */}
                             {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                               <button
-                                onClick={async () => {
-                                  const toastId = toast.loading("Processing document chunks and embeddings...");
-                                  try {
-                                    await apiClient.post(`/api/documents/${document.id}/process`);
-                                    toast.dismiss(toastId);
-                                    toast.success("Document chunked and embedded successfully!");
-                                    fetchDocuments();
-                                  } catch (error: any) {
-                                    toast.dismiss(toastId);
-                                    toast.error(formatBackendError(error));
-                                  }
-                                }}
-                                title="Process Document"
-                                className="transition hover:text-emerald-500"
+                                onClick={() => handleProcess(document)}
+                                disabled={busyDocIds.has(document.id)}
+                                title={busyDocIds.has(document.id) ? t("docs.processInProgress" as any) : "Process Document"}
+                                className="transition hover:text-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                <RefreshCcw className="h-4 w-4" />
+                                {busyDocIds.has(document.id) ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RefreshCcw className="h-4 w-4" />
+                                )}
                               </button>
                             )}
                             {!canManage && (
@@ -722,21 +761,16 @@ export function KnowledgeBaseDocuments() {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={document.active}
-                            onCheckedChange={async (checked) => {
-                              const action = checked ? "activate" : "deactivate";
-                              const toastId = toast.loading(`${checked ? "Activating" : "Deactivating"} document...`);
-                              try {
-                                await apiClient.patch(`/api/documents/${document.id}/${action}`);
-                                toast.dismiss(toastId);
-                                toast.success(`Document ${checked ? "activated" : "deactivated"} successfully!`);
-                                fetchDocuments();
-                              } catch (error: any) {
-                                toast.dismiss(toastId);
-                                toast.error(formatBackendError(error));
-                              }
-                            }}
+                            disabled={busyDocIds.has(document.id)}
+                            onCheckedChange={(checked) => handleToggleActive(document, checked)}
                             aria-label={`Toggle ${document.name}`}
                           />
+                          {busyDocIds.has(document.id) && (
+                            <Loader2
+                              className="h-4 w-4 animate-spin text-slate-400"
+                              aria-label={t("docs.processInProgress" as any)}
+                            />
+                          )}
                           <span className="text-xs text-slate-500 font-semibold">{t("docs.activeStatus" as any)}</span>
                         </div>
 
@@ -767,7 +801,8 @@ export function KnowledgeBaseDocuments() {
                           {canCreate && (
                             <button
                               aria-label={`Upload new version of ${document.name}`}
-                              className="rounded-lg p-2 hover:bg-slate-100 text-slate-400"
+                              className="rounded-lg p-2 hover:bg-slate-100 text-slate-400 disabled:cursor-not-allowed disabled:opacity-40"
+                              disabled={busyDocIds.has(document.id)}
                               onClick={() => setNewVersionDoc({ id: document.id, name: document.name })}
                             >
                               <FilePlus2 className="h-4 w-4" />
@@ -777,22 +812,16 @@ export function KnowledgeBaseDocuments() {
                           {/* Doctor-only actions */}
                           {!canManage && (document.status === "uploaded" || document.status === "failed") && (
                             <button
-                              onClick={async () => {
-                                const toastId = toast.loading("Processing document chunks and embeddings...");
-                                try {
-                                  await apiClient.post(`/api/documents/${document.id}/process`);
-                                  toast.dismiss(toastId);
-                                  toast.success("Document chunked and embedded successfully!");
-                                  fetchDocuments();
-                                } catch (error: any) {
-                                  toast.dismiss(toastId);
-                                  toast.error(formatBackendError(error));
-                                }
-                              }}
-                              title="Process Document"
-                              className="rounded-lg p-2 hover:bg-slate-100 text-emerald-500"
+                              onClick={() => handleProcess(document)}
+                              disabled={busyDocIds.has(document.id)}
+                              title={busyDocIds.has(document.id) ? t("docs.processInProgress" as any) : "Process Document"}
+                              className="rounded-lg p-2 hover:bg-slate-100 text-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <RefreshCcw className="h-4 w-4" />
+                              {busyDocIds.has(document.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCcw className="h-4 w-4" />
+                              )}
                             </button>
                           )}
 
@@ -851,6 +880,7 @@ export function KnowledgeBaseDocuments() {
         open={newVersionDoc !== null}
         onOpenChange={(open) => !open && setNewVersionDoc(null)}
         onVersionUploaded={fetchDocuments}
+        onBusyChange={setDocBusy}
       />
 
       <Dialog open={deleteDocId !== null} onOpenChange={(open) => !open && setDeleteDocId(null)}>
@@ -900,7 +930,7 @@ export function KnowledgeBaseDocuments() {
             <Button variant="outline" onClick={() => setShowSyncConfirm(false)}>
               {t("docs.cancel" as any)}
             </Button>
-            <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSync}>
+            <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSync} disabled={isSyncing}>
               <RefreshCcw className="mr-2 h-4 w-4" />
               {t("docs.syncConfirm" as any)}
             </Button>

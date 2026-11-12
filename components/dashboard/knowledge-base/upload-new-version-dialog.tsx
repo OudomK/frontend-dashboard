@@ -6,20 +6,8 @@ import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { Loader2, UploadCloud, FileText, X } from "lucide-react";
 import { toast } from "sonner";
-
-function formatBackendError(error: any): string {
-  const detail = error.response?.data?.detail;
-  if (Array.isArray(detail)) {
-    return detail.map((d: any) => {
-      const field = d.loc && d.loc.length > 0 ? d.loc[d.loc.length - 1] : "field";
-      return `${field}: ${d.msg}`;
-    }).join(", ");
-  }
-  if (typeof detail === "string") {
-    return detail;
-  }
-  return error.response?.data?.message || error.message || "An error occurred";
-}
+import { documentErrorMessage, formatBackendError } from "@/lib/document-errors";
+import { useTranslation } from "@/lib/hooks/use-translation";
 
 type Props = {
   documentId: number | null;
@@ -27,6 +15,9 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onVersionUploaded?: () => void;
+  // Reports the source document as busy while /update + /process run, so the
+  // list can disable that document's other processing actions.
+  onBusyChange?: (documentId: number, busy: boolean) => void;
 };
 
 // Uploads a replacement file as a NEW VERSION of an existing document.
@@ -34,10 +25,14 @@ type Props = {
 // root via parent_id), then /process on the returned new doc - which embeds it
 // and, on success, activates it while deactivating the prior version. The old
 // version keeps serving until processing succeeds (see process_document).
-export function UploadNewVersionDialog({ documentId, documentName, open, onOpenChange, onVersionUploaded }: Props) {
+export function UploadNewVersionDialog({ documentId, documentName, open, onOpenChange, onVersionUploaded, onBusyChange }: Props) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  // Synchronous guard: a second click before React re-renders must not send
+  // a second /update (which would create yet another version) or /process.
+  const inFlightRef = useRef(false);
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -86,7 +81,11 @@ export function UploadNewVersionDialog({ documentId, documentName, open, onOpenC
       return;
     }
 
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    const sourceId = documentId;
     setIsUploading(true);
+    onBusyChange?.(sourceId, true);
     const toastId = toast.loading("Uploading new version...");
     try {
       const formData = new FormData();
@@ -112,21 +111,29 @@ export function UploadNewVersionDialog({ documentId, documentName, open, onOpenC
         toast.success("New version is now the active document.");
       } catch (procErr: any) {
         toast.dismiss(processToastId);
-        toast.error(`Uploaded, but processing failed (previous version stays active): ${formatBackendError(procErr)}`);
+        toast.error(`Uploaded, but processing failed (previous version stays active): ${documentErrorMessage(procErr, t)}`);
       }
 
       onOpenChange(false);
-      onVersionUploaded?.();
     } catch (error: any) {
       toast.dismiss(toastId);
-      toast.error(formatBackendError(error));
+      toast.error(documentErrorMessage(error, t));
     } finally {
+      inFlightRef.current = false;
       setIsUploading(false);
+      onBusyChange?.(sourceId, false);
+      onVersionUploaded?.();
     }
   };
 
+  // Keep the dialog (and its spinner) open until the request settles.
+  const handleOpenChange = (next: boolean) => {
+    if (!next && inFlightRef.current) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-slate-900">Upload New Version</DialogTitle>
@@ -267,6 +274,7 @@ export function UploadNewVersionDialog({ documentId, documentName, open, onOpenC
                 onClick={handleSubmit}
                 className="bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-semibold"
               >
+                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isUploading ? "Uploading..." : "Upload New Version"}
               </Button>
             </DialogFooter>
