@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { isAxiosError } from "axios";
 import { apiClient, API_URL } from "@/lib/api-client";
 import { Loader2, Pencil, Save, Plus, Trash2, Shield, HeartPulse, Building2, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +16,19 @@ import "react-quill-new/dist/quill.snow.css";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+
+const createEmptyClinic = () => ({
+  clinic_name: { en: "", km: "" },
+  about_text: { en: "", km: "" },
+  mission: { en: "", km: "" },
+  vision: { en: "", km: "" },
+  address: { en: "", km: "" },
+  opening_hours: { en: "", km: "" },
+  phone: "",
+  email: "",
+  telegram_link: "",
+  map_link: "",
+});
 
 export function AboutManagement() {
   const { t, language } = useTranslation();
@@ -34,19 +48,32 @@ export function AboutManagement() {
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-      const [clinicRes, teamRes] = await Promise.all([
-        apiClient.get("/api/v1/about/clinic"),
-        apiClient.get("/api/v1/about/team")
-      ]);
-      setClinic(clinicRes.data);
-      setTeam(teamRes.data);
-    } catch (err) {
-      console.error(err);
-      toast.error(t("abt.failedLoad"));
-    } finally {
-      setLoading(false);
+    const [clinicResult, teamResult] = await Promise.allSettled([
+      apiClient.get("/api/v1/about/clinic"),
+      apiClient.get("/api/v1/about/team")
+    ]);
+
+    let failed = false;
+
+    if (clinicResult.status === "fulfilled") {
+      setClinic(clinicResult.value.data);
+    } else if (isAxiosError(clinicResult.reason) && clinicResult.reason.response?.status === 404) {
+      // No clinic row yet: render an empty form so the admin can create it.
+      setClinic(createEmptyClinic());
+    } else {
+      console.error(clinicResult.reason);
+      failed = true;
     }
+
+    if (teamResult.status === "fulfilled") {
+      setTeam(teamResult.value.data);
+    } else {
+      console.error(teamResult.reason);
+      failed = true;
+    }
+
+    if (failed) toast.error(t("abt.failedLoad"));
+    setLoading(false);
   };
 
   const handleClinicChange = (e: any) => {
@@ -67,10 +94,18 @@ export function AboutManagement() {
     });
   };
 
+  const clinicNameMissing =
+    !!clinic && !clinic.clinic_name?.en?.trim() && !clinic.clinic_name?.km?.trim();
+
   const saveClinicInfo = async () => {
+    if (!clinic || clinicNameMissing) return;
     setSavingClinic(true);
     try {
-      await apiClient.put("/api/v1/about/clinic", clinic);
+      // When creating (no row yet) don't send an id at all.
+      const { id, ...rest } = clinic;
+      const payload = id ? clinic : rest;
+      const res = await apiClient.put("/api/v1/about/clinic", payload);
+      if (res.data && typeof res.data === "object") setClinic(res.data);
       toast.success(t("abt.clinicUpdated"));
     } catch (err) {
       console.error(err);
@@ -333,8 +368,15 @@ export function AboutManagement() {
               </div>
             </div>
             
-            <div className="flex justify-end pt-4">
-              <Button onClick={saveClinicInfo} disabled={savingClinic} className="bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all duration-200">
+            <div className="flex justify-end items-center gap-3 pt-4">
+              {clinicNameMissing && (
+                <p className="text-sm text-red-600">
+                  {language === "km"
+                    ? "សូមបញ្ចូលឈ្មោះគ្លីនិក (ខ្មែរ ឬ អង់គ្លេស) មុនពេលរក្សាទុក។"
+                    : "Enter a clinic name (Khmer or English) before saving."}
+                </p>
+              )}
+              <Button onClick={saveClinicInfo} disabled={savingClinic || clinicNameMissing} className="bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all duration-200">
                 {savingClinic ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 {t("abt.saveClinic")}
               </Button>
